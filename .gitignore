@@ -1,39 +1,24 @@
-# Gradle
-.gradle/
-build/
-
-# Eclipse
-.project
-.classpath
-.settings/
-bin/
-
-# IntelliJ
-.idea
-*.ipr
-*.iml
-*.iws
-
-# NetBeans
-nb-configuration.xml
-
-# Visual Studio Code
-.vscode
-.factorypath
-
-# OSX
-.DS_Store
-
-# Vim
+# Compiled binaries and packages
+*.exe
+*.dll
+*.so
+*.dylib
+*.wasm
+*.bin
+# Go build cache
+.cache/go-build/
+# Go modules cache
+pkg/mod/
+# Test results
+*.test
+testdata/
+# Editor/IDE specific files
+.idea/
+.vscode/
 *.swp
-*.swo
-
-# patch
-*.orig
-*.rej
-
-# Local environment
-.env
-
-# Plugin directory
-/.quarkus/cli/plugins/
+*~
+# Operating system generated files
+.DS_Store
+Thumbs.db
+# Enviroment files
+*.env

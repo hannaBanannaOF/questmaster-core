@@ -1,7 +1,0 @@
-databaseChangeLog:
-  - include:
-      file: /changelog/session.yml
-      relativeToChangelogFile: true
-  - include:
-      file: /changelog/character-sheet.yml
-      relativeToChangelogFile: true
