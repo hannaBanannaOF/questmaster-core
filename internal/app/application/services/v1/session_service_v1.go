@@ -2,9 +2,9 @@ package services_v1
 
 import (
 	"log"
+	enum "questmaster-core/domain/enumerations"
 	vo "questmaster-core/domain/vo"
 	datasource "questmaster-core/internal/app/infra/datasources"
-	"questmaster-core/internal/app/infra/db"
 	models "questmaster-core/internal/app/infra/models"
 	"time"
 
@@ -13,7 +13,8 @@ import (
 )
 
 type SessionServiceV1 struct {
-	SessionDs datasource.SessionDataSourceInterface
+	SessionDs        datasource.SessionDataSourceInterface
+	CharacterSheetDs datasource.CharacterSheetDataSourceInterface
 }
 
 func (svc *SessionServiceV1) GetAllByPlayerIdOrDmId(UserId string) []vo.SessionListItem {
@@ -32,6 +33,7 @@ func (svc *SessionServiceV1) GetAllByPlayerIdOrDmId(UserId string) []vo.SessionL
 			Description: model.SessionName,
 			Dmed:        model.DmId == uuid,
 			System:      model.TrpgSystem,
+			InPlay:      model.InPlay,
 		}
 	})
 }
@@ -70,7 +72,7 @@ func (svc *SessionServiceV1) GetCalendar(StartDate time.Time, EndDate time.Time,
 		log.Panicf("Unable to get sessions: %s", err)
 	}
 
-	return lo.Map(data, func(model db.Pair[models.Session, models.SessionCalendar], _ int) vo.CalendarItem {
+	return lo.Map(data, func(model models.Pair[models.Session, models.SessionCalendar], _ int) vo.CalendarItem {
 		return vo.CalendarItem{
 			Slug:       model.First.Slug,
 			Name:       model.First.SessionName,
@@ -80,4 +82,70 @@ func (svc *SessionServiceV1) GetCalendar(StartDate time.Time, EndDate time.Time,
 			ScheduleId: model.Second.Id,
 		}
 	})
+}
+
+func (svc *SessionServiceV1) GetSessionDetails(SessionId int, UserId string) *vo.SessionDetailItem {
+	data, err := svc.SessionDs.GetOne(SessionId)
+	if err != nil {
+		log.Panicf("Unable to get session: %s", err)
+	}
+
+	if data == nil {
+		return nil
+	}
+
+	cs, err := svc.CharacterSheetDs.GetAllBySessionId(data.Id)
+	if err != nil {
+		log.Panicf("Unable to get session: %s", err)
+	}
+
+	uuid, err := uuid.Parse(UserId)
+	if err != nil {
+		log.Panicf("Unable to get sessions: %s", err)
+	}
+
+	return &vo.SessionDetailItem{
+		Id:       data.Id,
+		Name:     data.SessionName,
+		Overview: data.Overview,
+		System:   data.TrpgSystem,
+		InPlay:   data.InPlay,
+		Dmed:     data.DmId == uuid,
+		Characters: lo.Map(cs, func(model models.CharacterSheet, _ int) vo.SessionCharacterSheetItem {
+			return vo.SessionCharacterSheetItem{
+				Name:      model.CharacterName,
+				MaxHp:     model.MaxHp,
+				CurrentHp: model.CurrentHp,
+			}
+		}),
+	}
+}
+
+func (svc *SessionServiceV1) ToggleInPlayById(SessionId int, UserId string) *vo.SessionDetailItem {
+	data, err := svc.SessionDs.ToggleInPlayById(SessionId)
+	if err != nil {
+		log.Panicf("Unable to update session: %s", err)
+	}
+	return svc.GetSessionDetails(data.Id, UserId)
+}
+
+func (svc *SessionServiceV1) ResolveSlug(Slug string) *vo.SlugResolve {
+	data, err := svc.SessionDs.ResolveSlug(Slug)
+	if err != nil {
+		log.Panicf("Unable to resolve slug %s: %s", Slug, err)
+	}
+
+	return &vo.SlugResolve{
+		CoreId: *data,
+	}
+}
+
+func (svc *SessionServiceV1) CreateSession(SessionName string, SessionOverview *string, TrpgSystem enum.TrpgSystem, UserId string) *vo.Slug {
+	data, err := svc.SessionDs.CreateSession(SessionName, SessionOverview, TrpgSystem, UserId)
+	if err != nil {
+		log.Panicf("Unable to create session: %s", err)
+	}
+	return &vo.Slug{
+		Slug: data.Slug,
+	}
 }

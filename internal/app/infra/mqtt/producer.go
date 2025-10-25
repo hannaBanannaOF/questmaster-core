@@ -20,7 +20,7 @@ type RabbitConfig struct {
 }
 
 type UpdatePathsMessage struct {
-	Instance string `json:"id"`
+	Instance string `json:"instance"`
 	Url      string `json:"url"`
 	Regex    string `json:"regex"`
 }

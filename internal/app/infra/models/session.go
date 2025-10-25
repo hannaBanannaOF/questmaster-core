@@ -13,4 +13,5 @@ type Session struct {
 	InPlay      bool            `db:"in_play"`
 	TrpgSystem  enum.TrpgSystem `db:"trpg_system"`
 	Slug        string          `db:"slug"`
+	Overview    *string         `db:"overview"`
 }

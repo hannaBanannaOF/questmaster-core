@@ -1,7 +1,5 @@
 package enum
 
-import "fmt"
-
 type TrpgSystem string
 
 const (
@@ -22,10 +20,10 @@ func (s *TrpgSystem) Scan(value interface{}) error {
 		case "CALL_OF_CTHULHU":
 			*s = CallOfCthulhu
 		default:
-			return fmt.Errorf("unknown status string: %s", string(v))
+			*s = Unknown
 		}
 	default:
-		return fmt.Errorf("unsupported type for Status: %T", value)
+		*s = Unknown
 	}
 	return nil
 }

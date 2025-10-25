@@ -9,4 +9,5 @@ type SessionListItem struct {
 	Description string          `json:"description"`
 	Dmed        bool            `json:"dmed"`
 	System      enum.TrpgSystem `json:"system"`
+	InPlay      bool            `json:"inPlay"`
 }

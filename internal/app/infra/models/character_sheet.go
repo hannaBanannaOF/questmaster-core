@@ -13,4 +13,6 @@ type CharacterSheet struct {
 	TrpgSystem    enum.TrpgSystem `db:"trpg_system"`
 	SessionId     *int            `db:"session_id"`
 	Slug          string          `db:"slug"`
+	MaxHp         *int            `db:"max_hp"`
+	CurrentHp     *int            `db:"current_hp"`
 }
