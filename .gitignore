@@ -22,3 +22,5 @@ testdata/
 Thumbs.db
 # Enviroment files
 *.env
+
+Old/
