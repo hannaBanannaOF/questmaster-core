@@ -8,7 +8,8 @@ import (
 	"os"
 	"questmaster-core/cmd/app/bootstrap"
 	"questmaster-core/cmd/app/routes"
-	rpg "questmaster-core/internal/infra/rpg"
+	"questmaster-core/internal/shared/middleware"
+	"questmaster-core/internal/shared/mqtt"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -33,7 +34,7 @@ func main() {
 	}
 	authHost := os.Getenv("AUTH_HOST")
 	realmName := os.Getenv("AUTH_REALM")
-	rsa, err := rpg.GetJWKSet(fmt.Sprintf("%s/realms/%s/protocol/openid-connect/certs", authHost, realmName))
+	rsa, err := middleware.GetJWKSet(fmt.Sprintf("%s/realms/%s/protocol/openid-connect/certs", authHost, realmName))
 	if err != nil {
 		log.Panicf("Unable to start server: %s", err)
 	}
@@ -63,21 +64,29 @@ func main() {
 	// Bootstrap
 	campaignHandler := bootstrap.BuildCampaignHandler(pgPool)
 	characterHandler := bootstrap.BuildCharacterHandler(pgPool)
+	inviteHandler := bootstrap.BuildInviteHandler(pgPool)
 
 	// Routes
-	router := gin.Default()
+	router := gin.New()
+	router.Use(
+		gin.Logger(),
+		gin.Recovery(),
+		middleware.ErrorHandler(),
+	)
+
 	routes.RegisterV1Routes(router, routes.V1RoutesDeps{
 		CampaignHandler:  campaignHandler,
 		CharacterHandler: characterHandler,
-		AuthMiddleware:   rpg.AuthMiddleware(rsa),
-		PermMiddleware:   rpg.UpdatePermissionsMiddleware(mongoClient, pgPool),
+		InviteHandler:    inviteHandler,
+		AuthMiddleware:   middleware.AuthMiddleware(rsa),
+		PermMiddleware:   middleware.UpdatePermissionsMiddleware(mongoClient, pgPool),
 	})
 
 	// MQTT
 	mqttPort, _ := strconv.Atoi(os.Getenv("MQTT_PORT"))
 
-	prod := rpg.RabbitMQProducer{
-		Config: rpg.RabbitConfig{
+	prod := mqtt.RabbitMQProducer{
+		Config: mqtt.RabbitConfig{
 			Host:     os.Getenv("MQTT_HOST"),
 			Port:     mqttPort,
 			Username: os.Getenv("MQTT_USER"),

@@ -1,0 +1,5 @@
+package invite
+
+type AcceptInviteRequest struct {
+	CharacterSheetID int `json:"character_sheet_id"`
+}

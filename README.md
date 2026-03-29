@@ -1,3 +1,3 @@
 Questmaster - Core
 
-docker build -t repo.repsy.io/hannabananna/questmaster/questmaster-core:latest .
+docker build -t labs.liminal/questmaster/questmaster-core:1.0.0 .

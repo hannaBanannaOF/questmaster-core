@@ -1,18 +1,38 @@
 package bootstrap
 
 import (
-	usecases "questmaster-core/internal/app/campaign/usecases"
-	infra "questmaster-core/internal/infra/campaign/pg"
-	transport "questmaster-core/internal/transport/campaign/http"
+	campaign "questmaster-core/internal/campaign"
+	campaignUsecases "questmaster-core/internal/campaign/app/usecases"
+	campaignInfra "questmaster-core/internal/campaign/infra/pg"
+	campaignTransport "questmaster-core/internal/campaign/transport/http"
+
+	character "questmaster-core/internal/character"
+	invite "questmaster-core/internal/invite"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func BuildCampaignHandler(db *pgxpool.Pool) *transport.CampaignsHandler {
-	repo := infra.NewCampaignRepositoryPG(db)
-	fetchUc := usecases.NewFetchMyCampaigns(repo)
-	resolveSlugUc := usecases.NewResolveCampaignSlug(repo)
-	createCampaignUC := usecases.NewCreateCampaign(repo)
-	toggleStatusUC := usecases.NewUpdateStatus(repo)
-	return transport.NewCampaignsHandler(fetchUc, resolveSlugUc, createCampaignUC, toggleStatusUC)
+func BuildCampaignHandler(db *pgxpool.Pool) *campaignTransport.CampaignHandler {
+	campaignRepo := campaignInfra.NewCampaignRepositoryPG(db)
+	getCampaignFromIDUC := campaignUsecases.NewGetCampaignFromID(campaignRepo)
+
+	characterModule := character.NewCharacterModule(db, getCampaignFromIDUC)
+	inviteModule := invite.NewInviteModule(db, getCampaignFromIDUC, characterModule.GetMyCharactersWithoutCampaignUC(), characterModule.LinkCharacterToCampaignUC())
+
+	campaignModule := campaign.NewCampaignModule(
+		db,
+		characterModule.GetCampaignCharactersUC(),
+		inviteModule.GetInviteByCampaignIDUC(),
+		inviteModule.CreateInviteUC(),
+	)
+
+	return campaignTransport.NewCampaignHandler(
+		campaignModule.FetchMyCampaignsUC(),
+		campaignModule.ResolveCampaignSlugUC(),
+		campaignModule.CreateCampaignUC(),
+		campaignModule.UpdateCampaignStatusUC(),
+		campaignModule.GetCampaignDetailsUC(),
+		campaignModule.DeleteCampaignUC(),
+		campaignModule.GetOrCreateCampaignInviteUC(),
+	)
 }
