@@ -15,14 +15,14 @@ func NewGetCharacterDetail(r characterApp.CharacterRepository) *GetCharacterDeta
 	}
 }
 
-func (uc *GetCharacterDetailUseCase) Execute(characterID characterDomain.CharacterID) (characterApp.CharacterDetailReadModel, error) {
-	char, err := uc.r.FindByID(characterID)
+func (uc *GetCharacterDetailUseCase) Execute(cmd characterApp.GetCharacterDetailsCommand) (characterDomain.Character, error) {
+	char, err := uc.r.FindByID(cmd.ID)
 	if err != nil {
-		return characterApp.CharacterDetailReadModel{}, err
+		return characterDomain.Character{}, err
 	}
 	if char == nil {
-		return characterApp.CharacterDetailReadModel{}, ErrCharacterNotFound
+		return characterDomain.Character{}, ErrCharacterNotFound
 	}
 
-	return characterApp.MapDomainToDetailReadModel(*char), nil
+	return *char, nil
 }

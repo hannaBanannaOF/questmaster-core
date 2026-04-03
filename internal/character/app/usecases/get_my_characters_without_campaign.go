@@ -4,6 +4,7 @@ import (
 	characterApp "questmaster-core/internal/character/app"
 	characterDomain "questmaster-core/internal/character/domain"
 	rpgDomain "questmaster-core/internal/rpg/domain"
+	userDomain "questmaster-core/internal/user/domain"
 )
 
 type GetMyCharactersWithoutCampaignUseCase struct {
@@ -16,6 +17,6 @@ func NewMyGetCharactersWithoutCampaign(r characterApp.CharacterRepository) *GetM
 	}
 }
 
-func (uc *GetMyCharactersWithoutCampaignUseCase) GetBySystemAndCampaignIDNull(userID rpgDomain.UserID, system rpgDomain.System) ([]characterDomain.Character, error) {
+func (uc *GetMyCharactersWithoutCampaignUseCase) GetBySystemAndCampaignIDNull(userID userDomain.UserID, system rpgDomain.System) ([]characterDomain.Character, error) {
 	return uc.r.GetAllByUserIDAndCampaignIDNullAndSystem(userID, system)
 }

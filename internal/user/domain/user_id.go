@@ -1,4 +1,4 @@
-package rpg
+package user
 
 import "github.com/google/uuid"
 

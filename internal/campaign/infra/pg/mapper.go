@@ -3,6 +3,7 @@ package campaign
 import (
 	campaignDomain "questmaster-core/internal/campaign/domain"
 	rpgDomain "questmaster-core/internal/rpg/domain"
+	userDomain "questmaster-core/internal/user/domain"
 )
 
 func MapRowToDomain(row CampaignRow) (campaignDomain.Campaign, error) {
@@ -32,12 +33,13 @@ func MapRowToDomain(row CampaignRow) (campaignDomain.Campaign, error) {
 	}
 
 	return campaignDomain.Campaign{
-		Id:       campaignDomain.NewCampaignID(row.ID),
-		Name:     name,
-		Dm:       rpgDomain.NewUserID(row.DmID),
-		Status:   status,
-		System:   system,
-		Slug:     slug,
-		Overview: overview,
+		Id:          campaignDomain.NewCampaignID(row.ID),
+		Name:        name,
+		Dm:          userDomain.NewUserID(row.DmID),
+		Status:      status,
+		System:      system,
+		Slug:        slug,
+		Overview:    overview,
+		PlayerCount: campaignDomain.NewPlayerCount(row.PlayerCount),
 	}, nil
 }

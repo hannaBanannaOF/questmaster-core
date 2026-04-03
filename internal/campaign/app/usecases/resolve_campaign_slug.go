@@ -2,7 +2,7 @@ package campaign
 
 import (
 	campaignApp "questmaster-core/internal/campaign/app"
-	rpgDomain "questmaster-core/internal/rpg/domain"
+	rpgApp "questmaster-core/internal/rpg/app"
 )
 
 type ResolveCampaignSlugUseCase struct {
@@ -13,8 +13,8 @@ func NewResolveCampaignSlug(r campaignApp.CampaignRepository) *ResolveCampaignSl
 	return &ResolveCampaignSlugUseCase{r: r}
 }
 
-func (uc *ResolveCampaignSlugUseCase) Execute(slug rpgDomain.Slug) (campaignApp.ResolveCampaignSlugReadModel, error) {
-	campaign, err := uc.r.FindBySlug(slug)
+func (uc *ResolveCampaignSlugUseCase) Execute(cmd rpgApp.ResolveSlugCommand) (campaignApp.ResolveCampaignSlugReadModel, error) {
+	campaign, err := uc.r.FindBySlug(cmd.Slug)
 	if err != nil {
 		return campaignApp.ResolveCampaignSlugReadModel{}, err
 	}

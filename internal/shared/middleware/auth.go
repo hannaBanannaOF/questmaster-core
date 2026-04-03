@@ -7,17 +7,15 @@ import (
 	"fmt"
 	"math/big"
 	"net/http"
-	rpgDomain "questmaster-core/internal/rpg/domain"
 	"questmaster-core/internal/shared/context"
 	"questmaster-core/internal/shared/httperrors"
+	userDomain "questmaster-core/internal/user/domain"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
-
-const UserIDKey = "UserID"
 
 func AuthMiddleware(jwkSet map[string]*rsa.PublicKey) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -78,16 +76,91 @@ func AuthMiddleware(jwkSet map[string]*rsa.PublicKey) gin.HandlerFunc {
 			return
 		}
 
+		claimsMap := token.Claims.(jwt.MapClaims)
+
+		firstName := getOptionalString(claimsMap, "given_name")
+		lastName := getOptionalString(claimsMap, "family_name")
+		var compositeName *userDomain.Name
+		if firstName != nil {
+			o, err := userDomain.NewName(getString(claimsMap, "given_name"), lastName)
+			if err != nil {
+				_ = c.Error(httperrors.ErrUnauthorized)
+				c.Abort()
+				return
+			}
+			compositeName = &o
+		}
+
+		username, err := userDomain.NewUsername(getString(claimsMap, "preferred_username"))
+		if err != nil {
+			_ = c.Error(httperrors.ErrUnauthorized)
+			c.Abort()
+			return
+		}
+
+		user := userDomain.User{
+			Id:       userDomain.NewUserID(uuid),
+			Username: username,
+			Name:     compositeName,
+		}
+
 		appCtx := context.AppContext{Context: c}
-		appCtx.SetUserID(rpgDomain.NewUserID(uuid))
+		appCtx.SetUser(user)
 
 		c.Next()
 	}
 }
 
-func GetJWKSet(url string) (map[string]*rsa.PublicKey, error) {
+func getString(claims jwt.MapClaims, key string) string {
+	if val, ok := claims[key]; ok {
+		if str, ok := val.(string); ok {
+			return str
+		}
+	}
+	return ""
+}
+
+func getOptionalString(claims jwt.MapClaims, key string) *string {
+	if val, ok := claims[key]; ok {
+		if str, ok := val.(string); ok && str != "" {
+			return &str
+		}
+	}
+	return nil
+}
+
+type OIDCDiscovery struct {
+	Issuer  string `json:"issuer"`
+	JWKSUri string `json:"jwks_uri"`
+	// outros campos disponíveis se precisar futuramente
+	AuthorizationEndpoint string `json:"authorization_endpoint"`
+	TokenEndpoint         string `json:"token_endpoint"`
+	UserinfoEndpoint      string `json:"userinfo_endpoint"`
+}
+
+func GetJWKSet(oidcHost string) (map[string]*rsa.PublicKey, error) {
+	wellKnownURL := strings.TrimRight(oidcHost, "/") + "/.well-known/openid-configuration"
+
+	resp, err := http.Get(wellKnownURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch OIDC discovery document: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("discovery endpoint returned status %d", resp.StatusCode)
+	}
+
+	var discovery OIDCDiscovery
+	if err := json.NewDecoder(resp.Body).Decode(&discovery); err != nil {
+		return nil, fmt.Errorf("failed to decode discovery document: %w", err)
+	}
+
+	if discovery.JWKSUri == "" {
+		return nil, fmt.Errorf("jwks_uri not found in discovery document")
+	}
 	// Make the GET request
-	response, err := http.Get(url)
+	response, err := http.Get(discovery.JWKSUri)
 	if err != nil {
 		return nil, fmt.Errorf("error making GET request: %v", err)
 	}

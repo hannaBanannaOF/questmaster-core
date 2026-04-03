@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS public.campaign
     name character varying(200) COLLATE pg_catalog."default" NOT NULL,
     dm_id uuid,
     status character varying(45) COLLATE pg_catalog."default" NOT NULL DEFAULT 'DRAFT'::character varying,
-    trpg_system character varying(45) COLLATE pg_catalog."default" NOT NULL,
+    game_system character varying(45) COLLATE pg_catalog."default" NOT NULL,
     slug character varying(255) COLLATE pg_catalog."default",
     overview text COLLATE pg_catalog."default",
     CONSTRAINT campaign_pkey PRIMARY KEY (id),

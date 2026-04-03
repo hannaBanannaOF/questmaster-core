@@ -4,23 +4,22 @@ import (
 	campaignDomain "questmaster-core/internal/campaign/domain"
 	characterDomain "questmaster-core/internal/character/domain"
 	inviteDomain "questmaster-core/internal/invite/domain"
-	rpgDomain "questmaster-core/internal/rpg/domain"
+	userDomain "questmaster-core/internal/user/domain"
+
+	"github.com/google/uuid"
 )
 
-func MapDomainToListReadModel(domain campaignDomain.Campaign, userId rpgDomain.UserID) CampaignListReadModel {
-	return CampaignListReadModel{
-		Slug:   domain.Slug.Value(),
-		Name:   domain.Name.Value(),
-		System: domain.System.Value(),
-		IsDM:   domain.IsDM(userId),
-		Status: domain.Status.Value(),
-	}
+type CampaignDetailsInput struct {
+	Campaign   campaignDomain.Campaign
+	Characters []characterDomain.Character
+	Invite     *inviteDomain.Invite
+	UserID     userDomain.UserID
 }
 
-func MapDomainToDetailReadModel(campaign campaignDomain.Campaign, characters []characterDomain.Character, userId rpgDomain.UserID) CampaignDetailsReadModel {
+func MapDomainToDetailReadModel(input CampaignDetailsInput) CampaignDetailsReadModel {
 
-	charactersModels := make([]CampaignCharacterReadModel, 0, len(characters))
-	for _, c := range characters {
+	charactersModels := make([]CampaignCharacterReadModel, 0, len(input.Characters))
+	for _, c := range input.Characters {
 		charactersModels = append(charactersModels, CampaignCharacterReadModel{
 			Id:   c.Id.Value(),
 			Name: c.Name.Value(),
@@ -28,31 +27,33 @@ func MapDomainToDetailReadModel(campaign campaignDomain.Campaign, characters []c
 	}
 
 	var campaignOverview *string
-	if campaign.Overview != nil {
-		o := campaign.Overview.Value()
+	if input.Campaign.Overview != nil {
+		o := input.Campaign.Overview.Value()
 		campaignOverview = &o
 	}
+
+	var inviteHash *uuid.UUID
+	if input.Invite != nil {
+		h := input.Invite.Hash.Value()
+		inviteHash = &h
+	}
+
 	return CampaignDetailsReadModel{
-		Id:         campaign.Id.Value(),
-		Name:       campaign.Name.Value(),
-		Status:     campaign.Status.Value(),
-		System:     campaign.System.Value(),
-		Slug:       campaign.Slug.Value(),
+		Id:         input.Campaign.Id.Value(),
+		Name:       input.Campaign.Name.Value(),
+		Status:     input.Campaign.Status.Value(),
+		System:     input.Campaign.System.Value(),
+		Slug:       input.Campaign.Slug.Value(),
 		Overview:   campaignOverview,
-		IsDM:       campaign.IsDM(userId),
+		IsDM:       input.Campaign.IsDM(input.UserID),
 		Characters: charactersModels,
+		InviteHash: inviteHash,
 	}
 }
 
 func MapDomainToCreateReadModel(campaign campaignDomain.Campaign) CreateCampaignReadModel {
 	return CreateCampaignReadModel{
 		Slug: campaign.Slug.Value(),
-	}
-}
-
-func MapDomainToGetOrCreateInviteReadModel(invite inviteDomain.Invite) GetOrCreateInviteReadModel {
-	return GetOrCreateInviteReadModel{
-		InviteHash: invite.Hash.Value(),
 	}
 }
 

@@ -40,9 +40,7 @@ func ErrorHandler() gin.HandlerFunc {
 
 		c.AbortWithStatusJSON(
 			httpErr.Status,
-			gin.H{
-				"error": httpErr.Message,
-			},
+			httpErr,
 		)
 	}
 }

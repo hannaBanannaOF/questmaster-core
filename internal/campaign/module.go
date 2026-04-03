@@ -8,33 +8,30 @@ import (
 )
 
 type CampaignModule struct {
-	createcampaignUC            *campaignUsecases.CreateCampaignUseCase
-	deleteCampaignUC            *campaignUsecases.DeleteCampaignUseCase
-	fetchMyCampaingUC           *campaignUsecases.FetchMyCampaignsUseCase
-	getCampaignDetailUC         *campaignUsecases.GetCampaignDetailsUseCase
-	getCampaignFromIDUC         *campaignUsecases.GetCampaignFromIDUseCase
-	getOrCreateCampaignInviteUC *campaignUsecases.GetOrCreateCampaignInviteUseCase
-	resolveCampaignSlugUC       *campaignUsecases.ResolveCampaignSlugUseCase
-	updateCampaignStatusUC      *campaignUsecases.UpdateCampaignStatusUseCase
+	createcampaignUC          *campaignUsecases.CreateCampaignUseCase
+	deleteCampaignUC          *campaignUsecases.DeleteCampaignUseCase
+	getCurrentUserCampaignsUC *campaignUsecases.GetCurrentUserCampaignsUseCase
+	getCampaignDetailUC       *campaignUsecases.GetCampaignDetailsUseCase
+	getCampaignFromIDUC       *campaignUsecases.GetCampaignFromIDUseCase
+	resolveCampaignSlugUC     *campaignUsecases.ResolveCampaignSlugUseCase
+	updateCampaignStatusUC    *campaignUsecases.UpdateCampaignStatusUseCase
 }
 
 func NewCampaignModule(
 	db *pgxpool.Pool,
 	charactersFinder campaignUsecases.CampaignCharacterFinder,
-	campaignInviteFinder campaignUsecases.CampaignInviteFinder,
-	campaignInviteCreator campaignUsecases.CampaignInviteCreator,
+	inviteFinder campaignUsecases.CampaignInviteFinder,
 ) *CampaignModule {
 	r := campaignInfra.NewCampaignRepositoryPG(db)
 	getCampaignFromIDUC := campaignUsecases.NewGetCampaignFromID(r)
 	return &CampaignModule{
-		createcampaignUC:            campaignUsecases.NewCreateCampaign(r),
-		deleteCampaignUC:            campaignUsecases.NewDeleteCampaign(r),
-		fetchMyCampaingUC:           campaignUsecases.NewFetchMyCampaigns(r),
-		getCampaignDetailUC:         campaignUsecases.NewGetCampaignDetails(*getCampaignFromIDUC, charactersFinder),
-		getCampaignFromIDUC:         getCampaignFromIDUC,
-		getOrCreateCampaignInviteUC: campaignUsecases.NewGetOrCreateCampaignInvite(*getCampaignFromIDUC, campaignInviteFinder, campaignInviteCreator),
-		resolveCampaignSlugUC:       campaignUsecases.NewResolveCampaignSlug(r),
-		updateCampaignStatusUC:      campaignUsecases.NewUpdateStatus(r),
+		createcampaignUC:          campaignUsecases.NewCreateCampaign(r),
+		deleteCampaignUC:          campaignUsecases.NewDeleteCampaign(r),
+		getCurrentUserCampaignsUC: campaignUsecases.NewGetCurrentUserMyCampaigns(r),
+		getCampaignDetailUC:       campaignUsecases.NewGetCampaignDetails(*getCampaignFromIDUC, charactersFinder, inviteFinder),
+		getCampaignFromIDUC:       getCampaignFromIDUC,
+		resolveCampaignSlugUC:     campaignUsecases.NewResolveCampaignSlug(r),
+		updateCampaignStatusUC:    campaignUsecases.NewUpdateStatus(r),
 	}
 }
 
@@ -46,8 +43,8 @@ func (m *CampaignModule) DeleteCampaignUC() *campaignUsecases.DeleteCampaignUseC
 	return m.deleteCampaignUC
 }
 
-func (m *CampaignModule) FetchMyCampaignsUC() *campaignUsecases.FetchMyCampaignsUseCase {
-	return m.fetchMyCampaingUC
+func (m *CampaignModule) GetCurrentUserCampaignsUC() *campaignUsecases.GetCurrentUserCampaignsUseCase {
+	return m.getCurrentUserCampaignsUC
 }
 
 func (m *CampaignModule) GetCampaignDetailsUC() *campaignUsecases.GetCampaignDetailsUseCase {
@@ -56,10 +53,6 @@ func (m *CampaignModule) GetCampaignDetailsUC() *campaignUsecases.GetCampaignDet
 
 func (m *CampaignModule) GetCampaignFromIDUC() *campaignUsecases.GetCampaignFromIDUseCase {
 	return m.getCampaignFromIDUC
-}
-
-func (m *CampaignModule) GetOrCreateCampaignInviteUC() *campaignUsecases.GetOrCreateCampaignInviteUseCase {
-	return m.getOrCreateCampaignInviteUC
 }
 
 func (m *CampaignModule) ResolveCampaignSlugUC() *campaignUsecases.ResolveCampaignSlugUseCase {

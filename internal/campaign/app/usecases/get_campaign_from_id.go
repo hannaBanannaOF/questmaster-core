@@ -13,8 +13,8 @@ func NewGetCampaignFromID(r campaignApp.CampaignRepository) *GetCampaignFromIDUs
 	return &GetCampaignFromIDUseCase{r: r}
 }
 
-func (uc *GetCampaignFromIDUseCase) FindByID(ID campaignDomain.CampaignID) (campaignDomain.Campaign, error) {
-	campaign, err := uc.r.FindById(ID)
+func (uc *GetCampaignFromIDUseCase) FindByID(campaignID campaignDomain.CampaignID) (campaignDomain.Campaign, error) {
+	campaign, err := uc.r.FindById(campaignID)
 	if err != nil {
 		return campaignDomain.Campaign{}, err
 	}

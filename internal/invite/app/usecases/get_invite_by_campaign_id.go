@@ -16,14 +16,11 @@ func NewGetInviteByCampaignID(r inviteApp.InviteRepository) *GetInviteByCampaign
 	}
 }
 
-func (uc *GetInviteByCampaignIDUseCase) GetByCampaignID(campaignID campaignDomain.CampaignID) (inviteDomain.Invite, error) {
+func (uc *GetInviteByCampaignIDUseCase) GetByCampaignID(campaignID campaignDomain.CampaignID) (*inviteDomain.Invite, error) {
 	invite, err := uc.r.FindByCampaignID(campaignID)
 	if err != nil {
-		return inviteDomain.Invite{}, err
-	}
-	if invite == nil {
-		return inviteDomain.Invite{}, ErrInviteNotFound
+		return &inviteDomain.Invite{}, err
 	}
 
-	return *invite, nil
+	return invite, nil
 }

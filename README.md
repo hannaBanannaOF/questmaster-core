@@ -124,11 +124,11 @@ In release mode the service does not auto-load `.env`, so the environment must a
 Build the image:
 
 ```bash
-docker build -t questmaster-core .
+docker build -t labs.liminal/questmaster/questmaster-core .
 ```
 
 Run the container:
 
 ```bash
-docker run --rm -p 8080:8080 questmaster-core
+docker run --rm -p 8080:8080 labs.liminal/questmaster/questmaster-core
 ```

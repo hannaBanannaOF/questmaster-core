@@ -11,9 +11,5 @@ type CampaignCharacterFinder interface {
 }
 
 type CampaignInviteFinder interface {
-	GetByCampaignID(campaignID campaignDomain.CampaignID) (inviteDomain.Invite, error)
-}
-
-type CampaignInviteCreator interface {
-	Create(campaignID campaignDomain.CampaignID) (inviteDomain.Invite, error)
+	GetByCampaignID(campaignID campaignDomain.CampaignID) (*inviteDomain.Invite, error)
 }

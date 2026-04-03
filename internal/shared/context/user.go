@@ -1,23 +1,37 @@
 package context
 
 import (
-	rpgDomain "questmaster-core/internal/rpg/domain"
+	userDomain "questmaster-core/internal/user/domain"
 )
 
-func (c *AppContext) SetUserID(id rpgDomain.UserID) {
-	c.Set(string(userIDKey), id)
+func (c *AppContext) SetUser(data userDomain.User) {
+	c.Set(string(userKey), data)
 }
 
-func (c *AppContext) UserID() rpgDomain.UserID {
-	v, ok := c.Get(string(userIDKey))
+func (c *AppContext) User() userDomain.User {
+	v, ok := c.Get(string(userKey))
 	if !ok {
-		panic("UserID not found in context")
+		panic("User not found in context")
 	}
 
-	id, ok := v.(rpgDomain.UserID)
+	data, ok := v.(userDomain.User)
 	if !ok {
-		panic("UserID has invalid type")
+		panic("User has invalid type")
 	}
 
-	return id
+	return data
+}
+
+func (c *AppContext) UserID() userDomain.UserID {
+	v, ok := c.Get(string(userKey))
+	if !ok {
+		panic("User not found in context")
+	}
+
+	data, ok := v.(userDomain.User)
+	if !ok {
+		panic("User has invalid type")
+	}
+
+	return data.Id
 }

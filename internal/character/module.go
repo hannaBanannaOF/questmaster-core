@@ -10,7 +10,7 @@ import (
 type CharacterModule struct {
 	createCharacterUC                *characterUsecases.CreateCharacterUseCase
 	deleteCharacterUC                *characterUsecases.DeleteCharacterUseCase
-	fetchMyCharactersUC              *characterUsecases.FetchMyCharactersUseCase
+	getCurrentUserCharactersUC       *characterUsecases.GetCurrentUserCharactersUseCase
 	getCampaignCharactersUC          *characterUsecases.GetCampaignCharactersUseCase
 	getCharacterDetailUC             *characterUsecases.GetCharacterDetailUseCase
 	resolveCharacterSlugUC           *characterUsecases.ResolveCharacterSlugUseCase
@@ -24,7 +24,7 @@ func NewCharacterModule(db *pgxpool.Pool, campaignFinder characterUsecases.Chara
 	return &CharacterModule{
 		createCharacterUC:                characterUsecases.NewCreateCharacter(r),
 		deleteCharacterUC:                characterUsecases.NewDeleteCharacter(r),
-		fetchMyCharactersUC:              characterUsecases.NewFetchMyCharacter(r),
+		getCurrentUserCharactersUC:       characterUsecases.NewGetCurrrentUserCharacters(r),
 		getCampaignCharactersUC:          characterUsecases.NewGetCampaignCharacters(r),
 		getCharacterDetailUC:             characterUsecases.NewGetCharacterDetail(r),
 		resolveCharacterSlugUC:           characterUsecases.NewResolveCharacterSlug(r),
@@ -42,8 +42,8 @@ func (m *CharacterModule) DeleteCharacterUC() *characterUsecases.DeleteCharacter
 	return m.deleteCharacterUC
 }
 
-func (m *CharacterModule) FetchMyCharactersUC() *characterUsecases.FetchMyCharactersUseCase {
-	return m.fetchMyCharactersUC
+func (m *CharacterModule) GetCurrentUserCharactersUC() *characterUsecases.GetCurrentUserCharactersUseCase {
+	return m.getCurrentUserCharactersUC
 }
 
 func (m *CharacterModule) GetCampaignCharactersUC() *characterUsecases.GetCampaignCharactersUseCase {

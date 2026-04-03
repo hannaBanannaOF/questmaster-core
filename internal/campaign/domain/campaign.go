@@ -1,25 +1,26 @@
 package campaign
 
 import (
-	rpg "questmaster-core/internal/rpg/domain"
 	rpgDomain "questmaster-core/internal/rpg/domain"
+	userDomain "questmaster-core/internal/user/domain"
 )
 
 type Campaign struct {
-	Id       CampaignID
-	Name     CampaignName
-	Dm       rpgDomain.UserID
-	Status   CampaignStatus
-	System   rpgDomain.System
-	Slug     rpgDomain.Slug
-	Overview *CampaignOverview
+	Id          CampaignID
+	Name        CampaignName
+	Dm          userDomain.UserID
+	Status      CampaignStatus
+	System      rpgDomain.System
+	Slug        rpgDomain.Slug
+	Overview    *CampaignOverview
+	PlayerCount PlayerCount
 }
 
-func (c Campaign) IsDM(userID rpg.UserID) bool {
+func (c Campaign) IsDM(userID userDomain.UserID) bool {
 	return c.Dm.Value() == userID.Value()
 }
 
-func (c *Campaign) ChangeStatus(to CampaignStatus, userID rpgDomain.UserID) error {
+func (c *Campaign) ChangeStatus(to CampaignStatus, userID userDomain.UserID) error {
 	if err := c.CanEdit(userID); err != nil {
 		return err
 	}

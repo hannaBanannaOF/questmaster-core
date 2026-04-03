@@ -1,8 +1,8 @@
 package campaign
 
-import rpgDomain "questmaster-core/internal/rpg/domain"
+import userDomain "questmaster-core/internal/user/domain"
 
-func (c *Campaign) CanEdit(userID rpgDomain.UserID) error {
+func (c *Campaign) CanEdit(userID userDomain.UserID) error {
 	if !c.IsDM(userID) {
 		return ErrNotDM
 	}
@@ -10,7 +10,7 @@ func (c *Campaign) CanEdit(userID rpgDomain.UserID) error {
 	return nil
 }
 
-func (c *Campaign) CanDelete(userID rpgDomain.UserID) error {
+func (c *Campaign) CanDelete(userID userDomain.UserID) error {
 	if !c.IsDM(userID) {
 		return ErrNotDM
 	}

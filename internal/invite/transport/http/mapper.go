@@ -4,7 +4,7 @@ import (
 	characterDomain "questmaster-core/internal/character/domain"
 	inviteApp "questmaster-core/internal/invite/app"
 	inviteDomain "questmaster-core/internal/invite/domain"
-	rpgDomain "questmaster-core/internal/rpg/domain"
+	userDomain "questmaster-core/internal/user/domain"
 )
 
 func MapInviteDetailsReadModelToResponse(rm inviteApp.InviteDetailReadModel) InviteDetailsResponse {
@@ -24,7 +24,7 @@ func MapInviteDetailsReadModelToResponse(rm inviteApp.InviteDetailReadModel) Inv
 	}
 }
 
-func MapAcceptRequestToAcceptCommand(r AcceptInviteRequest, userID rpgDomain.UserID, hash inviteDomain.InviteHash) inviteApp.AcceptInviteCommand {
+func MapAcceptRequestToAcceptCommand(r AcceptInviteRequest, userID userDomain.UserID, hash inviteDomain.InviteHash) inviteApp.AcceptInviteCommand {
 	return inviteApp.AcceptInviteCommand{
 		Hash:             hash,
 		CharacterSheetID: characterDomain.NewCharacterID(r.CharacterSheetID),

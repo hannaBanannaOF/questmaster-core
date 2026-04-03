@@ -1,0 +1,559 @@
+definitions:
+  campaign.CampaignDetailResponse:
+    properties:
+      characters:
+        items:
+          $ref: '#/definitions/campaign.CampaignDetailResponseCharacterItem'
+        type: array
+      id:
+        type: integer
+      id_dm:
+        type: boolean
+      invite_hash:
+        type: string
+      name:
+        type: string
+      overview:
+        type: string
+      slug:
+        type: string
+      status:
+        type: string
+      system:
+        type: string
+    type: object
+  campaign.CampaignDetailResponseCharacterItem:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  campaign.CampaignListResponse:
+    properties:
+      is_dm:
+        type: boolean
+      name:
+        type: string
+      player_count:
+        type: integer
+      slug:
+        type: string
+      status:
+        type: string
+      system:
+        type: string
+    type: object
+  campaign.CampaignStatusResponse:
+    properties:
+      status:
+        type: string
+    type: object
+  campaign.CreateCampaignRequest:
+    properties:
+      name:
+        type: string
+      overview:
+        type: string
+      system:
+        type: string
+    type: object
+  campaign.UpdateCampaignStatusRequest:
+    properties:
+      status:
+        type: string
+    type: object
+  character.CharacterCurrentHpResponse:
+    properties:
+      current_hp:
+        type: integer
+    type: object
+  character.CharacterDetailResponse:
+    properties:
+      current_hp:
+        type: integer
+      id:
+        type: integer
+      max_hp:
+        type: integer
+      name:
+        type: string
+      system:
+        type: string
+    type: object
+  character.CharacterListResponse:
+    properties:
+      current_hp:
+        type: integer
+      max_hp:
+        type: integer
+      name:
+        type: string
+      slug:
+        type: string
+      system:
+        type: string
+    type: object
+  character.CreateCharacterRequest:
+    properties:
+      hp:
+        type: integer
+      name:
+        type: string
+      system:
+        type: string
+    type: object
+  character.UpdateHPRequest:
+    properties:
+      new_hp:
+        type: integer
+    type: object
+  httperrors.HttpError:
+    properties:
+      message:
+        type: string
+      status:
+        type: integer
+    type: object
+  rpg.RpgIdResponse:
+    properties:
+      id:
+        type: integer
+    type: object
+  rpg.RpgSlugResponse:
+    properties:
+      slug:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: REST APIs of Questmaster for documentation.
+  title: Questmaster's APIs
+  version: "1.0"
+paths:
+  /core/api/v1/campaign:
+    get:
+      description: Get current user campaigns as **player** and **DM**
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/campaign.CampaignListResponse'
+        "401":
+          description: Unauthorized - missing or invalid access_token
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+      security:
+      - BearerAuth: []
+      summary: Get current user campaigns
+      tags:
+      - v1:campaign
+    post:
+      consumes:
+      - application/json
+      description: Create new campaign with status **DRAFT**
+      parameters:
+      - description: Campaign data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/campaign.CreateCampaignRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/rpg.RpgSlugResponse'
+        "400":
+          description: Invalid campaign data
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "401":
+          description: Unauthorized - missing or invalid access_token
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+      security:
+      - BearerAuth: []
+      summary: Create campaign
+      tags:
+      - v1:campaign
+  /core/api/v1/campaign/{campaignID}:
+    delete:
+      description: Deletes a campaign with the status **ARCHIVED** or **DRAFT**
+      parameters:
+      - description: Campaign ID
+        in: path
+        name: campaignID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized - missing or invalid access_token
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "403":
+          description: Only the DM can delete a campaign
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "404":
+          description: Campaign not found
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+      security:
+      - BearerAuth: []
+      summary: Delete campaign
+      tags:
+      - v1:campaign
+    get:
+      description: Get a more detailed view of the campaign
+      parameters:
+      - description: Campaign ID
+        in: path
+        name: campaignID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/campaign.CampaignDetailResponse'
+        "401":
+          description: Unauthorized - missing or invalid access_token
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "404":
+          description: Campaign not found
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+      security:
+      - BearerAuth: []
+      summary: Get campaign details
+      tags:
+      - v1:campaign
+  /core/api/v1/campaign/{campaignID}/status:
+    patch:
+      consumes:
+      - application/json
+      description: |-
+        Updates campaign status to the following rules:
+        - **DRAFT** -> ACTIVE
+        - **ACTIVE** -> PAUSED / ARCHIVED
+        - **PAUSED** -> ACTIVE / ARCHIVED
+      parameters:
+      - description: Campaign ID
+        in: path
+        name: campaignID
+        required: true
+        type: integer
+      - description: New campaign status
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/campaign.UpdateCampaignStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/campaign.CampaignStatusResponse'
+        "401":
+          description: Unauthorized - missing or invalid access_token
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "403":
+          description: Only the DM can update a campaign, or the status transition
+            is invalid
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "404":
+          description: Campaign not found
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+      security:
+      - BearerAuth: []
+      summary: Update Status
+      tags:
+      - v1:campaign
+  /core/api/v1/campaign/resolve/{slug}:
+    get:
+      description: Resolves the campaign slug to the internal ID
+      parameters:
+      - description: Campaign slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rpg.RpgIdResponse'
+        "400":
+          description: Invalid slug
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "401":
+          description: Unauthorized - missing or invalid access_token
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "404":
+          description: Campaign not found
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+      security:
+      - BearerAuth: []
+      summary: Resolve campaign slug
+      tags:
+      - v1:campaign
+  /core/api/v1/character:
+    get:
+      description: Get current user characters
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/character.CharacterListResponse'
+        "401":
+          description: Unauthorized - missing or invalid access_token
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+      security:
+      - BearerAuth: []
+      summary: Get current user characters
+      tags:
+      - v1:character
+    post:
+      consumes:
+      - application/json
+      description: Create new character
+      parameters:
+      - description: Character data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/character.CreateCharacterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/rpg.RpgSlugResponse'
+        "400":
+          description: Invalid character data
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "401":
+          description: Unauthorized - missing or invalid access_token
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+      security:
+      - BearerAuth: []
+      summary: Create character
+      tags:
+      - v1:character
+  /core/api/v1/character/{characterID}:
+    delete:
+      description: Deletes a character
+      parameters:
+      - description: Character ID
+        in: path
+        name: characterID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized - missing or invalid access_token
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "403":
+          description: Only the player can delete a character
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "404":
+          description: Character not found
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+      security:
+      - BearerAuth: []
+      summary: Delete character
+      tags:
+      - v1:character
+    get:
+      description: Get a more detailed view of the character
+      parameters:
+      - description: Character ID
+        in: path
+        name: characterID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/character.CharacterDetailResponse'
+        "401":
+          description: Unauthorized - missing or invalid access_token
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "404":
+          description: Character not found
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+      security:
+      - BearerAuth: []
+      summary: Get character details
+      tags:
+      - v1:character
+  /core/api/v1/character/{characterID}/hp:
+    patch:
+      consumes:
+      - application/json
+      description: Updates character HP
+      parameters:
+      - description: Campaign ID
+        in: path
+        name: characterID
+        required: true
+        type: integer
+      - description: New character HP
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/character.UpdateHPRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/character.CharacterCurrentHpResponse'
+        "401":
+          description: Unauthorized - missing or invalid access_token
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "403":
+          description: Only the DM can update a campaign, or the status transition
+            is invalid
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "404":
+          description: Campaign not found
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+      security:
+      - BearerAuth: []
+      summary: Update HP
+      tags:
+      - v1:character
+  /core/api/v1/character/resolve/{slug}:
+    get:
+      description: Resolves the character slug to the internal ID
+      parameters:
+      - description: Character slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rpg.RpgIdResponse'
+        "400":
+          description: Invalid slug
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "401":
+          description: Unauthorized - missing or invalid access_token
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "404":
+          description: Character not found
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+      security:
+      - BearerAuth: []
+      summary: Resolve character slug
+      tags:
+      - v1:character
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

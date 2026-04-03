@@ -2,7 +2,7 @@ package character
 
 import (
 	characterApp "questmaster-core/internal/character/app"
-	rpgDomain "questmaster-core/internal/rpg/domain"
+	rpgApp "questmaster-core/internal/rpg/app"
 )
 
 type ResolveCharacterSlugUseCase struct {
@@ -13,8 +13,8 @@ func NewResolveCharacterSlug(r characterApp.CharacterRepository) *ResolveCharact
 	return &ResolveCharacterSlugUseCase{r: r}
 }
 
-func (uc *ResolveCharacterSlugUseCase) Execute(slug rpgDomain.Slug) (characterApp.CharacterResolveSlugReadModel, error) {
-	character, err := uc.r.FindBySlug(slug)
+func (uc *ResolveCharacterSlugUseCase) Execute(cmd rpgApp.ResolveSlugCommand) (characterApp.CharacterResolveSlugReadModel, error) {
+	character, err := uc.r.FindBySlug(cmd.Slug)
 	if err != nil {
 		return characterApp.CharacterResolveSlugReadModel{}, err
 	}

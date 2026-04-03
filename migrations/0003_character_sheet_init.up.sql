@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS public.character_sheet
     name character varying(200) COLLATE pg_catalog."default" NOT NULL,
     player_id uuid NOT NULL,
     campaign_id bigint,
-    trpg_system character varying(45) COLLATE pg_catalog."default" NOT NULL,
+    game_system character varying(45) COLLATE pg_catalog."default" NOT NULL,
     slug character varying(255) COLLATE pg_catalog."default",
     max_hp integer,
     current_hp integer,

@@ -1,13 +1,13 @@
 package character
 
-import rpgDomain "questmaster-core/internal/rpg/domain"
+import userDomain "questmaster-core/internal/user/domain"
 
 type CampaignAccess interface {
-	IsDM(userID rpgDomain.UserID) bool
+	IsDM(userID userDomain.UserID) bool
 }
 
 func (c *Character) CanUpdate(
-	user rpgDomain.UserID,
+	user userDomain.UserID,
 	campaign CampaignAccess,
 ) error {
 
@@ -22,7 +22,7 @@ func (c *Character) CanUpdate(
 	return ErrNotAllowed
 }
 
-func (c *Character) CanDelete(user rpgDomain.UserID) error {
+func (c *Character) CanDelete(user userDomain.UserID) error {
 	if !c.IsPlayer(user) {
 		return ErrNotPlayer
 	}

@@ -4,6 +4,7 @@ import (
 	campaignDomain "questmaster-core/internal/campaign/domain"
 	characterDomain "questmaster-core/internal/character/domain"
 	rpgDomain "questmaster-core/internal/rpg/domain"
+	userDomain "questmaster-core/internal/user/domain"
 )
 
 func MapRowToDomain(row CharacterRow) (characterDomain.Character, error) {
@@ -39,7 +40,7 @@ func MapRowToDomain(row CharacterRow) (characterDomain.Character, error) {
 	return characterDomain.Character{
 		Id:         characterDomain.NewCharacterID(row.Id),
 		Name:       characterName,
-		PlayerID:   rpgDomain.NewUserID(row.PlayerID),
+		PlayerID:   userDomain.NewUserID(row.PlayerID),
 		System:     system,
 		CampaignID: campaignID,
 		Slug:       characterSlug,

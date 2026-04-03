@@ -4,6 +4,7 @@ import (
 	campaignDomain "questmaster-core/internal/campaign/domain"
 	characterDomain "questmaster-core/internal/character/domain"
 	rpgDomain "questmaster-core/internal/rpg/domain"
+	userDomain "questmaster-core/internal/user/domain"
 )
 
 type InviteCampaignFinder interface {
@@ -11,7 +12,7 @@ type InviteCampaignFinder interface {
 }
 
 type InviteAvailableCharacterFinder interface {
-	GetBySystemAndCampaignIDNull(userID rpgDomain.UserID, system rpgDomain.System) ([]characterDomain.Character, error)
+	GetBySystemAndCampaignIDNull(userID userDomain.UserID, system rpgDomain.System) ([]characterDomain.Character, error)
 }
 
 type InviteCharacterCampaignLinker interface {

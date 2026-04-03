@@ -14,11 +14,11 @@ func registerCharacterRoutes(
 ) {
 	character := v1.Group("/character")
 	{
-		character.GET("", appContext.Adapt(handler.GetMyCharacters))
+		character.GET("", appContext.Adapt(handler.GetCurrentUserCharacters))
 		character.POST("", appContext.Adapt(handler.CreateCharacter))
 		character.GET("/resolve/:slug", middleware.Slug(), appContext.Adapt(handler.ResolveSlug))
-		character.GET("/:characterID/details", middleware.CharacterID(), appContext.Adapt(handler.GetDetails))
-		character.PATCH("/:characterID/hp/current", middleware.CharacterID(), appContext.Adapt(handler.UpdateHP))
+		character.GET("/:characterID", middleware.CharacterID(), appContext.Adapt(handler.GetDetails))
+		character.PATCH("/:characterID/hp", middleware.CharacterID(), appContext.Adapt(handler.UpdateHP))
 		character.DELETE("/:characterID", middleware.CharacterID(), appContext.Adapt(handler.DeleteCharacter))
 	}
 }

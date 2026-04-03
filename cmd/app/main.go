@@ -3,22 +3,36 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"questmaster-core/cmd/app/bootstrap"
 	"questmaster-core/cmd/app/routes"
 	"questmaster-core/internal/shared/middleware"
-	"questmaster-core/internal/shared/mqtt"
-	"strconv"
+
+	_ "questmaster-core/docs"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	swaggerfiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// TO RUN SWAGGER -> go run github.com/swaggo/swag/cmd/swag@latest init -g cmd/app/main.go --parseInternal
+
+// @title Questmaster's APIs
+// @version 1.0
+// @description REST APIs of Questmaster for documentation.
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+// @host localhost:8082
+// @BasePath /core/api/v1
+// @schemes http
 func main() {
 	// Debug flags
 	debug := flag.Bool("debug", false, "Run in debug mode")
@@ -32,9 +46,8 @@ func main() {
 	} else {
 		log.Print("Running in RELEASE mode!")
 	}
-	authHost := os.Getenv("AUTH_HOST")
-	realmName := os.Getenv("AUTH_REALM")
-	rsa, err := middleware.GetJWKSet(fmt.Sprintf("%s/realms/%s/protocol/openid-connect/certs", authHost, realmName))
+	oidcHost := os.Getenv("OIDC_HOST")
+	rsa, err := middleware.GetJWKSet(oidcHost)
 	if err != nil {
 		log.Panicf("Unable to start server: %s", err)
 	}
@@ -65,6 +78,7 @@ func main() {
 	campaignHandler := bootstrap.BuildCampaignHandler(pgPool)
 	characterHandler := bootstrap.BuildCharacterHandler(pgPool)
 	inviteHandler := bootstrap.BuildInviteHandler(pgPool)
+	userHandler := bootstrap.BuildUserHandler()
 
 	// Routes
 	router := gin.New()
@@ -78,22 +92,13 @@ func main() {
 		CampaignHandler:  campaignHandler,
 		CharacterHandler: characterHandler,
 		InviteHandler:    inviteHandler,
+		UserHandler:      userHandler,
 		AuthMiddleware:   middleware.AuthMiddleware(rsa),
 		PermMiddleware:   middleware.UpdatePermissionsMiddleware(mongoClient, pgPool),
 	})
 
-	// MQTT
-	mqttPort, _ := strconv.Atoi(os.Getenv("MQTT_PORT"))
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
-	prod := mqtt.RabbitMQProducer{
-		Config: mqtt.RabbitConfig{
-			Host:     os.Getenv("MQTT_HOST"),
-			Port:     mqttPort,
-			Username: os.Getenv("MQTT_USER"),
-			Password: os.Getenv("MQTT_PASSWORD"),
-		},
-	}
-	prod.UpdateGatewayPaths(os.Getenv("GATEWAY_EXCHANGE"), os.Getenv("GATEWAY_URL"))
 	runAddr := os.Getenv("RUN_ADDR")
 	if runAddr == "" {
 		runAddr = "0.0.0.0:8080"

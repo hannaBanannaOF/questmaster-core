@@ -5,17 +5,20 @@ import (
 )
 
 type GetCampaignDetailsUseCase struct {
-	getCampaignUc   GetCampaignFromIDUseCase
-	getCharactersUc CampaignCharacterFinder
+	getCampaignUc           GetCampaignFromIDUseCase
+	getCampaignCharactersUc CampaignCharacterFinder
+	getCampaignInviteUC     CampaignInviteFinder
 }
 
 func NewGetCampaignDetails(
 	getCampaignUc GetCampaignFromIDUseCase,
-	getCharactersUc CampaignCharacterFinder,
+	getCampaignCharactersUc CampaignCharacterFinder,
+	getCampaignInviteUC CampaignInviteFinder,
 ) *GetCampaignDetailsUseCase {
 	return &GetCampaignDetailsUseCase{
-		getCampaignUc:   getCampaignUc,
-		getCharactersUc: getCharactersUc,
+		getCampaignUc:           getCampaignUc,
+		getCampaignCharactersUc: getCampaignCharactersUc,
+		getCampaignInviteUC:     getCampaignInviteUC,
 	}
 }
 
@@ -25,10 +28,22 @@ func (uc *GetCampaignDetailsUseCase) Execute(cmd campaignApp.GetCampaignDetailsC
 		return campaignApp.CampaignDetailsReadModel{}, err
 	}
 
-	characters, err := uc.getCharactersUc.GetByCampaignID(cmd.ID)
+	characters, err := uc.getCampaignCharactersUc.GetByCampaignID(cmd.ID)
 	if err != nil {
 		return campaignApp.CampaignDetailsReadModel{}, err
 	}
 
-	return campaignApp.MapDomainToDetailReadModel(campaign, characters, cmd.UserID), nil
+	invite, err := uc.getCampaignInviteUC.GetByCampaignID(cmd.ID)
+	if err != nil {
+		return campaignApp.CampaignDetailsReadModel{}, err
+	}
+
+	input := campaignApp.CampaignDetailsInput{
+		Campaign:   campaign,
+		Characters: characters,
+		Invite:     invite,
+		UserID:     cmd.UserID,
+	}
+
+	return campaignApp.MapDomainToDetailReadModel(input), nil
 }

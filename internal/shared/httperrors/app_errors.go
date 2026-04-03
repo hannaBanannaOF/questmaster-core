@@ -9,6 +9,8 @@ import (
 	characterAppErr "questmaster-core/internal/character/app/usecases"
 	characterDomainErr "questmaster-core/internal/character/domain"
 	inviteAppErr "questmaster-core/internal/invite/app/usecases"
+	rpgDomain "questmaster-core/internal/rpg/domain"
+	userDomainErr "questmaster-core/internal/user/domain"
 )
 
 var ErrInvalidParam = errors.New("Invalid param")
@@ -16,8 +18,8 @@ var ErrUnauthorized = errors.New("Unauthorized")
 var ErrInvalidRequestBody = errors.New("Invalid request body")
 
 type HttpError struct {
-	Status  int
-	Message string
+	Status  int    `json:"status"`
+	Message string `json:"message"`
 }
 
 func From(err error) HttpError {
@@ -44,7 +46,9 @@ func From(err error) HttpError {
 		errors.Is(err, characterDomainErr.ErrInvalidMaxHP),
 		errors.Is(err, characterDomainErr.ErrInvalidCharacterName),
 		errors.Is(err, ErrInvalidParam),
-		errors.Is(err, ErrInvalidRequestBody):
+		errors.Is(err, ErrInvalidRequestBody),
+		errors.Is(err, rpgDomain.ErrInvalidSlug),
+		errors.Is(err, rpgDomain.ErrInvalidSystem):
 		return HttpError{
 			Status:  http.StatusBadRequest,
 			Message: err.Error(),
@@ -55,7 +59,9 @@ func From(err error) HttpError {
 			Status:  http.StatusConflict,
 			Message: err.Error(),
 		}
-	case errors.Is(err, ErrUnauthorized):
+	case errors.Is(err, userDomainErr.ErrInvalidFirstname),
+		errors.Is(err, userDomainErr.ErrInvalidUsername),
+		errors.Is(err, ErrUnauthorized):
 		return HttpError{
 			Status:  http.StatusUnauthorized,
 			Message: err.Error(),

@@ -10,6 +10,7 @@ import (
 	campaignDomain "questmaster-core/internal/campaign/domain"
 	characterDomain "questmaster-core/internal/character/domain"
 	rpgDomain "questmaster-core/internal/rpg/domain"
+	userDomain "questmaster-core/internal/user/domain"
 )
 
 type CharacterRepositoryPG struct {
@@ -21,7 +22,7 @@ func NewCharacterRepositoryPG(db *pgxpool.Pool) *CharacterRepositoryPG {
 }
 
 func (r *CharacterRepositoryPG) GetAllByPlayerID(
-	userID rpgDomain.UserID,
+	userID userDomain.UserID,
 ) ([]characterDomain.Character, error) {
 	rows, err := r.db.Query(context.Background(), `
         SELECT cs.*
@@ -130,7 +131,7 @@ func (r *CharacterRepositoryPG) FindByID(characterID characterDomain.CharacterID
 	return &val, nil
 }
 
-func (r *CharacterRepositoryPG) Create(name characterDomain.CharacterName, playerID rpgDomain.UserID, system rpgDomain.System, hp *characterDomain.HP) (characterDomain.Character, error) {
+func (r *CharacterRepositoryPG) Create(name characterDomain.CharacterName, playerID userDomain.UserID, system rpgDomain.System, hp *characterDomain.HP) (characterDomain.Character, error) {
 
 	var currHP any
 	var maxHP any
@@ -143,7 +144,7 @@ func (r *CharacterRepositoryPG) Create(name characterDomain.CharacterName, playe
 	}
 
 	rows, err := r.db.Query(context.Background(), `
-		INSERT INTO character_sheet(name, player_id, trpg_system, max_hp, current_hp) 
+		INSERT INTO character_sheet(name, player_id, game_system, max_hp, current_hp) 
 		VALUES($1, $2, $3, $4, $5) 
 		RETURNING *
 	`, name.Value(), playerID.Value(), system.Value(), maxHP, currHP)
@@ -199,13 +200,13 @@ func (r *CharacterRepositoryPG) DeleteByID(characterID characterDomain.Character
 	return cmdTag.RowsAffected() > 0, nil
 }
 
-func (r *CharacterRepositoryPG) GetAllByUserIDAndCampaignIDNullAndSystem(userID rpgDomain.UserID, system rpgDomain.System) ([]characterDomain.Character, error) {
+func (r *CharacterRepositoryPG) GetAllByUserIDAndCampaignIDNullAndSystem(userID userDomain.UserID, system rpgDomain.System) ([]characterDomain.Character, error) {
 	rows, err := r.db.Query(context.Background(), `
         SELECT cs.*
         FROM character_sheet cs
         WHERE cs.campaign_id IS NULL
 		AND cs.player_id = $1
-		AND cs.trpg_system = $2
+		AND cs.game_system = $2
     `, userID.Value(), system.Value())
 	if err != nil {
 		return nil, err
@@ -238,7 +239,7 @@ func (r *CharacterRepositoryPG) UpdateCampaign(campaignID campaignDomain.Campaig
 			cs.id = $2
 			AND cs.campaign_id IS NULL
 			AND c.id = $1
-			AND cs.trpg_system = c.trpg_system
+			AND cs.game_system = c.game_system
 		RETURNING cs.*
 	`, campaignID.Value(), characterID.Value())
 	if err != nil {

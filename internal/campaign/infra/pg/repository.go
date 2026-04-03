@@ -9,6 +9,7 @@ import (
 
 	campaignDomain "questmaster-core/internal/campaign/domain"
 	rpgDomain "questmaster-core/internal/rpg/domain"
+	userDomain "questmaster-core/internal/user/domain"
 )
 
 type CampaignRepositoryPG struct {
@@ -19,11 +20,13 @@ func NewCampaignRepositoryPG(db *pgxpool.Pool) *CampaignRepositoryPG {
 	return &CampaignRepositoryPG{db: db}
 }
 
-func (r *CampaignRepositoryPG) GetByDmId(userID rpgDomain.UserID) ([]campaignDomain.Campaign, error) {
+func (r *CampaignRepositoryPG) GetByDmId(userID userDomain.UserID) ([]campaignDomain.Campaign, error) {
 	rows, err := r.db.Query(context.Background(), `
-        SELECT c.*
+        SELECT c.*, COUNT(cs.id) as player_count
         FROM campaign c
-        WHERE c.dm_id = $1
+		LEFT JOIN character_sheet cs ON cs.campaign_id = c.id
+		WHERE c.dm_id = $1
+		GROUP BY c.id
     `, userID.Value())
 	if err != nil {
 		return nil, err
@@ -47,12 +50,13 @@ func (r *CampaignRepositoryPG) GetByDmId(userID rpgDomain.UserID) ([]campaignDom
 	return domain, nil
 }
 
-func (r *CampaignRepositoryPG) GetByPlayerId(userID rpgDomain.UserID) ([]campaignDomain.Campaign, error) {
+func (r *CampaignRepositoryPG) GetByPlayerId(userID userDomain.UserID) ([]campaignDomain.Campaign, error) {
 	rows, err := r.db.Query(context.Background(), `
-		SELECT DISTINCT c.*
-		FROM campaign c
-		JOIN character_sheet cs ON cs.campaign_id = c.id
+		SELECT DISTINCT c.*, COUNT(cs.id) as player_count
+        FROM campaign c
+		LEFT JOIN character_sheet cs ON cs.campaign_id = c.id
 		WHERE cs.player_id = $1
+		GROUP BY c.id
 	`, userID.Value())
 	if err != nil {
 		return nil, err
@@ -78,9 +82,11 @@ func (r *CampaignRepositoryPG) GetByPlayerId(userID rpgDomain.UserID) ([]campaig
 
 func (r *CampaignRepositoryPG) FindBySlug(slug rpgDomain.Slug) (*campaignDomain.Campaign, error) {
 	rows, err := r.db.Query(context.Background(), `
-		SELECT c.*
-		FROM campaign c
+		SELECT c.*, COUNT(cs.id) as player_count
+        FROM campaign c
+		LEFT JOIN character_sheet cs ON cs.campaign_id = c.id
 		WHERE c.slug = $1
+		GROUP BY c.id	
 	`, slug.Value())
 	if err != nil {
 		return nil, err
@@ -104,9 +110,11 @@ func (r *CampaignRepositoryPG) FindBySlug(slug rpgDomain.Slug) (*campaignDomain.
 
 func (r *CampaignRepositoryPG) FindById(id campaignDomain.CampaignID) (*campaignDomain.Campaign, error) {
 	rows, err := r.db.Query(context.Background(), `
-		SELECT c.*
-		FROM campaign c
+		SELECT c.*, COUNT(cs.id) as player_count
+        FROM campaign c
+		LEFT JOIN character_sheet cs ON cs.campaign_id = c.id
 		WHERE c.id = $1
+		GROUP BY c.id
 	`, id.Value())
 	if err != nil {
 		return nil, err
@@ -128,7 +136,7 @@ func (r *CampaignRepositoryPG) FindById(id campaignDomain.CampaignID) (*campaign
 	return &val, nil
 }
 
-func (r *CampaignRepositoryPG) Create(Name campaignDomain.CampaignName, Overview *campaignDomain.CampaignOverview, DmID rpgDomain.UserID, System rpgDomain.System) (campaignDomain.Campaign, error) {
+func (r *CampaignRepositoryPG) Create(Name campaignDomain.CampaignName, Overview *campaignDomain.CampaignOverview, DmID userDomain.UserID, System rpgDomain.System) (campaignDomain.Campaign, error) {
 	var overview any
 	if Overview != nil {
 		overview = Overview.Value()
@@ -136,8 +144,8 @@ func (r *CampaignRepositoryPG) Create(Name campaignDomain.CampaignName, Overview
 		overview = nil
 	}
 	rows, err := r.db.Query(context.Background(), `
-		INSERT INTO campaign(name, dm_id, trpg_system, overview) 
-		VALUES($1, $2, $3, $4) RETURNING *
+		INSERT INTO campaign(name, dm_id, game_system, overview) 
+		VALUES($1, $2, $3, $4) RETURNING *, 0 as player_count
 	`, Name.Value(), DmID.Value(), System.Value(), overview)
 	if err != nil {
 		return campaignDomain.Campaign{}, err
@@ -160,7 +168,7 @@ func (r *CampaignRepositoryPG) UpdateStatus(newStatus campaignDomain.CampaignSta
 	rows, err := r.db.Query(context.Background(), `
 		UPDATE campaign SET status = $1 
 		WHERE id = $2
-		RETURNING *
+		RETURNING *, 0 as player_count
 	`, newStatus.Value(), id.Value())
 	if err != nil {
 		return campaignDomain.Campaign{}, err

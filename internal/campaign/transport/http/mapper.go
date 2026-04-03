@@ -3,17 +3,18 @@ package campaign
 import (
 	campaignApp "questmaster-core/internal/campaign/app"
 	campaignDomain "questmaster-core/internal/campaign/domain"
-	rpgDomain "questmaster-core/internal/rpg/domain"
 	rpgTransport "questmaster-core/internal/rpg/transport/http"
+	user "questmaster-core/internal/user/domain"
 )
 
-func MapListReadModelToResponse(rm campaignApp.CampaignListReadModel) CampaignListResponse {
+func MapListReadModelToResponse(c campaignDomain.Campaign, userID user.UserID) CampaignListResponse {
 	return CampaignListResponse{
-		Slug:   rm.Slug,
-		Name:   rm.Name,
-		IsDM:   rm.IsDM,
-		Status: rm.Status,
-		System: rm.System,
+		Slug:        c.Slug.Value(),
+		Name:        c.Name.Value(),
+		IsDM:        c.IsDM(userID),
+		Status:      c.Status.Value(),
+		System:      c.System.Value(),
+		PlayerCount: c.PlayerCount.Value(),
 	}
 }
 
@@ -43,38 +44,7 @@ func MapDetailReadModelToResponse(rm campaignApp.CampaignDetailsReadModel) Campa
 		Overview:   rm.Overview,
 		IsDM:       rm.IsDM,
 		Characters: characters,
-	}
-}
-
-func MapCreateRequestToCreateCommand(req CreateCampaignRequest, userID rpgDomain.UserID) (campaignApp.CreateCampaignCommand, error) {
-	name, err := campaignDomain.NewCampaignName(req.Name)
-	if err != nil {
-		return campaignApp.CreateCampaignCommand{}, err
-	}
-
-	var overview *campaignDomain.CampaignOverview
-
-	if req.Overview != nil {
-		o := campaignDomain.NewCampaignOverview(*req.Overview)
-		overview = &o
-	}
-
-	system, err := rpgDomain.NewSystem(req.System)
-	if err != nil {
-		return campaignApp.CreateCampaignCommand{}, err
-	}
-
-	return campaignApp.CreateCampaignCommand{
-		Name:     name,
-		Overview: overview,
-		DmID:     userID,
-		System:   system,
-	}, nil
-}
-
-func MapGetOrCreateCampaignInviteReadModelToResponse(rm campaignApp.GetOrCreateInviteReadModel) CreateCampaignInviteResponse {
-	return CreateCampaignInviteResponse{
-		Hash: rm.InviteHash,
+		InviteHash: rm.InviteHash,
 	}
 }
 

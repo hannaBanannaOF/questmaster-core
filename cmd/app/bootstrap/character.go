@@ -16,7 +16,7 @@ func BuildCharacterHandler(db *pgxpool.Pool) *characterTransport.CharactersHandl
 	module := character.NewCharacterModule(db, getCampaignFromIDUC)
 
 	return characterTransport.NewCharactersHandler(
-		module.FetchMyCharactersUC(),
+		module.GetCurrentUserCharactersUC(),
 		module.CreateCharacterUC(),
 		module.ResolveCharacterSlugUC(),
 		module.GetCharacterDetailUC(),

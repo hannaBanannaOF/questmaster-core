@@ -14,12 +14,11 @@ func registerCampaignRoutes(
 ) {
 	campaign := v1.Group("/campaign")
 	{
-		campaign.GET("", appContext.Adapt(handler.GetMyCampaigns))
+		campaign.GET("", appContext.Adapt(handler.GetCurrentUserCampaigns))
 		campaign.POST("", appContext.Adapt(handler.CreateCampaign))
 		campaign.GET("/resolve/:slug", middleware.Slug(), appContext.Adapt(handler.ResolveSlug))
 		campaign.DELETE("/:campaignID", middleware.CampaignID(), appContext.Adapt(handler.DeleteCampaign))
-		campaign.GET("/:campaignID/details", middleware.CampaignID(), appContext.Adapt(handler.GetCampaignDetails))
+		campaign.GET("/:campaignID", middleware.CampaignID(), appContext.Adapt(handler.GetCampaignDetails))
 		campaign.PATCH("/:campaignID/status", middleware.CampaignID(), appContext.Adapt(handler.UpdateStatus))
-		campaign.POST("/:campaignID/invite", middleware.CampaignID(), appContext.Adapt(handler.GetOrCreateCampaignInvite))
 	}
 }
