@@ -19,5 +19,6 @@ func BuildInviteHandler(db *pgxpool.Pool) *inviteTransport.InviteHandler {
 	return inviteTransport.NewInviteHandler(
 		inviteModule.GetInviteDetailUC(),
 		inviteModule.GetAcceptInviteUC(),
+		inviteModule.CreateInviteUC(),
 	)
 }

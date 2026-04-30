@@ -6,7 +6,9 @@ type InviteDetailCharacterItem struct {
 }
 
 type InviteDetailReadModel struct {
-	CampaignID   int
-	CampaignName string
-	Characters   []InviteDetailCharacterItem
+	CampaignID          int
+	CampaignName        string
+	CampaignSystem      string
+	CampaignOverview    *string
+	CampaignPlayerCount int
 }

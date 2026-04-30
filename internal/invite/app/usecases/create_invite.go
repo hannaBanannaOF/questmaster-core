@@ -1,7 +1,6 @@
 package invite
 
 import (
-	campaignDomain "questmaster-core/internal/campaign/domain"
 	inviteApp "questmaster-core/internal/invite/app"
 	inviteDomain "questmaster-core/internal/invite/domain"
 )
@@ -16,8 +15,8 @@ func NewCreateInvite(r inviteApp.InviteRepository) *CreateInviteUseCase {
 	}
 }
 
-func (uc *CreateInviteUseCase) Create(campaignID campaignDomain.CampaignID) (inviteDomain.Invite, error) {
-	invite, err := uc.r.Create(campaignID)
+func (uc *CreateInviteUseCase) Execute(cmd inviteApp.CreateInviteCommand) (inviteDomain.Invite, error) {
+	invite, err := uc.r.Create(cmd.CampaignID)
 	if err != nil {
 		return inviteDomain.Invite{}, err
 	}

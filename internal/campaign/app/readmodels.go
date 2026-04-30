@@ -15,8 +15,9 @@ type CampaignDetailsReadModel struct {
 }
 
 type CampaignCharacterReadModel struct {
-	Id   int
-	Name string
+	Id        int
+	Name      string
+	CurrentHP *int
 }
 
 type CreateCampaignReadModel struct {

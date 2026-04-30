@@ -8,19 +8,12 @@ import (
 )
 
 func MapInviteDetailsReadModelToResponse(rm inviteApp.InviteDetailReadModel) InviteDetailsResponse {
-	availableCharacters := make([]InviteDetailsCharacterListItem, 0, len(rm.Characters))
-
-	for _, c := range rm.Characters {
-		availableCharacters = append(availableCharacters, InviteDetailsCharacterListItem{
-			ID:   c.ID,
-			Name: c.Name,
-		})
-	}
-
 	return InviteDetailsResponse{
-		CampaignID:   rm.CampaignID,
-		CampaignName: rm.CampaignName,
-		Characters:   availableCharacters,
+		CampaignID:          rm.CampaignID,
+		CampaignName:        rm.CampaignName,
+		CampaignOverview:    rm.CampaignOverview,
+		CampaignSystem:      rm.CampaignSystem,
+		CampaignPlayerCount: rm.CampaignPlayerCount,
 	}
 }
 
@@ -29,5 +22,11 @@ func MapAcceptRequestToAcceptCommand(r AcceptInviteRequest, userID userDomain.Us
 		Hash:             hash,
 		CharacterSheetID: characterDomain.NewCharacterID(r.CharacterSheetID),
 		UserID:           userID,
+	}
+}
+
+func MapInviteDomainToResponse(invite inviteDomain.Invite) InviteCreateResponse {
+	return InviteCreateResponse{
+		Hash: invite.Hash.Value(),
 	}
 }

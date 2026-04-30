@@ -22,12 +22,13 @@ type CampaignDetailResponse struct {
 	System     string                                `json:"system"`
 	Slug       string                                `json:"slug"`
 	Overview   *string                               `json:"overview"`
-	IsDM       bool                                  `json:"id_dm"`
+	IsDM       bool                                  `json:"is_dm"`
 	Characters []CampaignDetailResponseCharacterItem `json:"characters"`
 	InviteHash *uuid.UUID                            `json:"invite_hash"`
 }
 
 type CampaignDetailResponseCharacterItem struct {
-	Id   int    `json:"id"`
-	Name string `json:"name"`
+	Id        int    `json:"id"`
+	Name      string `json:"name"`
+	CurrentHP *int   `json:"current_hp"`
 }

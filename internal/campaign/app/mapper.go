@@ -20,9 +20,15 @@ func MapDomainToDetailReadModel(input CampaignDetailsInput) CampaignDetailsReadM
 
 	charactersModels := make([]CampaignCharacterReadModel, 0, len(input.Characters))
 	for _, c := range input.Characters {
+		var currentHP *int
+		if c.Hp != nil {
+			curr := c.Hp.Current()
+			currentHP = &curr
+		}
 		charactersModels = append(charactersModels, CampaignCharacterReadModel{
-			Id:   c.Id.Value(),
-			Name: c.Name.Value(),
+			Id:        c.Id.Value(),
+			Name:      c.Name.Value(),
+			CurrentHP: currentHP,
 		})
 	}
 

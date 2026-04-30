@@ -15,9 +15,17 @@ func MapDomainToInviteDetailsReadModel(campaign campaignDomain.Campaign, charact
 		})
 	}
 
+	var overview *string
+	if campaign.Overview != nil {
+		o := campaign.Overview.Value()
+		overview = &o
+	}
+
 	return InviteDetailReadModel{
-		CampaignID:   campaign.Id.Value(),
-		CampaignName: campaign.Name.Value(),
-		Characters:   charactersRm,
+		CampaignID:          campaign.Id.Value(),
+		CampaignName:        campaign.Name.Value(),
+		CampaignSystem:      campaign.System.Value(),
+		CampaignOverview:    overview,
+		CampaignPlayerCount: campaign.PlayerCount.Value(),
 	}
 }

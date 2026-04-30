@@ -7,10 +7,10 @@ definitions:
         type: array
       id:
         type: integer
-      id_dm:
-        type: boolean
       invite_hash:
         type: string
+      is_dm:
+        type: boolean
       name:
         type: string
       overview:
@@ -114,6 +114,24 @@ definitions:
         type: string
       status:
         type: integer
+    type: object
+  invite.InviteDetailsCharacterListItem:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  invite.InviteDetailsResponse:
+    properties:
+      campaign_id:
+        type: integer
+      campaign_name:
+        type: string
+      characters:
+        items:
+          $ref: '#/definitions/invite.InviteDetailsCharacterListItem'
+        type: array
     type: object
   rpg.RpgIdResponse:
     properties:
@@ -551,6 +569,40 @@ paths:
       summary: Resolve character slug
       tags:
       - v1:character
+  /core/api/v1/invite/{inviteHash}:
+    get:
+      description: Gets campaign invite details such as available characters, campiagn
+        overview and name, etc
+      parameters:
+      - description: Invite hash
+        in: path
+        name: inviteHash
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/invite.InviteDetailsResponse'
+        "401":
+          description: Unauthorized - missing or invalid access_token
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "404":
+          description: Invite not found
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+      security:
+      - BearerAuth: []
+      summary: Get campaign invite details
+      tags:
+      - v1:invite
 securityDefinitions:
   BearerAuth:
     in: header

@@ -14,6 +14,7 @@ func registerInviteRoutes(
 ) {
 	invite := v1.Group("/invite")
 	{
+		invite.POST("", appContext.Adapt(handler.CreateInvite))
 		invite.GET("/:inviteHash", middleware.InviteHash(), appContext.Adapt(handler.GetInviteDetails))
 		invite.POST("/:inviteHash/accept", middleware.InviteHash(), appContext.Adapt(handler.AcceptInvite))
 	}

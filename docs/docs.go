@@ -664,6 +664,58 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/core/api/v1/invite/{inviteHash}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Gets campaign invite details such as available characters, campiagn overview and name, etc",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v1:invite"
+                ],
+                "summary": "Get campaign invite details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Invite hash",
+                        "name": "inviteHash",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/invite.InviteDetailsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid access_token",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "404": {
+                        "description": "Invite not found",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -679,11 +731,11 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
-                "id_dm": {
-                    "type": "boolean"
-                },
                 "invite_hash": {
                     "type": "string"
+                },
+                "is_dm": {
+                    "type": "boolean"
                 },
                 "name": {
                     "type": "string"
@@ -844,6 +896,34 @@ const docTemplate = `{
                 },
                 "status": {
                     "type": "integer"
+                }
+            }
+        },
+        "invite.InviteDetailsCharacterListItem": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "invite.InviteDetailsResponse": {
+            "type": "object",
+            "properties": {
+                "campaign_id": {
+                    "type": "integer"
+                },
+                "campaign_name": {
+                    "type": "string"
+                },
+                "characters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/invite.InviteDetailsCharacterListItem"
+                    }
                 }
             }
         },
