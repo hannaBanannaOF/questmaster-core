@@ -10,6 +10,7 @@ type CharacterListResponse struct {
 
 type CharacterDetailResponse struct {
 	Id        int    `json:"id"`
+	Slug      string `json:"slug"`
 	System    string `json:"system"`
 	Name      string `json:"name"`
 	MaxHP     *int   `json:"max_hp"`

@@ -39,7 +39,7 @@ func (uc *UpdateHPUseCase) Execute(cmd characterApp.UpdateHPCommand) (characterA
 		campaignAccess = campaign
 	}
 
-	newHP, err := characterDomain.NewHP(cmd.NewHP.Current(), character.Hp.Max())
+	newHP, err := characterDomain.NewHP(cmd.NewHP, character.Hp.Max())
 	if err != nil {
 		return characterApp.UpdateHPReadModel{}, err
 	}

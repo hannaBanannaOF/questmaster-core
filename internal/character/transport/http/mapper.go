@@ -36,6 +36,7 @@ func MapDetailReadModelToResponse(c characterDomain.Character) CharacterDetailRe
 		Id:        c.Id.Value(),
 		Name:      c.Name.Value(),
 		System:    c.System.Value(),
+		Slug:      c.Slug.Value(),
 		MaxHP:     max,
 		CurrentHP: current,
 	}
@@ -48,13 +49,9 @@ func MapCurrentHpToResponse(currentHp int) CharacterCurrentHpResponse {
 }
 
 func MapUpdateHPRequestToCommand(req UpdateHPRequest, id characterDomain.CharacterID, userID userDomain.UserID) (characterApp.UpdateHPCommand, error) {
-	hp, err := characterDomain.NewHP(req.NewHP, req.NewHP)
-	if err != nil {
-		return characterApp.UpdateHPCommand{}, err
-	}
 	return characterApp.UpdateHPCommand{
 		ID:     id,
-		NewHP:  hp,
+		NewHP:  req.NewHP,
 		UserID: userID,
 	}, nil
 }

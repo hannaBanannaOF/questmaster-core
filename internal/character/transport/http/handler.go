@@ -79,6 +79,7 @@ func (h *CharactersHandler) GetCurrentUserCharacters(ctx *context.AppContext) er
 // @Security BearerAuth
 // @Router /core/api/v1/character [post]
 func (h *CharactersHandler) CreateCharacter(ctx *context.AppContext) error {
+
 	var body CreateCharacterRequest
 	if err := ctx.ShouldBindJSON(&body); err != nil {
 		return httperrors.ErrInvalidRequestBody

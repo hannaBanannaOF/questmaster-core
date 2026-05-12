@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS public.campaign_invite
     campaign_id bigint NOT NULL,
     hash uuid NOT NULL DEFAULT gen_random_uuid(),
     CONSTRAINT campaign_invite_pkey PRIMARY KEY (id),
-    CONSTRAINT campaign_invite_campaign_id_key UNIQUE (campaign_id)
+    CONSTRAINT campaign_invite_campaign_id_key UNIQUE (campaign_id),
     CONSTRAINT fk_campaign_campaign_invite FOREIGN KEY (campaign_id)
         REFERENCES public.campaign (id) MATCH SIMPLE
         ON UPDATE NO ACTION

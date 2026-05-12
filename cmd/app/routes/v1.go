@@ -15,14 +15,12 @@ type V1RoutesDeps struct {
 	InviteHandler    *inviteTransport.InviteHandler
 	UserHandler      *userTransport.UserHandler
 	AuthMiddleware   gin.HandlerFunc
-	PermMiddleware   gin.HandlerFunc
 }
 
 func RegisterV1Routes(router *gin.Engine, deps V1RoutesDeps) {
 	v1 := router.Group(
 		"/core/api/v1",
 		deps.AuthMiddleware,
-		deps.PermMiddleware,
 	)
 
 	registerUserRoutes(v1, deps.UserHandler)

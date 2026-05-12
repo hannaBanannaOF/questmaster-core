@@ -28,6 +28,6 @@ type GetCurrentUserCharactersCommand struct {
 
 type UpdateHPCommand struct {
 	ID     characterDomain.CharacterID
-	NewHP  characterDomain.HP
+	NewHP  int
 	UserID userDomain.UserID
 }

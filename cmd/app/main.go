@@ -3,7 +3,10 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
+	"net"
+	"net/http"
 	"os"
 	"questmaster-core/cmd/app/bootstrap"
 	"questmaster-core/cmd/app/routes"
@@ -13,11 +16,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/joho/godotenv"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // TO RUN SWAGGER -> go run github.com/swaggo/swag/cmd/swag@latest init -g cmd/app/main.go --parseInternal
@@ -34,18 +34,22 @@ import (
 // @BasePath /core/api/v1
 // @schemes http
 func main() {
-	// Debug flags
-	debug := flag.Bool("debug", false, "Run in debug mode")
-	flag.Parse()
-	if *debug {
-		log.Print("Running in DEBUG mode, loading envs from file...")
-		err := godotenv.Load("../../.env")
-		if err != nil {
-			log.Panicf("Unable to load .env file: %s", err)
-		}
-	} else {
-		log.Print("Running in RELEASE mode!")
+	runAddr := os.Getenv("RUN_ADDR")
+	if runAddr == "" {
+		runAddr = "0.0.0.0:8080"
 	}
+	healthCheck := flag.Bool("check-health", false, "Executa o healthcheck")
+	flag.Parse()
+
+	if *healthCheck {
+		_, port, _ := net.SplitHostPort(runAddr)
+		resp, err := http.Get(fmt.Sprintf("http://localhost:%s/health", port))
+		if err != nil || resp.StatusCode != http.StatusOK {
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
+
 	oidcHost := os.Getenv("OIDC_HOST")
 	rsa, err := middleware.GetJWKSet(oidcHost)
 	if err != nil {
@@ -62,17 +66,6 @@ func main() {
 		log.Panicf("unable to get conn pool: %s", err)
 	}
 	defer pgPool.Close()
-
-	mongoClientOptions := options.Client().ApplyURI(os.Getenv("MONGODB_URL"))
-	mongoClient, err := mongo.Connect(context.Background(), mongoClientOptions)
-	if err != nil {
-		log.Panicf("error connectiong to MongoDB: %s", err)
-	}
-	defer func() {
-		if err = mongoClient.Disconnect(context.Background()); err != nil {
-			log.Fatal(err)
-		}
-	}()
 
 	// Bootstrap
 	campaignHandler := bootstrap.BuildCampaignHandler(pgPool)
@@ -94,14 +87,13 @@ func main() {
 		InviteHandler:    inviteHandler,
 		UserHandler:      userHandler,
 		AuthMiddleware:   middleware.AuthMiddleware(rsa),
-		PermMiddleware:   middleware.UpdatePermissionsMiddleware(mongoClient, pgPool),
+	})
+
+	router.GET("/health", func(c *gin.Context) {
+		c.Status(http.StatusOK)
 	})
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
-	runAddr := os.Getenv("RUN_ADDR")
-	if runAddr == "" {
-		runAddr = "0.0.0.0:8080"
-	}
 	router.Run(runAddr)
 }
