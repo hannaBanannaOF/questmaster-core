@@ -30,7 +30,7 @@ func MapListReadModelToResponse(c characterDomain.Character) CharacterListRespon
 	}
 }
 
-func MapDetailReadModelToResponse(c characterDomain.Character) CharacterDetailResponse {
+func MapDetailReadModelToResponse(c characterDomain.Character, userID userDomain.UserID) CharacterDetailResponse {
 	current, max := convertHP(c.Hp)
 	return CharacterDetailResponse{
 		Id:        c.Id.Value(),
@@ -39,6 +39,7 @@ func MapDetailReadModelToResponse(c characterDomain.Character) CharacterDetailRe
 		Slug:      c.Slug.Value(),
 		MaxHP:     max,
 		CurrentHP: current,
+		IsPlayer:  c.IsPlayer(userID),
 	}
 }
 

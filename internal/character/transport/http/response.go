@@ -15,6 +15,7 @@ type CharacterDetailResponse struct {
 	Name      string `json:"name"`
 	MaxHP     *int   `json:"max_hp"`
 	CurrentHP *int   `json:"current_hp"`
+	IsPlayer  bool   `json:"is_player"`
 }
 
 type CharacterCurrentHpResponse struct {

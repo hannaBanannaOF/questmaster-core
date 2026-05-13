@@ -163,7 +163,7 @@ func (h *CharactersHandler) GetDetails(ctx *context.AppContext) error {
 		return err
 	}
 
-	ctx.JSON(http.StatusOK, MapDetailReadModelToResponse(details))
+	ctx.JSON(http.StatusOK, MapDetailReadModelToResponse(details, ctx.UserID()))
 	return nil
 }
 
