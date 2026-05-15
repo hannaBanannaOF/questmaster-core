@@ -50,7 +50,8 @@ func NewCharactersHandler(
 // @Router /core/api/v1/character [get]
 func (h *CharactersHandler) GetCurrentUserCharacters(ctx *context.AppContext) error {
 	characters, err := h.getCurrentUserCharactersUC.Execute(characterApp.GetCurrentUserCharactersCommand{
-		UserID: ctx.UserID(),
+		UserID:  ctx.UserID(),
+		Filters: ctx.Filters().CharacterListFilters,
 	})
 	if err != nil {
 		return err

@@ -95,3 +95,15 @@ func (r *InviteRepositoryPG) FindByHash(hash inviteDomain.InviteHash) (*inviteDo
 
 	return &val, nil
 }
+
+func (r *InviteRepositoryPG) DeleteByCampaignID(campaignID campaignDomain.CampaignID) (bool, error) {
+	cmdTag, err := r.db.Exec(context.Background(), `
+		DELETE FROM campaign_invite ci
+		WHERE ci.campaign_id = $1
+	`, campaignID.Value())
+	if err != nil {
+		return false, err
+	}
+
+	return cmdTag.RowsAffected() > 0, nil
+}

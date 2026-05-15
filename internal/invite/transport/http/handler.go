@@ -47,15 +47,32 @@ func (h *InviteHandler) GetInviteDetails(ctx *context.AppContext) error {
 	return nil
 }
 
+// @Summary Accept invite
+// @Description Accepts campaign invite linking selected character to campaign
+// @Tags v1:invite
+// @Accept json
+// @Param request body AcceptInviteRequest true "Invite accept data"
+// @Param inviteHash path string true "Invite hash"
+// @Produce json
+// @Success 204
+// @Failure 401 {object} httperrors.HttpError "Unauthorized - missing or invalid access_token"
+// @Failure 403 {object} httperrors.HttpError "Forbidden - Not character player"
+// @Failure 404 {object} httperrors.HttpError "Invite not found"
+// @Failure 500 {object} httperrors.HttpError "Internal server error"
+// @Security BearerAuth
+// @Router /core/api/v1/invite/{inviteHash}/accept [post]
 func (h *InviteHandler) AcceptInvite(ctx *context.AppContext) error {
 	var body AcceptInviteRequest
 	if err := ctx.ShouldBindJSON(&body); err != nil {
 		return httperrors.ErrInvalidRequestBody
 	}
 
-	cmd := MapAcceptRequestToAcceptCommand(body, ctx.UserID(), ctx.InviteHash())
+	cmd, err := MapAcceptRequestToAcceptCommand(body, ctx.UserID(), ctx.InviteHash())
+	if err != nil {
+		return err
+	}
 
-	err := h.acceptInviteUC.Execute(cmd)
+	err = h.acceptInviteUC.Execute(cmd)
 	if err != nil {
 		return err
 	}

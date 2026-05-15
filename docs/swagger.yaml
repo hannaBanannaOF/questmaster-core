@@ -24,6 +24,8 @@ definitions:
     type: object
   campaign.CampaignDetailResponseCharacterItem:
     properties:
+      current_hp:
+        type: integer
       id:
         type: integer
       name:
@@ -74,9 +76,13 @@ definitions:
         type: integer
       id:
         type: integer
+      is_player:
+        type: boolean
       max_hp:
         type: integer
       name:
+        type: string
+      slug:
         type: string
       system:
         type: string
@@ -115,23 +121,35 @@ definitions:
       status:
         type: integer
     type: object
-  invite.InviteDetailsCharacterListItem:
+  invite.AcceptInviteRequest:
     properties:
-      id:
+      character_slug:
+        type: string
+    type: object
+  invite.CreateInviteRequest:
+    properties:
+      campaign_id:
         type: integer
-      name:
+    type: object
+  invite.InviteCreateResponse:
+    properties:
+      hash:
         type: string
     type: object
   invite.InviteDetailsResponse:
     properties:
-      campaign_id:
-        type: integer
       campaign_name:
         type: string
-      characters:
-        items:
-          $ref: '#/definitions/invite.InviteDetailsCharacterListItem'
-        type: array
+      campaign_overview:
+        type: string
+      campaign_player_count:
+        type: integer
+      campaign_slug:
+        type: string
+      campaign_system:
+        type: string
+      invite_hash:
+        type: string
     type: object
   rpg.RpgIdResponse:
     properties:
@@ -569,6 +587,46 @@ paths:
       summary: Resolve character slug
       tags:
       - v1:character
+  /core/api/v1/invite:
+    post:
+      consumes:
+      - application/json
+      description: Create a new campaign invite
+      parameters:
+      - description: Invite data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/invite.CreateInviteRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/invite.InviteCreateResponse'
+        "401":
+          description: Unauthorized - missing or invalid access_token
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "403":
+          description: Not allowed to create invite
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "409":
+          description: Invite for campaign already exists
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+      security:
+      - BearerAuth: []
+      summary: Create campaign invite
+      tags:
+      - v1:invite
   /core/api/v1/invite/{inviteHash}:
     get:
       description: Gets campaign invite details such as available characters, campiagn
@@ -582,8 +640,8 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
-          description: Created
+        "200":
+          description: OK
           schema:
             $ref: '#/definitions/invite.InviteDetailsResponse'
         "401":
@@ -601,6 +659,49 @@ paths:
       security:
       - BearerAuth: []
       summary: Get campaign invite details
+      tags:
+      - v1:invite
+  /core/api/v1/invite/{inviteHash}/accept:
+    post:
+      consumes:
+      - application/json
+      description: Accepts campaign invite linking selected character to campaign
+      parameters:
+      - description: Invite accept data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/invite.AcceptInviteRequest'
+      - description: Invite hash
+        in: path
+        name: inviteHash
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized - missing or invalid access_token
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "403":
+          description: Forbidden - Not character player
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "404":
+          description: Invite not found
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+      security:
+      - BearerAuth: []
+      summary: Accept invite
       tags:
       - v1:invite
 securityDefinitions:

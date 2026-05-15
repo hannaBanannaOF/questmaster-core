@@ -78,7 +78,8 @@ func main() {
 	router.Use(
 		gin.Logger(),
 		gin.Recovery(),
-		middleware.ErrorHandler(),
+		middleware.ErrorHandlerMiddleware(),
+		middleware.QueryParamsMiddleware(),
 	)
 
 	routes.RegisterV1Routes(router, routes.V1RoutesDeps{

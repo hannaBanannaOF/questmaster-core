@@ -665,6 +665,69 @@ const docTemplate = `{
                 }
             }
         },
+        "/core/api/v1/invite": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new campaign invite",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v1:invite"
+                ],
+                "summary": "Create campaign invite",
+                "parameters": [
+                    {
+                        "description": "Invite data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/invite.CreateInviteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/invite.InviteCreateResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid access_token",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "403": {
+                        "description": "Not allowed to create invite",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "409": {
+                        "description": "Invite for campaign already exists",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    }
+                }
+            }
+        },
         "/core/api/v1/invite/{inviteHash}": {
             "get": {
                 "security": [
@@ -690,14 +753,81 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created",
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/invite.InviteDetailsResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized - missing or invalid access_token",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "404": {
+                        "description": "Invite not found",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/core/api/v1/invite/{inviteHash}/accept": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Accepts campaign invite linking selected character to campaign",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v1:invite"
+                ],
+                "summary": "Accept invite",
+                "parameters": [
+                    {
+                        "description": "Invite accept data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/invite.AcceptInviteRequest"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Invite hash",
+                        "name": "inviteHash",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid access_token",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - Not character player",
                         "schema": {
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
@@ -757,6 +887,9 @@ const docTemplate = `{
         "campaign.CampaignDetailResponseCharacterItem": {
             "type": "object",
             "properties": {
+                "current_hp": {
+                    "type": "integer"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -835,10 +968,16 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "is_player": {
+                    "type": "boolean"
+                },
                 "max_hp": {
                     "type": "integer"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "slug": {
                     "type": "string"
                 },
                 "system": {
@@ -899,13 +1038,26 @@ const docTemplate = `{
                 }
             }
         },
-        "invite.InviteDetailsCharacterListItem": {
+        "invite.AcceptInviteRequest": {
             "type": "object",
             "properties": {
-                "id": {
+                "character_slug": {
+                    "type": "string"
+                }
+            }
+        },
+        "invite.CreateInviteRequest": {
+            "type": "object",
+            "properties": {
+                "campaign_id": {
                     "type": "integer"
-                },
-                "name": {
+                }
+            }
+        },
+        "invite.InviteCreateResponse": {
+            "type": "object",
+            "properties": {
+                "hash": {
                     "type": "string"
                 }
             }
@@ -913,17 +1065,23 @@ const docTemplate = `{
         "invite.InviteDetailsResponse": {
             "type": "object",
             "properties": {
-                "campaign_id": {
-                    "type": "integer"
-                },
                 "campaign_name": {
                     "type": "string"
                 },
-                "characters": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/invite.InviteDetailsCharacterListItem"
-                    }
+                "campaign_overview": {
+                    "type": "string"
+                },
+                "campaign_player_count": {
+                    "type": "integer"
+                },
+                "campaign_slug": {
+                    "type": "string"
+                },
+                "campaign_system": {
+                    "type": "string"
+                },
+                "invite_hash": {
+                    "type": "string"
                 }
             }
         },

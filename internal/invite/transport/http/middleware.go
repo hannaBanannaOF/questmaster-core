@@ -1,4 +1,4 @@
-package middleware
+package invite
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 	"questmaster-core/internal/shared/httperrors"
 )
 
-func InviteHash() gin.HandlerFunc {
+func InviteHashMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		raw := c.Param("inviteHash")

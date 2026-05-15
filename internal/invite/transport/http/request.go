@@ -1,7 +1,7 @@
 package invite
 
 type AcceptInviteRequest struct {
-	CharacterSheetID int `json:"character_sheet_id"`
+	CharacterSlug string `json:"character_slug"`
 }
 
 type CreateInviteRequest struct {

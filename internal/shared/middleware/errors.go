@@ -8,7 +8,7 @@ import (
 	"questmaster-core/internal/shared/httperrors"
 )
 
-func ErrorHandler() gin.HandlerFunc {
+func ErrorHandlerMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		// Executa handlers seguintes

@@ -23,7 +23,8 @@ type GetCharacterDetailsCommand struct {
 }
 
 type GetCurrentUserCharactersCommand struct {
-	UserID userDomain.UserID
+	UserID  userDomain.UserID
+	Filters *characterDomain.CharacterListFilters
 }
 
 type UpdateHPCommand struct {

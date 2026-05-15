@@ -12,20 +12,21 @@ type InviteModule struct {
 	getInviteByCampaignIDUC *inviteUsecases.GetInviteByCampaignIDUseCase
 	getInviteDetailsUC      *inviteUsecases.GetInviteDetailUseCase
 	acceptInviteUC          *inviteUsecases.AcceptInviteUseCase
+	deleteInviteUC          *inviteUsecases.DeleteInviteUseCase
 }
 
 func NewInviteModule(
 	db *pgxpool.Pool,
 	inviteCampaignFinder inviteUsecases.InviteCampaignFinder,
-	inviteAvailableCharactersFinder inviteUsecases.InviteAvailableCharacterFinder,
 	inviteCharacterCampaignLinker inviteUsecases.InviteCharacterCampaignLinker,
 ) *InviteModule {
 	r := inviteInfra.NewInviteRepositoryPG(db)
 	return &InviteModule{
 		createInviteUC:          inviteUsecases.NewCreateInvite(r),
 		getInviteByCampaignIDUC: inviteUsecases.NewGetInviteByCampaignID(r),
-		getInviteDetailsUC:      inviteUsecases.NewGetInviteDetail(r, inviteCampaignFinder, inviteAvailableCharactersFinder),
+		getInviteDetailsUC:      inviteUsecases.NewGetInviteDetail(r, inviteCampaignFinder),
 		acceptInviteUC:          inviteUsecases.NewAcceptInvite(r, inviteCharacterCampaignLinker),
+		deleteInviteUC:          inviteUsecases.NewDeleteInvite(r),
 	}
 }
 
@@ -43,4 +44,8 @@ func (m *InviteModule) GetInviteDetailUC() *inviteUsecases.GetInviteDetailUseCas
 
 func (m *InviteModule) GetAcceptInviteUC() *inviteUsecases.AcceptInviteUseCase {
 	return m.acceptInviteUC
+}
+
+func (m *InviteModule) DeleteInviteUC() *inviteUsecases.DeleteInviteUseCase {
+	return m.deleteInviteUC
 }

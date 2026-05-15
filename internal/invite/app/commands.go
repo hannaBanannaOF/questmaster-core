@@ -2,8 +2,8 @@ package invite
 
 import (
 	campaignDomain "questmaster-core/internal/campaign/domain"
-	characterDomain "questmaster-core/internal/character/domain"
 	inviteDomain "questmaster-core/internal/invite/domain"
+	rpgDomain "questmaster-core/internal/rpg/domain"
 	userDomain "questmaster-core/internal/user/domain"
 )
 
@@ -13,9 +13,9 @@ type GetinviteDetailsCommand struct {
 }
 
 type AcceptInviteCommand struct {
-	Hash             inviteDomain.InviteHash
-	CharacterSheetID characterDomain.CharacterID
-	UserID           userDomain.UserID
+	Hash          inviteDomain.InviteHash
+	CharacterSlug rpgDomain.Slug
+	UserID        userDomain.UserID
 }
 
 type CreateInviteCommand struct {

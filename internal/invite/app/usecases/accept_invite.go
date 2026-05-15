@@ -26,7 +26,7 @@ func (uc *AcceptInviteUseCase) Execute(cmd inviteApp.AcceptInviteCommand) error 
 		return ErrInviteNotFound
 	}
 
-	_, err = uc.linkCharacterToCampaignUC.LinkToCampaign(invite.CampaignId, cmd.CharacterSheetID)
+	_, err = uc.linkCharacterToCampaignUC.LinkToCampaign(invite.CampaignId, cmd.CharacterSlug, cmd.UserID)
 	if err != nil {
 		return err
 	}

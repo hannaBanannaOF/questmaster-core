@@ -8,7 +8,7 @@ import (
 )
 
 type CharacterRepository interface {
-	GetAllByPlayerID(userID userDomain.UserID) ([]characterDomain.Character, error)
+	GetAllByPlayerIDWithFilters(userID userDomain.UserID, filters *characterDomain.CharacterListFilters) ([]characterDomain.Character, error)
 	GetAllByCampaignID(campaignID campaignDomain.CampaignID) ([]characterDomain.Character, error)
 	FindBySlug(slug rpgDomain.Slug) (*characterDomain.Character, error)
 	FindByID(characterID characterDomain.CharacterID) (*characterDomain.Character, error)
@@ -16,5 +16,5 @@ type CharacterRepository interface {
 	UpdateHP(newHP characterDomain.HP, characterID characterDomain.CharacterID) (characterDomain.Character, error)
 	DeleteByID(characterID characterDomain.CharacterID) (bool, error)
 	GetAllByUserIDAndCampaignIDNullAndSystem(userID userDomain.UserID, system rpgDomain.System) ([]characterDomain.Character, error)
-	UpdateCampaign(campaignID campaignDomain.CampaignID, characterID characterDomain.CharacterID) (*characterDomain.Character, error)
+	UpdateCampaign(campaignID campaignDomain.CampaignID, characterSlug rpgDomain.Slug, userID userDomain.UserID) (*characterDomain.Character, error)
 }

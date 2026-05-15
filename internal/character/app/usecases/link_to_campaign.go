@@ -4,6 +4,8 @@ import (
 	campaignDomain "questmaster-core/internal/campaign/domain"
 	characterApp "questmaster-core/internal/character/app"
 	characterDomain "questmaster-core/internal/character/domain"
+	rpgDomain "questmaster-core/internal/rpg/domain"
+	userDomain "questmaster-core/internal/user/domain"
 )
 
 type LinkCharacterToCampaignUseCase struct {
@@ -16,14 +18,14 @@ func NewLinkCharacterToCampaign(r characterApp.CharacterRepository) *LinkCharact
 	}
 }
 
-func (uc LinkCharacterToCampaignUseCase) LinkToCampaign(campaignID campaignDomain.CampaignID, characterID characterDomain.CharacterID) (characterDomain.Character, error) {
-	character, err := uc.r.UpdateCampaign(campaignID, characterID)
+func (uc LinkCharacterToCampaignUseCase) LinkToCampaign(campaignID campaignDomain.CampaignID, characterSlug rpgDomain.Slug, userID userDomain.UserID) (characterDomain.Character, error) {
+	character, err := uc.r.UpdateCampaign(campaignID, characterSlug, userID)
 	if err != nil {
 		return characterDomain.Character{}, err
 	}
 
 	if character == nil {
-		return characterDomain.Character{}, ErrAlreadyEnrolled
+		return characterDomain.Character{}, ErrUnavailableCharacter
 	}
 
 	return *character, nil

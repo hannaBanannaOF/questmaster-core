@@ -1,12 +1,10 @@
 package invite
 
-type InviteDetailCharacterItem struct {
-	ID   int
-	Name string
-}
+import "github.com/google/uuid"
 
 type InviteDetailReadModel struct {
-	CampaignID          int
+	InviteHash          uuid.UUID
+	CampaignSlug        string
 	CampaignName        string
 	CampaignSystem      string
 	CampaignOverview    *string

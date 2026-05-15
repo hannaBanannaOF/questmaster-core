@@ -3,6 +3,7 @@ package character
 import (
 	"context"
 	"errors"
+	"strconv"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -21,25 +22,44 @@ func NewCharacterRepositoryPG(db *pgxpool.Pool) *CharacterRepositoryPG {
 	return &CharacterRepositoryPG{db: db}
 }
 
-func (r *CharacterRepositoryPG) GetAllByPlayerID(
+func (r *CharacterRepositoryPG) GetAllByPlayerIDWithFilters(
 	userID userDomain.UserID,
+	filters *characterDomain.CharacterListFilters,
 ) ([]characterDomain.Character, error) {
-	rows, err := r.db.Query(context.Background(), `
+	query := `
         SELECT cs.*
         FROM character_sheet cs
         WHERE cs.player_id = $1
-    `, userID.Value())
+    `
+	args := []any{userID.Value()}
+	argCount := 1
+	if filters.GameSystem != nil {
+		argCount++
+		query += " AND cs.game_system = $" + strconv.Itoa(argCount)
+		args = append(args, filters.GameSystem.Value())
+	}
+
+	if filters.WithoutCampaign != nil {
+		if *filters.WithoutCampaign == true {
+			query += " AND cs.campaign_id IS NULL"
+		} else {
+			query += " AND cs.campaign_id IS NOT NULL"
+		}
+
+	}
+
+	rows, err := r.db.Query(context.Background(), query, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
+
 	record, err := pgx.CollectRows(rows, pgx.RowToStructByName[CharacterRow])
 	if err != nil {
 		return nil, err
 	}
 
-	domain := make([]characterDomain.Character, 0)
-
+	domain := make([]characterDomain.Character, 0, len(record))
 	for _, c := range record {
 		val, err := MapRowToDomain(c)
 		if err != nil {
@@ -230,18 +250,19 @@ func (r *CharacterRepositoryPG) GetAllByUserIDAndCampaignIDNullAndSystem(userID 
 	return domain, nil
 }
 
-func (r *CharacterRepositoryPG) UpdateCampaign(campaignID campaignDomain.CampaignID, characterID characterDomain.CharacterID) (*characterDomain.Character, error) {
+func (r *CharacterRepositoryPG) UpdateCampaign(campaignID campaignDomain.CampaignID, characterSlug rpgDomain.Slug, userID userDomain.UserID) (*characterDomain.Character, error) {
 	rows, err := r.db.Query(context.Background(), `
 		UPDATE character_sheet cs
-		SET campaign_id = $1
+		SET campaign_id = c.id
 		FROM campaign c
 		WHERE 
-			cs.id = $2
+			cs.slug = $2
 			AND cs.campaign_id IS NULL
 			AND c.id = $1
+			AND cs.player_id = $3
 			AND cs.game_system = c.game_system
 		RETURNING cs.*
-	`, campaignID.Value(), characterID.Value())
+	`, campaignID.Value(), characterSlug.Value(), userID.Value())
 	if err != nil {
 		return nil, err
 	}

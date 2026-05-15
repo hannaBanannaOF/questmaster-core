@@ -1,4 +1,4 @@
-package middleware
+package campaign
 
 import (
 	"fmt"
@@ -6,27 +6,27 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	characterDomain "questmaster-core/internal/character/domain"
+	campaignDomain "questmaster-core/internal/campaign/domain"
 	"questmaster-core/internal/shared/context"
 	"questmaster-core/internal/shared/httperrors"
 )
 
-func CharacterID() gin.HandlerFunc {
+func CampaignIDMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		raw := c.Param("characterID")
+		raw := c.Param("campaignID")
 
 		id, err := strconv.Atoi(raw)
 		if err != nil {
 			_ = c.Error(
-				fmt.Errorf("%w: characterID", httperrors.ErrInvalidParam),
+				fmt.Errorf("%w: campaignID", httperrors.ErrInvalidParam),
 			)
 			c.Abort()
 			return
 		}
 
 		appCtx := context.AppContext{Context: c}
-		appCtx.SetCharacterID(characterDomain.NewCharacterID(id))
+		appCtx.SetCampaignID(campaignDomain.NewCampaignID(id))
 
 		c.Next()
 	}

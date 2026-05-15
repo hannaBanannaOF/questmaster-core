@@ -5,20 +5,17 @@ import (
 )
 
 type GetInviteDetailUseCase struct {
-	r                        inviteApp.InviteRepository
-	getCampaignUC            InviteCampaignFinder
-	getAvailableCharactersUC InviteAvailableCharacterFinder
+	r             inviteApp.InviteRepository
+	getCampaignUC InviteCampaignFinder
 }
 
 func NewGetInviteDetail(
 	r inviteApp.InviteRepository,
 	getCampaignUC InviteCampaignFinder,
-	getAvailableCharactersUC InviteAvailableCharacterFinder,
 ) *GetInviteDetailUseCase {
 	return &GetInviteDetailUseCase{
-		r:                        r,
-		getCampaignUC:            getCampaignUC,
-		getAvailableCharactersUC: getAvailableCharactersUC,
+		r:             r,
+		getCampaignUC: getCampaignUC,
 	}
 }
 
@@ -36,10 +33,5 @@ func (uc *GetInviteDetailUseCase) Execute(cmd inviteApp.GetinviteDetailsCommand)
 		return inviteApp.InviteDetailReadModel{}, err
 	}
 
-	availableCharacters, err := uc.getAvailableCharactersUC.GetBySystemAndCampaignIDNull(cmd.UserID, campaign.System)
-	if err != nil {
-		return inviteApp.InviteDetailReadModel{}, err
-	}
-
-	return inviteApp.MapDomainToInviteDetailsReadModel(campaign, availableCharacters), nil
+	return inviteApp.MapDomainToInviteDetailsReadModel(cmd.Hash, campaign), nil
 }

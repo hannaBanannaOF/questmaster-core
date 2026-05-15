@@ -1,4 +1,4 @@
-package middleware
+package rpg
 
 import (
 	"github.com/gin-gonic/gin"
@@ -7,7 +7,7 @@ import (
 	"questmaster-core/internal/shared/context"
 )
 
-func Slug() gin.HandlerFunc {
+func SlugMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		raw := c.Param("slug")

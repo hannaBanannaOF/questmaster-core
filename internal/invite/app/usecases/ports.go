@@ -11,10 +11,6 @@ type InviteCampaignFinder interface {
 	FindByID(campaignID campaignDomain.CampaignID) (campaignDomain.Campaign, error)
 }
 
-type InviteAvailableCharacterFinder interface {
-	GetBySystemAndCampaignIDNull(userID userDomain.UserID, system rpgDomain.System) ([]characterDomain.Character, error)
-}
-
 type InviteCharacterCampaignLinker interface {
-	LinkToCampaign(campaignID campaignDomain.CampaignID, characterID characterDomain.CharacterID) (characterDomain.Character, error)
+	LinkToCampaign(campaignID campaignDomain.CampaignID, characterSlug rpgDomain.Slug, userID userDomain.UserID) (characterDomain.Character, error)
 }

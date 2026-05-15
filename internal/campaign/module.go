@@ -21,12 +21,13 @@ func NewCampaignModule(
 	db *pgxpool.Pool,
 	charactersFinder campaignUsecases.CampaignCharacterFinder,
 	inviteFinder campaignUsecases.CampaignInviteFinder,
+	inviteDewleter campaignUsecases.CampaignInviteDeleter,
 ) *CampaignModule {
 	r := campaignInfra.NewCampaignRepositoryPG(db)
 	getCampaignFromIDUC := campaignUsecases.NewGetCampaignFromID(r)
 	return &CampaignModule{
 		createcampaignUC:          campaignUsecases.NewCreateCampaign(r),
-		deleteCampaignUC:          campaignUsecases.NewDeleteCampaign(r),
+		deleteCampaignUC:          campaignUsecases.NewDeleteCampaign(r, inviteDewleter),
 		getCurrentUserCampaignsUC: campaignUsecases.NewGetCurrentUserMyCampaigns(r),
 		getCampaignDetailUC:       campaignUsecases.NewGetCampaignDetails(*getCampaignFromIDUC, charactersFinder, inviteFinder),
 		getCampaignFromIDUC:       getCampaignFromIDUC,

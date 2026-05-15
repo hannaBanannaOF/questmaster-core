@@ -14,7 +14,7 @@ func BuildInviteHandler(db *pgxpool.Pool) *inviteTransport.InviteHandler {
 	campaignRepo := campaignInfra.NewCampaignRepositoryPG(db)
 	getCampaignFromIDUC := campaignUsecases.NewGetCampaignFromID(campaignRepo)
 	characterModule := character.NewCharacterModule(db, getCampaignFromIDUC)
-	inviteModule := invite.NewInviteModule(db, getCampaignFromIDUC, characterModule.GetMyCharactersWithoutCampaignUC(), characterModule.LinkCharacterToCampaignUC())
+	inviteModule := invite.NewInviteModule(db, getCampaignFromIDUC, characterModule.LinkCharacterToCampaignUC())
 
 	return inviteTransport.NewInviteHandler(
 		inviteModule.GetInviteDetailUC(),

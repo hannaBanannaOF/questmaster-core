@@ -14,7 +14,7 @@ func NewGetCurrrentUserCharacters(r characterApp.CharacterRepository) *GetCurren
 }
 
 func (uc *GetCurrentUserCharactersUseCase) Execute(cmd characterApp.GetCurrentUserCharactersCommand) ([]characterDomain.Character, error) {
-	characters, err := uc.r.GetAllByPlayerID(cmd.UserID)
+	characters, err := uc.r.GetAllByPlayerIDWithFilters(cmd.UserID, cmd.Filters)
 	if err != nil {
 		return nil, err
 	}
