@@ -171,14 +171,14 @@ func (h *CharactersHandler) GetDetails(ctx *context.AppContext) error {
 // @Summary Update HP
 // @Description Updates character HP
 // @Tags v1:character
-// @Param characterID path integer true "Campaign ID"
+// @Param characterID path integer true "Character ID"
 // @Accept json
 // @Param request body UpdateHPRequest true "New character HP"
 // @Produce json
 // @Success 200 {object} CharacterCurrentHpResponse
-// @Failure 404 {object} httperrors.HttpError "Campaign not found"
+// @Failure 404 {object} httperrors.HttpError "Character not found"
 // @Failure 401 {object} httperrors.HttpError "Unauthorized - missing or invalid access_token"
-// @Failure 403 {object} httperrors.HttpError "Only the DM can update a campaign, or the status transition is invalid"
+// @Failure 403 {object} httperrors.HttpError "Only the character's player can update it"
 // @Failure 500 {object} httperrors.HttpError "Internal server error"
 // @Security BearerAuth
 // @Router /core/api/v1/character/{characterID}/hp [patch]

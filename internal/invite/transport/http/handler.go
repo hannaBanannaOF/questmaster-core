@@ -24,7 +24,7 @@ func NewInviteHandler(getInviteDetailUC *inviteUsecases.GetInviteDetailUseCase, 
 }
 
 // @Summary Get campaign invite details
-// @Description Gets campaign invite details such as available characters, campiagn overview and name, etc
+// @Description Gets campaign invite details such as available characters, campaign overview and name, etc
 // @Tags v1:invite
 // @Param inviteHash path string true "Invite hash"
 // @Produce json

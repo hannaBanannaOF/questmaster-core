@@ -1,137 +1,54 @@
 # Questmaster Core
 
-Questmaster Core is the authenticated backend API for the Questmaster platform. It manages campaigns, character sheets, and campaign invites, exposes HTTP endpoints under `/core/api/v1`, stores its primary data in PostgreSQL, refreshes permission documents in MongoDB, and publishes its gateway route registration to RabbitMQ during startup.
+**Questmaster Core** is the authenticated core backend API for the Questmaster platform. Built with Go and the Gin framework, it manages campaigns, player character sheets, and campaign invitation flows while providing OpenID Connect (OIDC) JWT validation and swagger-driven API documentation.
 
-## What this service does
+---
 
-- Creates, lists, inspects, and deletes campaigns
-- Updates campaign status with the transitions `DRAFT -> ACTIVE -> PAUSED/ARCHIVED`
-- Creates, lists, inspects, updates HP for, and deletes character sheets
-- Resolves campaign and character slugs to numeric IDs
-- Creates or reuses invite links for campaigns
-- Accepts campaign invites by linking a character sheet to a campaign
-- Validates Bearer tokens against the auth server JWK set
+## Features & Capabilities
 
-## Stack
+- **Campaign Management**: Create, list, inspect details, update lifecycle statuses (`DRAFT -> ACTIVE -> PAUSED/ARCHIVED`), and delete campaigns. Automatic slug generation ensures SEO/friendly URL access.
+- **Character Sheets**: Create, inspect, list user characters, update current HP, attach/detach from campaigns, and delete character sheets. Automatic slug generation ensures SEO/friendly URL access.
+- **Campaign Invites**: Generate unique UUID invite links for campaigns and allow players to accept invites by binding their character sheets.
+- **User Profile**: Exposes user information extracted from validated JWT bearer tokens.
+- **Security & Authentication**: Middleware verifies Bearer JWT tokens dynamically using the JWKS endpoint of your OIDC identity provider (e.g., Keycloak).
+- **Health Checks & Diagnostics**: Includes a built-in health check flag (`-check-health`) and Swagger UI documentation (`/swagger/index.html`).
 
-- Go 1.25.6
-- Gin
-- PostgreSQL
-- MongoDB
-- RabbitMQ
-- JWT/JWK-based authentication
+---
 
-## HTTP API
+## Tech Stack
 
-Base path: `/core/api/v1`
+- **Language**: Go 1.25.6
+- **Web Framework**: Gin Framework (`github.com/gin-gonic/gin`)
+- **Database**: PostgreSQL with `pgx/v5` connection pool
+- **Authentication**: JWT verification via standard OIDC JWKS (`github.com/golang-jwt/jwt/v5`)
+- **Documentation**: Swagger / OpenAPI 2.0 (`swaggo/gin-swagger`)
+- **Containerization**: Multi-stage Docker build targeting `scratch`
 
-Authentication: every route requires `Authorization: Bearer <token>`
+---
 
-### Campaign routes
+## Environment Variables
 
-- `GET /campaign`
-- `POST /campaign`
-- `GET /campaign/resolve/:slug`
-- `DELETE /campaign/:campaignID`
-- `GET /campaign/:campaignID/details`
-- `PATCH /campaign/:campaignID/status`
-- `POST /campaign/:campaignID/invite`
+Configure the service using the following environment variables:
 
-### Character routes
+| Variable | Description | Default / Example |
+| --- | --- | --- |
+| `RUN_ADDR` | Network address and port for the HTTP server | `0.0.0.0:8080` |
+| `OIDC_HOST` | Base URL of the OIDC / Keycloak provider for JWKs | `http://localhost:8080/realms/questmaster` |
+| `DB_URL` | PostgreSQL connection string | `postgres://user:password@localhost:5432/questmaster?sslmode=disable` |
 
-- `GET /character`
-- `POST /character`
-- `GET /character/resolve/:slug`
-- `GET /character/:characterID/details`
-- `PATCH /character/:characterID/hp/current`
-- `DELETE /character/:characterID`
+---
 
-### Invite routes
+## Database Architecture & Migrations
 
-- `GET /invite/:inviteHash`
-- `POST /invite/:inviteHash/accept`
+Database migrations are located in the `migrations/` directory as raw SQL scripts. Apply them sequentially (`0001` through `0005`):
 
-Notes:
+1. `0001_init.up.sql`: Enables PostgreSQL `unaccent` extension.
+2. `0002_campaign_init.up.sql`: Creates `campaign` table and PL/pgSQL slug generation trigger (`trg_generate_slug`).
+3. `0003_character_sheet_init.up.sql`: Creates `character_sheet` table with campaign foreign key and slug generation trigger.
+4. `0004_campaign_invite.up.sql`: Creates `campaign_invite` table with `gen_random_uuid()` hash generation.
 
-- `POST /campaign` accepts `name`, `system`, and optional `overview`
-- `POST /character` accepts `name`, `system`, and optional `hp`
-- `PATCH /campaign/:campaignID/status` accepts `status` with values `DRAFT`, `ACTIVE`, `PAUSED`, or `ARCHIVED`; valid transitions are `DRAFT -> ACTIVE`, `ACTIVE -> PAUSED/ARCHIVED`, and `PAUSED -> ACTIVE/ARCHIVED`
-- `POST /campaign/:campaignID/invite` returns an invite hash and reuses the existing invite when one already exists
-- `POST /invite/:inviteHash/accept` accepts `character_sheet_id`
+### Entity-Relationship Diagram
 
-## Runtime dependencies
-
-The service expects these systems to be available:
-
-- PostgreSQL for campaigns, character sheets, invites, and sessions
-- MongoDB for the `permissions` collection
-- An auth server exposing JWKs at `${AUTH_HOST}/realms/${AUTH_REALM}/protocol/openid-connect/certs`
-- RabbitMQ for the startup message that registers `/core/api/v1/**` with the gateway
-
-## Configuration
-
-The application reads environment variables at startup:
-
-| Variable | Purpose |
-| --- | --- |
-| `AUTH_HOST` | Base URL of the auth server |
-| `AUTH_REALM` | Realm used to build the JWK URL |
-| `DB_URL` | PostgreSQL connection string |
-| `MONGODB_URL` | MongoDB connection string |
-| `MONGODB_DATABASENAME` | MongoDB database that stores the `permissions` collection |
-| `MQTT_HOST` | RabbitMQ host |
-| `MQTT_PORT` | RabbitMQ port |
-| `MQTT_USER` | RabbitMQ username |
-| `MQTT_PASSWORD` | RabbitMQ password |
-| `GATEWAY_EXCHANGE` | Exchange name declared during the startup gateway-registration step |
-| `GATEWAY_URL` | This service public URL to be included in the gateway registration message |
-| `RUN_ADDR` | HTTP listen address. If omitted, the service falls back to `0.0.0.0:8080` |
-
-## Database setup
-
-The repository includes raw SQL migrations in `migrations/`. Apply them in numeric order before starting the service.
-
-Important details:
-
-- `0001_init.up.sql` enables the `unaccent` extension
-- `0004_campaign_invite.up.sql` uses `gen_random_uuid()`, so PostgreSQL must have `pgcrypto` available before that migration is applied
-- The repo does not include a migration runner; use the SQL files with your preferred migration tool or psql workflow
-- A `session` table is created by migration, but session routes are not currently exposed by the HTTP API
-
-## Running locally
-
-### Option 1: debug mode with `.env`
-
-Debug mode loads `../../.env`, so run it from `cmd/app`:
-
-```bash
-cd cmd/app
-go run . -debug
-```
-
-### Option 2: release mode with shell environment variables
-
-From the repository root:
-
-```bash
-go run ./cmd/app
-```
-
-In release mode the service does not auto-load `.env`, so the environment must already be set in your shell or process manager.
-
-## Docker
-
-Build the image:
-
-```bash
-docker build -t labs.liminal/questmaster/questmaster-core .
-```
-
-Run the container:
-
-```bash
-docker run --rm -p 8080:8080 labs.liminal/questmaster/questmaster-core
-```
 ```mermaid
 erDiagram
     campaign {
@@ -143,4 +60,123 @@ erDiagram
         character_varying_255 slug UK
         text? overview
     }
+
+    character_sheet {
+        bigint id PK "GENERATED BY DEFAULT AS IDENTITY"
+        character_varying_255 name "NOT NULL"
+        uuid player_id FK
+        bigint campaign_id FK "NULLABLE, since a character can exist without a campaign"
+        character_varying_45 game_system "NOT NULL"
+        character_varying_255 slug UK
+        integer? max_hp
+        integer? current_hp
+    }
+
+    campaign_invite {
+        bigint id PK "GENERATED BY DEFAULT AS IDENTITY"
+        bigint campaign_id FK "NOT NULL"
+        uuid hash UK "NOT NULL, DEFAULT gen_random_uuid()"
+    }
+```
+
+---
+
+## HTTP API Reference
+
+Base API Path: `/core/api/v1`
+
+Every endpoint under `/core/api/v1` requires an `Authorization: Bearer <JWT_TOKEN>` header.
+
+### User Endpoints
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/core/api/v1/user` | Retrieve authenticated user information from JWT claims |
+
+### Campaign Endpoints
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/core/api/v1/campaign` | List campaigns for the authenticated user |
+| `POST` | `/core/api/v1/campaign` | Create a new campaign |
+| `GET` | `/core/api/v1/campaign/resolve/:slug` | Resolve campaign slug to details |
+| `GET` | `/core/api/v1/campaign/:campaignID` | Get detailed information for a specific campaign |
+| `PATCH` | `/core/api/v1/campaign/:campaignID/status` | Update campaign status (`DRAFT`, `ACTIVE`, `PAUSED`, `ARCHIVED`) |
+| `DELETE` | `/core/api/v1/campaign/:campaignID` | Delete a campaign |
+
+### Character Endpoints
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/core/api/v1/character` | List character sheets belonging to the authenticated user |
+| `POST` | `/core/api/v1/character` | Create a new character sheet |
+| `GET` | `/core/api/v1/character/resolve/:slug` | Resolve character slug to details |
+| `GET` | `/core/api/v1/character/:characterID` | Get details of a character sheet |
+| `PATCH` | `/core/api/v1/character/:characterID/hp` | Update current/max hit points (HP) of a character sheet |
+| `DELETE` | `/core/api/v1/character/:characterID` | Delete a character sheet |
+
+### Campaign Invite Endpoints
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `POST` | `/core/api/v1/invite` | Generate or retrieve an invite link hash for a campaign |
+| `GET` | `/core/api/v1/invite/:inviteHash` | Inspect invite details by invite hash |
+| `POST` | `/core/api/v1/invite/:inviteHash/accept` | Accept a campaign invite with a specified `character_sheet_id` |
+
+### System & Documentation Endpoints
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/health` | Application health check endpoint |
+| `GET` | `/swagger/*any` | Interactive Swagger UI documentation |
+
+---
+
+## Local Development & Operations
+
+### Running Locally
+
+Ensure environment variables (`DB_URL`, `OIDC_HOST`) are set in your environment:
+
+```bash
+export DB_URL="postgres://postgres:postgres@localhost:5432/questmaster?sslmode=disable"
+export OIDC_HOST="http://localhost:8080/realms/questmaster"
+
+go run ./cmd/app
+```
+
+### Healthcheck Command
+
+The binary includes a healthcheck CLI mode for container health probes:
+
+```bash
+go run ./cmd/app -check-health
+```
+
+### Generating OpenAPI / Swagger Specs
+
+To update the Swagger documentation artifacts in `docs/`:
+
+```bash
+go run github.com/swaggo/swag/cmd/swag@latest init -g cmd/app/main.go --parseInternal
+```
+
+---
+
+## Docker
+
+Build the lightweight production Docker image:
+
+```bash
+docker build -t labs.liminal/questmaster/questmaster-core .
+```
+
+Run the container:
+
+```bash
+docker run --rm \
+  -e DB_URL="postgres://user:password@host.docker.internal:5432/questmaster?sslmode=disable" \
+  -e OIDC_HOST="http://host.docker.internal:8080/realms/questmaster" \
+  -p 8080:8080 \
+  labs.liminal/questmaster/questmaster-core
 ```

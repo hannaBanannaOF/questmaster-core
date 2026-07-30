@@ -161,6 +161,17 @@ definitions:
       slug:
         type: string
     type: object
+  user.UserResponse:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      surname:
+        type: string
+      username:
+        type: string
+    type: object
 info:
   contact: {}
   description: REST APIs of Questmaster for documentation.
@@ -510,7 +521,7 @@ paths:
       - application/json
       description: Updates character HP
       parameters:
-      - description: Campaign ID
+      - description: Character ID
         in: path
         name: characterID
         required: true
@@ -533,12 +544,11 @@ paths:
           schema:
             $ref: '#/definitions/httperrors.HttpError'
         "403":
-          description: Only the DM can update a campaign, or the status transition
-            is invalid
+          description: Only the character's player can update it
           schema:
             $ref: '#/definitions/httperrors.HttpError'
         "404":
-          description: Campaign not found
+          description: Character not found
           schema:
             $ref: '#/definitions/httperrors.HttpError'
         "500":
@@ -629,7 +639,7 @@ paths:
       - v1:invite
   /core/api/v1/invite/{inviteHash}:
     get:
-      description: Gets campaign invite details such as available characters, campiagn
+      description: Gets campaign invite details such as available characters, campaign
         overview and name, etc
       parameters:
       - description: Invite hash
@@ -704,6 +714,38 @@ paths:
       summary: Accept invite
       tags:
       - v1:invite
+  /core/api/v1/user:
+    get:
+      description: Get current user profile
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user.UserResponse'
+        "401":
+          description: Unauthorized - missing or invalid access_token
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+      security:
+      - BearerAuth: []
+      summary: Get current user profile
+      tags:
+      - v1:user
+  /health:
+    get:
+      description: Check application health status
+      responses:
+        "200":
+          description: OK
+      summary: Health check
+      tags:
+      - health
 securityDefinitions:
   BearerAuth:
     in: header

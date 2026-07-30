@@ -11,8 +11,8 @@ func registerUserRoutes(
 	v1 *gin.RouterGroup,
 	handler *userTransport.UserHandler,
 ) {
-	campaign := v1.Group("/user")
+	user := v1.Group("/user")
 	{
-		campaign.GET("", appContext.Adapt(handler.GetInfo))
+		user.GET("", appContext.Adapt(handler.GetInfo))
 	}
 }

@@ -616,7 +616,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Campaign ID",
+                        "description": "Character ID",
                         "name": "characterID",
                         "in": "path",
                         "required": true
@@ -645,13 +645,13 @@ const docTemplate = `{
                         }
                     },
                     "403": {
-                        "description": "Only the DM can update a campaign, or the status transition is invalid",
+                        "description": "Only the character's player can update it",
                         "schema": {
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
                     },
                     "404": {
-                        "description": "Campaign not found",
+                        "description": "Character not found",
                         "schema": {
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
@@ -735,7 +735,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Gets campaign invite details such as available characters, campiagn overview and name, etc",
+                "description": "Gets campaign invite details such as available characters, campaign overview and name, etc",
                 "produces": [
                     "application/json"
                 ],
@@ -843,6 +843,57 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
+                    }
+                }
+            }
+        },
+        "/core/api/v1/user": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get current user profile",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v1:user"
+                ],
+                "summary": "Get current user profile",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user.UserResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid access_token",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "description": "Check application health status",
+                "tags": [
+                    "health"
+                ],
+                "summary": "Health check",
+                "responses": {
+                    "200": {
+                        "description": "OK"
                     }
                 }
             }
@@ -1097,6 +1148,23 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "slug": {
+                    "type": "string"
+                }
+            }
+        },
+        "user.UserResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "surname": {
+                    "type": "string"
+                },
+                "username": {
                     "type": "string"
                 }
             }

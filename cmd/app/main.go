@@ -20,8 +20,6 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-// TO RUN SWAGGER -> go run github.com/swaggo/swag/cmd/swag@latest init -g cmd/app/main.go --parseInternal
-
 // @title Questmaster's APIs
 // @version 1.0
 // @description REST APIs of Questmaster for documentation.
@@ -90,11 +88,18 @@ func main() {
 		AuthMiddleware:   middleware.AuthMiddleware(rsa),
 	})
 
-	router.GET("/health", func(c *gin.Context) {
-		c.Status(http.StatusOK)
-	})
+	router.GET("/health", HealthCheck)
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
 	router.Run(runAddr)
+}
+
+// @Summary      Health check
+// @Description  Check application health status
+// @Tags         health
+// @Success      200
+// @Router       /health [get]
+func HealthCheck(c *gin.Context) {
+	c.Status(http.StatusOK)
 }
