@@ -14,9 +14,13 @@ pkg/mod/
 testdata/
 # Editor/IDE specific files
 .idea/
-.vscode/
+.vscode/*
 *.swp
 *~
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/settings.json
+!.vscode/extensions.json
 # Operating system generated files
 .DS_Store
 Thumbs.db
