@@ -40,13 +40,14 @@ Configure the service using the following environment variables:
 
 ## Database Architecture & Migrations
 
-Database migrations are located in the `migrations/` directory as raw SQL scripts. Apply them sequentially (`0001` through `0005`):
+Database migrations are located in the `migrations/` directory as raw SQL scripts. Apply them sequentially (`0001` through `0006`):
 
 1. `0001_init.up.sql`: Enables PostgreSQL `unaccent` extension.
 2. `0002_campaign_init.up.sql`: Creates `campaign` table and PL/pgSQL slug generation trigger (`trg_generate_slug`).
 3. `0003_character_sheet_init.up.sql`: Creates `character_sheet` table with campaign foreign key and slug generation trigger.
 4. `0004_campaign_invite.up.sql`: Creates `campaign_invite` table with `gen_random_uuid()` hash generation.
 5. `0005_campaign_delete_cascade.up.sql`: Deleting a campaign unlinks its characters (`ON DELETE SET NULL`) and removes its invite (`ON DELETE CASCADE`).
+6. `0006_slug_fallback.up.sql`: Slug triggers fall back to `campaign` / `character` when a name has no ASCII letters or digits, and fixes existing empty slugs.
 
 ### Entity-Relationship Diagram
 

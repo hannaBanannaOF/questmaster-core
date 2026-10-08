@@ -1,6 +1,7 @@
 package campaign
 
 import (
+	"regexp"
 	"testing"
 
 	campaignDomain "questmaster-core/internal/campaign/domain"
@@ -45,6 +46,31 @@ func createLinkedCharacter(t *testing.T, db *pgxpool.Pool, campaignID campaignDo
 		t.Fatalf("link character: %v", err)
 	}
 	return *linked
+}
+
+func TestCampaignSlugs(t *testing.T) {
+	db := testdb.Pool(t)
+	campaigns := NewCampaignRepositoryPG(db)
+
+	t.Run("derived from name without accents and punctuation", func(t *testing.T) {
+		c := createCampaign(t, campaigns, "Mina Assombrada Ébria!", newUser())
+		if !regexp.MustCompile(`^mina-assombrada-ebria(-\d+)?$`).MatchString(c.Slug.Value()) {
+			t.Fatalf("unexpected slug %q", c.Slug.Value())
+		}
+	})
+
+	t.Run("fallback for names without ASCII letters or digits", func(t *testing.T) {
+		dm := newUser()
+		c := createCampaign(t, campaigns, "???", dm)
+		if !regexp.MustCompile(`^campaign(-\d+)?$`).MatchString(c.Slug.Value()) {
+			t.Fatalf("unexpected slug %q", c.Slug.Value())
+		}
+
+		list, err := campaigns.GetByDmId(dm)
+		if err != nil || len(list) != 1 || list[0].Id != c.Id {
+			t.Fatalf("expected the campaign in the DM list, got %v err=%v", list, err)
+		}
+	})
 }
 
 func TestDeleteCampaignKeepsCharactersAndRemovesInvite(t *testing.T) {
