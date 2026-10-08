@@ -158,10 +158,12 @@ go run ./cmd/app -check-health
 
 ### Generating OpenAPI / Swagger Specs
 
-To update the Swagger documentation artifacts in `docs/`:
+The CI workflow (`.github/workflows/ci.yml`) regenerates the Swagger documentation in `docs/` on every push and commits it back to the branch when it changes, so you don't need to run it locally.
+
+To generate it locally anyway (uses the `swag` version pinned in `go.mod`):
 
 ```bash
-go run github.com/swaggo/swag/cmd/swag@latest init -g cmd/app/main.go --parseInternal
+go run github.com/swaggo/swag/cmd/swag init -g cmd/app/main.go --parseInternal
 ```
 
 ---
