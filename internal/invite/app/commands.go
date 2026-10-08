@@ -20,4 +20,5 @@ type AcceptInviteCommand struct {
 
 type CreateInviteCommand struct {
 	CampaignID campaignDomain.CampaignID
+	UserID     userDomain.UserID
 }

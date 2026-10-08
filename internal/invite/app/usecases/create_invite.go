@@ -6,16 +6,27 @@ import (
 )
 
 type CreateInviteUseCase struct {
-	r inviteApp.InviteRepository
+	r             inviteApp.InviteRepository
+	getCampaignUC InviteCampaignFinder
 }
 
-func NewCreateInvite(r inviteApp.InviteRepository) *CreateInviteUseCase {
+func NewCreateInvite(r inviteApp.InviteRepository, getCampaignUC InviteCampaignFinder) *CreateInviteUseCase {
 	return &CreateInviteUseCase{
-		r: r,
+		r:             r,
+		getCampaignUC: getCampaignUC,
 	}
 }
 
 func (uc *CreateInviteUseCase) Execute(cmd inviteApp.CreateInviteCommand) (inviteDomain.Invite, error) {
+	campaign, err := uc.getCampaignUC.FindByID(cmd.CampaignID)
+	if err != nil {
+		return inviteDomain.Invite{}, err
+	}
+
+	if err := campaign.CanEdit(cmd.UserID); err != nil {
+		return inviteDomain.Invite{}, err
+	}
+
 	invite, err := uc.r.Create(cmd.CampaignID)
 	if err != nil {
 		return inviteDomain.Invite{}, err

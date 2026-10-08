@@ -272,7 +272,9 @@ paths:
       tags:
       - v1:campaign
     get:
-      description: Get a more detailed view of the campaign
+      description: Get a more detailed view of the campaign. Only the DM and players
+        with a character in the campaign can see it, and only the DM gets the invite
+        hash
       parameters:
       - description: Campaign ID
         in: path
@@ -288,6 +290,10 @@ paths:
             $ref: '#/definitions/campaign.CampaignDetailResponse'
         "401":
           description: Unauthorized - missing or invalid access_token
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "403":
+          description: Not a member of this campaign
           schema:
             $ref: '#/definitions/httperrors.HttpError'
         "404":
@@ -621,7 +627,11 @@ paths:
           schema:
             $ref: '#/definitions/httperrors.HttpError'
         "403":
-          description: Not allowed to create invite
+          description: Only the DM can create a campaign invite
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "404":
+          description: Campaign not found
           schema:
             $ref: '#/definitions/httperrors.HttpError'
         "409":

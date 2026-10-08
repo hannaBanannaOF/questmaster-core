@@ -22,7 +22,7 @@ func NewInviteModule(
 ) *InviteModule {
 	r := inviteInfra.NewInviteRepositoryPG(db)
 	return &InviteModule{
-		createInviteUC:          inviteUsecases.NewCreateInvite(r),
+		createInviteUC:          inviteUsecases.NewCreateInvite(r, inviteCampaignFinder),
 		getInviteByCampaignIDUC: inviteUsecases.NewGetInviteByCampaignID(r),
 		getInviteDetailsUC:      inviteUsecases.NewGetInviteDetail(r, inviteCampaignFinder),
 		acceptInviteUC:          inviteUsecases.NewAcceptInvite(r, inviteCharacterCampaignLinker),

@@ -89,7 +89,8 @@ func (h *InviteHandler) AcceptInvite(ctx *context.AppContext) error {
 // @Produce json
 // @Success 201 {object} InviteCreateResponse
 // @Failure 401 {object} httperrors.HttpError "Unauthorized - missing or invalid access_token"
-// @Failure 403 {object} httperrors.HttpError "Not allowed to create invite"
+// @Failure 403 {object} httperrors.HttpError "Only the DM can create a campaign invite"
+// @Failure 404 {object} httperrors.HttpError "Campaign not found"
 // @Failure 409 {object} httperrors.HttpError "Invite for campaign already exists"
 // @Failure 500 {object} httperrors.HttpError "Internal server error"
 // @Security BearerAuth
@@ -102,6 +103,7 @@ func (h *InviteHandler) CreateInvite(ctx *context.AppContext) error {
 
 	invite, err := h.createInviteUC.Execute(inviteApp.CreateInviteCommand{
 		CampaignID: campaignDomain.CampaignID(body.CampaignID),
+		UserID:     ctx.UserID(),
 	})
 	if err != nil {
 		return err

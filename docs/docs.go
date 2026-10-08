@@ -17,11 +17,6 @@ const docTemplate = `{
     "paths": {
         "/core/api/v1/campaign": {
             "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
                 "description": "Get current user campaigns as **player** and **DM**",
                 "produces": [
                     "application/json"
@@ -49,14 +44,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
                     }
-                }
-            },
-            "post": {
+                },
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ],
+                ]
+            },
+            "post": {
                 "description": "Create new campaign with status **DRAFT**",
                 "consumes": [
                     "application/json"
@@ -104,16 +99,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
                     }
-                }
-            }
-        },
-        "/core/api/v1/campaign/resolve/{slug}": {
-            "get": {
+                },
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ],
+                ]
+            }
+        },
+        "/core/api/v1/campaign/resolve/{slug}": {
+            "get": {
                 "description": "Resolves the campaign slug to the internal ID",
                 "produces": [
                     "application/json"
@@ -162,17 +157,17 @@ const docTemplate = `{
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
                     }
-                }
-            }
-        },
-        "/core/api/v1/campaign/{campaignID}": {
-            "get": {
+                },
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ],
-                "description": "Get a more detailed view of the campaign",
+                ]
+            }
+        },
+        "/core/api/v1/campaign/{campaignID}": {
+            "get": {
+                "description": "Get a more detailed view of the campaign. Only the DM and players with a character in the campaign can see it, and only the DM gets the invite hash",
                 "produces": [
                     "application/json"
                 ],
@@ -202,6 +197,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
                     },
+                    "403": {
+                        "description": "Not a member of this campaign",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
                     "404": {
                         "description": "Campaign not found",
                         "schema": {
@@ -214,14 +215,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
                     }
-                }
-            },
-            "delete": {
+                },
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ],
+                ]
+            },
+            "delete": {
                 "description": "Deletes a campaign with the status **ARCHIVED** or **DRAFT**",
                 "produces": [
                     "application/json"
@@ -267,16 +268,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
                     }
-                }
-            }
-        },
-        "/core/api/v1/campaign/{campaignID}/status": {
-            "patch": {
+                },
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ],
+                ]
+            }
+        },
+        "/core/api/v1/campaign/{campaignID}/status": {
+            "patch": {
                 "description": "Updates campaign status to the following rules:\n- **DRAFT** -\u003e ACTIVE\n- **ACTIVE** -\u003e PAUSED / ARCHIVED\n- **PAUSED** -\u003e ACTIVE / ARCHIVED",
                 "consumes": [
                     "application/json"
@@ -337,16 +338,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
                     }
-                }
-            }
-        },
-        "/core/api/v1/character": {
-            "get": {
+                },
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ],
+                ]
+            }
+        },
+        "/core/api/v1/character": {
+            "get": {
                 "description": "Get current user characters",
                 "produces": [
                     "application/json"
@@ -374,14 +375,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
                     }
-                }
-            },
-            "post": {
+                },
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ],
+                ]
+            },
+            "post": {
                 "description": "Create new character",
                 "consumes": [
                     "application/json"
@@ -429,16 +430,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
                     }
-                }
-            }
-        },
-        "/core/api/v1/character/resolve/{slug}": {
-            "get": {
+                },
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ],
+                ]
+            }
+        },
+        "/core/api/v1/character/resolve/{slug}": {
+            "get": {
                 "description": "Resolves the character slug to the internal ID",
                 "produces": [
                     "application/json"
@@ -487,16 +488,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
                     }
-                }
-            }
-        },
-        "/core/api/v1/character/{characterID}": {
-            "get": {
+                },
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ],
+                ]
+            }
+        },
+        "/core/api/v1/character/{characterID}": {
+            "get": {
                 "description": "Get a more detailed view of the character",
                 "produces": [
                     "application/json"
@@ -539,14 +540,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
                     }
-                }
-            },
-            "delete": {
+                },
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ],
+                ]
+            },
+            "delete": {
                 "description": "Deletes a character",
                 "produces": [
                     "application/json"
@@ -592,16 +593,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
                     }
-                }
-            }
-        },
-        "/core/api/v1/character/{characterID}/hp": {
-            "patch": {
+                },
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ],
+                ]
+            }
+        },
+        "/core/api/v1/character/{characterID}/hp": {
+            "patch": {
                 "description": "Updates character HP",
                 "consumes": [
                     "application/json"
@@ -662,16 +663,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
                     }
-                }
-            }
-        },
-        "/core/api/v1/invite": {
-            "post": {
+                },
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ],
+                ]
+            }
+        },
+        "/core/api/v1/invite": {
+            "post": {
                 "description": "Create a new campaign invite",
                 "consumes": [
                     "application/json"
@@ -708,7 +709,13 @@ const docTemplate = `{
                         }
                     },
                     "403": {
-                        "description": "Not allowed to create invite",
+                        "description": "Only the DM can create a campaign invite",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "404": {
+                        "description": "Campaign not found",
                         "schema": {
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
@@ -725,16 +732,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
                     }
-                }
-            }
-        },
-        "/core/api/v1/invite/{inviteHash}": {
-            "get": {
+                },
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ],
+                ]
+            }
+        },
+        "/core/api/v1/invite/{inviteHash}": {
+            "get": {
                 "description": "Gets campaign invite details such as available characters, campaign overview and name, etc",
                 "produces": [
                     "application/json"
@@ -777,16 +784,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
                     }
-                }
-            }
-        },
-        "/core/api/v1/invite/{inviteHash}/accept": {
-            "post": {
+                },
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ],
+                ]
+            }
+        },
+        "/core/api/v1/invite/{inviteHash}/accept": {
+            "post": {
                 "description": "Accepts campaign invite linking selected character to campaign",
                 "consumes": [
                     "application/json"
@@ -844,16 +851,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
                     }
-                }
-            }
-        },
-        "/core/api/v1/user": {
-            "get": {
+                },
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ],
+                ]
+            }
+        },
+        "/core/api/v1/user": {
+            "get": {
                 "description": "Get current user profile",
                 "produces": [
                     "application/json"
@@ -881,7 +888,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
             }
         },
         "/health": {
