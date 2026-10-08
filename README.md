@@ -40,7 +40,7 @@ Configure the service using the following environment variables:
 
 ## Database Architecture & Migrations
 
-Database migrations are located in the `migrations/` directory as raw SQL scripts. Apply them sequentially (`0001` through `0006`):
+Database migrations are located in the `migrations/` directory as raw SQL scripts (`NNNN_name.up.sql` / `.down.sql`). They are embedded in the binary and applied with [golang-migrate](https://github.com/golang-migrate/migrate), which records the applied version in the `schema_migrations` table. See [Running migrations](#running-migrations).
 
 1. `0001_init.up.sql`: Enables PostgreSQL `unaccent` extension.
 2. `0002_campaign_init.up.sql`: Creates `campaign` table and PL/pgSQL slug generation trigger (`trg_generate_slug`).
@@ -147,6 +147,7 @@ Ensure environment variables (`DB_URL`, `OIDC_HOST`) are set in your environment
 export DB_URL="postgres://postgres:postgres@localhost:5432/questmaster?sslmode=disable"
 export OIDC_HOST="http://localhost:8080/realms/questmaster"
 
+go run ./cmd/app -migrate
 go run ./cmd/app
 ```
 
@@ -157,6 +158,32 @@ The binary includes a healthcheck CLI mode for container health probes:
 ```bash
 go run ./cmd/app -check-health
 ```
+
+### Running Migrations
+
+The binary applies the embedded migrations itself. Both commands only need `DB_URL`, and exit when done:
+
+| Flag | What it does |
+| --- | --- |
+| `-migrate` | Applies every pending migration in order and records the version. Does nothing if the database is up to date. Exits non-zero if a migration fails. |
+| `-migrate-force <version>` | Records `<version>` as applied **without running anything**, and clears a failed state. Only for the baseline and recovery steps below. |
+
+Two runs at the same time are safe: golang-migrate takes a Postgres advisory lock.
+
+**One-time baseline for an existing database.** Databases created before this mechanism have migrations `0001`–`0004` applied by hand and no `schema_migrations` table. Before the first `-migrate`, record that state, otherwise it would try to apply `0001` again:
+
+```bash
+docker compose run --rm migrate -migrate-force=4
+```
+
+**Recovering from a failed migration.** A failed migration leaves the database marked as *dirty* at that version, and `-migrate` refuses to run until it's cleared. Check what the failed migration already changed, undo it by hand, then force the previous version and run again:
+
+```bash
+docker compose run --rm migrate -migrate-force=<failed version - 1>
+docker compose run --rm migrate
+```
+
+**Rolling back.** The binary only migrates up. To roll back, run the [golang-migrate CLI](https://github.com/golang-migrate/migrate/tree/master/cmd/migrate) `down <n>` against the `migrations/` directory of the same commit, then deploy the previous image.
 
 ### Generating OpenAPI / Swagger Specs
 
@@ -187,3 +214,30 @@ docker run --rm \
   -p 8080:8080 \
   questmaster/questmaster-core
 ```
+
+### Docker Compose
+
+Run migrations as a one-off service that the API waits for. If a migration fails, Compose doesn't start the new API container:
+
+```yaml
+services:
+  migrate:
+    image: ghcr.io/hannabananaof/questmaster/questmaster-core:latest
+    command: ["-migrate"]
+    environment:
+      DB_URL: postgres://user:password@db:5432/questmaster?sslmode=disable
+    restart: "no"
+
+  api:
+    image: ghcr.io/hannabananaof/questmaster/questmaster-core:latest
+    environment:
+      DB_URL: postgres://user:password@db:5432/questmaster?sslmode=disable
+      OIDC_HOST: https://auth.example.com/realms/questmaster
+    ports:
+      - "8080:8080"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+```
+
+`docker compose up -d` then runs `migrate` first and starts `api` only if it exits successfully. If the database runs in the same Compose file, also add it to `migrate`'s `depends_on` with `condition: service_healthy`.

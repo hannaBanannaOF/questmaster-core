@@ -43,15 +43,12 @@ jobs:
         with:
           go-version-file: go.mod
 
-      # Applies every migration, rolls them all back, then applies them again,
-      # so broken down migrations fail the build too
+      # Same command as the Compose migrate service. Rollbacks are covered by the
+      # dbmigrate tests, which use their own throwaway databases
       - name: Apply migrations
-        run: |
-          up() { for f in $(ls migrations/*.up.sql | sort); do psql "$TEST_DB_URL" -v ON_ERROR_STOP=1 -q -f "$f"; done; }
-          down() { for f in $(ls migrations/*.down.sql | sort -r); do psql "$TEST_DB_URL" -v ON_ERROR_STOP=1 -q -f "$f"; done; }
-          up
-          down
-          up
+        run: go run ./cmd/app -migrate
+        env:
+          DB_URL: ${{ env.TEST_DB_URL }}
 
       - name: Vet
         run: go vet ./...
