@@ -1,5 +1,6 @@
 # Stage 1: Builder
-FROM golang:latest AS builder
+# Pinned to the Go minor version from go.mod so builds are reproducible
+FROM golang:1.25 AS builder
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -25,11 +26,19 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o questmaster-core -ldflags=
 # Use a minimal base image like scratch or a distroless image
 FROM scratch
 
+# scratch has no CA bundle; without it HTTPS calls (e.g. the OIDC discovery and JWKS fetch) fail
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+
 # Copy the built binary from the builder stage
 COPY --from=builder /app/questmaster-core /questmaster-core
 
+# Run as an unprivileged user (scratch has no /etc/passwd, so use the numeric "nobody" ids)
+USER 65534:65534
+
 # Expose any ports your application listens on (optional)
 EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD ["/questmaster-core", "-check-health"]
 
 # Specify the command to run when the container starts
 ENTRYPOINT ["/questmaster-core"]

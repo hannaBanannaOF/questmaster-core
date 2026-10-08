@@ -160,10 +160,10 @@ go run ./cmd/app -check-health
 
 The CI workflow (`.github/workflows/ci.yml`) regenerates the Swagger documentation in `docs/` on every push and commits it back to the branch when it changes, so you don't need to run it locally.
 
-To generate it locally anyway (uses the `swag` version pinned in `go.mod`):
+To generate it locally anyway (`swag` is declared as a tool in `go.mod`, which pins its version):
 
 ```bash
-go run github.com/swaggo/swag/cmd/swag init -g cmd/app/main.go --parseInternal
+go tool swag init -g cmd/app/main.go --parseInternal
 ```
 
 ---
