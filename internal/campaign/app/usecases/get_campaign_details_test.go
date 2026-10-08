@@ -79,6 +79,18 @@ func TestGetCampaignDetails(t *testing.T) {
 		}
 	})
 
+	t.Run("campaign not found", func(t *testing.T) {
+		uc := NewGetCampaignDetails(
+			*NewGetCampaignFromID(fakeCampaignRepo{}),
+			fakeCharacterFinder{},
+			&fakeInviteFinder{},
+		)
+		_, err := uc.Execute(campaignApp.GetCampaignDetailsCommand{ID: 1, UserID: dm})
+		if !errors.Is(err, ErrCampaignNotFound) {
+			t.Fatalf("expected ErrCampaignNotFound, got %v", err)
+		}
+	})
+
 	t.Run("outsider is forbidden", func(t *testing.T) {
 		uc := newDetailsUC(dm, player, &fakeInviteFinder{invite: invite})
 		_, err := uc.Execute(campaignApp.GetCampaignDetailsCommand{ID: 1, UserID: outsider})
