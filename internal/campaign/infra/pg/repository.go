@@ -20,14 +20,18 @@ func NewCampaignRepositoryPG(db *pgxpool.Pool) *CampaignRepositoryPG {
 	return &CampaignRepositoryPG{db: db}
 }
 
+// selectCampaign selects campaigns with player_count: the number of distinct players
+// with a character in the campaign, regardless of the WHERE clause appended to it.
+const selectCampaign = `
+	SELECT c.*,
+		(SELECT COUNT(DISTINCT cs.player_id) FROM character_sheet cs WHERE cs.campaign_id = c.id) AS player_count
+	FROM campaign c
+`
+
 func (r *CampaignRepositoryPG) GetByDmId(userID userDomain.UserID) ([]campaignDomain.Campaign, error) {
-	rows, err := r.db.Query(context.Background(), `
-        SELECT c.*, COUNT(cs.id) as player_count
-        FROM campaign c
-		LEFT JOIN character_sheet cs ON cs.campaign_id = c.id
+	rows, err := r.db.Query(context.Background(), selectCampaign+`
 		WHERE c.dm_id = $1
-		GROUP BY c.id
-    `, userID.Value())
+	`, userID.Value())
 	if err != nil {
 		return nil, err
 	}
@@ -51,12 +55,11 @@ func (r *CampaignRepositoryPG) GetByDmId(userID userDomain.UserID) ([]campaignDo
 }
 
 func (r *CampaignRepositoryPG) GetByPlayerId(userID userDomain.UserID) ([]campaignDomain.Campaign, error) {
-	rows, err := r.db.Query(context.Background(), `
-		SELECT DISTINCT c.*, COUNT(cs.id) as player_count
-        FROM campaign c
-		LEFT JOIN character_sheet cs ON cs.campaign_id = c.id
-		WHERE cs.player_id = $1
-		GROUP BY c.id
+	rows, err := r.db.Query(context.Background(), selectCampaign+`
+		WHERE EXISTS (
+			SELECT 1 FROM character_sheet p
+			WHERE p.campaign_id = c.id AND p.player_id = $1
+		)
 	`, userID.Value())
 	if err != nil {
 		return nil, err
@@ -81,12 +84,8 @@ func (r *CampaignRepositoryPG) GetByPlayerId(userID userDomain.UserID) ([]campai
 }
 
 func (r *CampaignRepositoryPG) FindBySlug(slug rpgDomain.Slug) (*campaignDomain.Campaign, error) {
-	rows, err := r.db.Query(context.Background(), `
-		SELECT c.*, COUNT(cs.id) as player_count
-        FROM campaign c
-		LEFT JOIN character_sheet cs ON cs.campaign_id = c.id
+	rows, err := r.db.Query(context.Background(), selectCampaign+`
 		WHERE c.slug = $1
-		GROUP BY c.id	
 	`, slug.Value())
 	if err != nil {
 		return nil, err
@@ -109,12 +108,8 @@ func (r *CampaignRepositoryPG) FindBySlug(slug rpgDomain.Slug) (*campaignDomain.
 }
 
 func (r *CampaignRepositoryPG) FindById(id campaignDomain.CampaignID) (*campaignDomain.Campaign, error) {
-	rows, err := r.db.Query(context.Background(), `
-		SELECT c.*, COUNT(cs.id) as player_count
-        FROM campaign c
-		LEFT JOIN character_sheet cs ON cs.campaign_id = c.id
+	rows, err := r.db.Query(context.Background(), selectCampaign+`
 		WHERE c.id = $1
-		GROUP BY c.id
 	`, id.Value())
 	if err != nil {
 		return nil, err
@@ -168,7 +163,8 @@ func (r *CampaignRepositoryPG) UpdateStatus(newStatus campaignDomain.CampaignSta
 	rows, err := r.db.Query(context.Background(), `
 		UPDATE campaign SET status = $1 
 		WHERE id = $2
-		RETURNING *, 0 as player_count
+		RETURNING *,
+			(SELECT COUNT(DISTINCT cs.player_id) FROM character_sheet cs WHERE cs.campaign_id = campaign.id) AS player_count
 	`, newStatus.Value(), id.Value())
 	if err != nil {
 		return campaignDomain.Campaign{}, err

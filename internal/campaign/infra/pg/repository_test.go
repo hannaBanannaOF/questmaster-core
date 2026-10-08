@@ -107,3 +107,48 @@ func TestDeleteCampaignKeepsCharactersAndRemovesInvite(t *testing.T) {
 		t.Fatalf("expected invite to be removed, got %v err=%v", invite, err)
 	}
 }
+
+func TestPlayerCountCountsDistinctPlayers(t *testing.T) {
+	db := testdb.Pool(t)
+	campaigns := NewCampaignRepositoryPG(db)
+
+	dm := newUser()
+	campaign := createCampaign(t, campaigns, "Crowded campaign", dm)
+	twoCharacters, oneCharacter := newUser(), newUser()
+	createLinkedCharacter(t, db, campaign.Id, twoCharacters)
+	createLinkedCharacter(t, db, campaign.Id, twoCharacters)
+	createLinkedCharacter(t, db, campaign.Id, oneCharacter)
+
+	expectCount := func(source string, list []campaignDomain.Campaign, err error) {
+		t.Helper()
+		if err != nil || len(list) != 1 || list[0].Id != campaign.Id {
+			t.Fatalf("%s: expected only campaign %d, got %v err=%v", source, campaign.Id, list, err)
+		}
+		if list[0].PlayerCount.Value() != 2 {
+			t.Fatalf("%s: expected player count 2, got %d", source, list[0].PlayerCount.Value())
+		}
+	}
+
+	list, err := campaigns.GetByDmId(dm)
+	expectCount("DM list", list, err)
+
+	list, err = campaigns.GetByPlayerId(twoCharacters)
+	expectCount("list of player with two characters", list, err)
+
+	list, err = campaigns.GetByPlayerId(oneCharacter)
+	expectCount("list of player with one character", list, err)
+
+	found, err := campaigns.FindById(campaign.Id)
+	if err != nil || found == nil {
+		t.Fatalf("find by id: %v", err)
+	}
+	expectCount("find by id", []campaignDomain.Campaign{*found}, nil)
+
+	t.Run("campaign without characters", func(t *testing.T) {
+		empty := createCampaign(t, campaigns, "Empty campaign", newUser())
+		found, err := campaigns.FindById(empty.Id)
+		if err != nil || found == nil || found.PlayerCount.Value() != 0 {
+			t.Fatalf("expected player count 0, got %v err=%v", found, err)
+		}
+	})
+}
