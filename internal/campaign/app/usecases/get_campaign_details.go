@@ -2,6 +2,7 @@ package campaign
 
 import (
 	campaignApp "questmaster-core/internal/campaign/app"
+	inviteDomain "questmaster-core/internal/invite/domain"
 )
 
 type GetCampaignDetailsUseCase struct {
@@ -33,9 +34,25 @@ func (uc *GetCampaignDetailsUseCase) Execute(cmd campaignApp.GetCampaignDetailsC
 		return campaignApp.CampaignDetailsReadModel{}, err
 	}
 
-	invite, err := uc.getCampaignInviteUC.GetByCampaignID(cmd.ID)
-	if err != nil {
+	hasCharacter := false
+	for _, c := range characters {
+		if c.IsPlayer(cmd.UserID) {
+			hasCharacter = true
+			break
+		}
+	}
+
+	if err := campaign.CanView(cmd.UserID, hasCharacter); err != nil {
 		return campaignApp.CampaignDetailsReadModel{}, err
+	}
+
+	// The invite hash grants access to the campaign, so only the DM gets it
+	var invite *inviteDomain.Invite
+	if campaign.IsDM(cmd.UserID) {
+		invite, err = uc.getCampaignInviteUC.GetByCampaignID(cmd.ID)
+		if err != nil {
+			return campaignApp.CampaignDetailsReadModel{}, err
+		}
 	}
 
 	input := campaignApp.CampaignDetailsInput{

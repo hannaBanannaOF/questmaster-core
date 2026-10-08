@@ -25,6 +25,9 @@ func (uc *UpdateHPUseCase) Execute(cmd characterApp.UpdateHPCommand) (characterA
 	if character == nil {
 		return characterApp.UpdateHPReadModel{}, ErrCharacterNotFound
 	}
+	if character.Hp == nil {
+		return characterApp.UpdateHPReadModel{}, characterDomain.ErrCharacterWithoutHP
+	}
 
 	var campaignAccess characterDomain.CampaignAccess
 

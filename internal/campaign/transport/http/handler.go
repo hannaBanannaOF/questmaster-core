@@ -184,12 +184,13 @@ func (h *CampaignHandler) UpdateStatus(ctx *context.AppContext) error {
 }
 
 // @Summary Get campaign details
-// @Description Get a more detailed view of the campaign
+// @Description Get a more detailed view of the campaign. Only the DM and players with a character in the campaign can see it, and only the DM gets the invite hash
 // @Tags v1:campaign
 // @Param campaignID path integer true "Campaign ID"
 // @Produce json
 // @Success 200 {object} CampaignDetailResponse
 // @Failure 401 {object} httperrors.HttpError "Unauthorized - missing or invalid access_token"
+// @Failure 403 {object} httperrors.HttpError "Not a member of this campaign"
 // @Failure 404 {object} httperrors.HttpError "Campaign not found"
 // @Failure 500 {object} httperrors.HttpError "Internal server error"
 // @Security BearerAuth
