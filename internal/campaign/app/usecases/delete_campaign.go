@@ -1,20 +1,16 @@
 package campaign
 
 import (
-	"errors"
 	campaignApp "questmaster-core/internal/campaign/app"
-	inviteUsecases "questmaster-core/internal/invite/app/usecases"
 )
 
 type DeleteCampaignUseCase struct {
-	r              campaignApp.CampaignRepository
-	deleteInviteUc CampaignInviteDeleter
+	r campaignApp.CampaignRepository
 }
 
-func NewDeleteCampaign(r campaignApp.CampaignRepository, deleteInviteUc CampaignInviteDeleter) *DeleteCampaignUseCase {
+func NewDeleteCampaign(r campaignApp.CampaignRepository) *DeleteCampaignUseCase {
 	return &DeleteCampaignUseCase{
-		r:              r,
-		deleteInviteUc: deleteInviteUc,
+		r: r,
 	}
 }
 
@@ -32,10 +28,7 @@ func (uc *DeleteCampaignUseCase) Execute(cmd campaignApp.DeleteCampaignCommand) 
 		return err
 	}
 
-	if err := uc.deleteInviteUc.DeleteByCampaignID(cmd.ID); err != nil && !errors.Is(err, inviteUsecases.ErrInviteNotFound) {
-		return err
-	}
-
+	// The foreign keys unlink the campaign's characters and remove its invite (migration 0005)
 	deleted, err := uc.r.DeleteById(cmd.ID)
 	if err != nil {
 		return err

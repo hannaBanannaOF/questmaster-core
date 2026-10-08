@@ -15,7 +15,7 @@ jobs:
     permissions:
       contents: read
 
-    # Repository tests run against a real database; they skip when DB_URL is unset
+    # Repository tests run against a real database; they skip when TEST_DB_URL is unset
     services:
       postgres:
         image: postgres:17
@@ -32,7 +32,7 @@ jobs:
           --health-retries 10
 
     env:
-      DB_URL: postgres://questmaster:questmaster@localhost:5432/questmaster?sslmode=disable
+      TEST_DB_URL: postgres://questmaster:questmaster@localhost:5432/questmaster?sslmode=disable
 
     steps:
       - name: Checkout repository
@@ -47,8 +47,8 @@ jobs:
       # so broken down migrations fail the build too
       - name: Apply migrations
         run: |
-          up() { for f in $(ls migrations/*.up.sql | sort); do psql "$DB_URL" -v ON_ERROR_STOP=1 -q -f "$f"; done; }
-          down() { for f in $(ls migrations/*.down.sql | sort -r); do psql "$DB_URL" -v ON_ERROR_STOP=1 -q -f "$f"; done; }
+          up() { for f in $(ls migrations/*.up.sql | sort); do psql "$TEST_DB_URL" -v ON_ERROR_STOP=1 -q -f "$f"; done; }
+          down() { for f in $(ls migrations/*.down.sql | sort -r); do psql "$TEST_DB_URL" -v ON_ERROR_STOP=1 -q -f "$f"; done; }
           up
           down
           up
