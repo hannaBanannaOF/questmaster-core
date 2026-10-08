@@ -69,6 +69,15 @@ func TestCreateInvite(t *testing.T) {
 		}
 	})
 
+	t.Run("archived campaign is rejected", func(t *testing.T) {
+		repo := &fakeInviteRepo{}
+		archived := fakeCampaignFinder{campaign: campaignDomain.Campaign{Id: 1, Dm: dm, Status: campaignDomain.StatusArchived}}
+		_, err := inviteUsecases.NewCreateInvite(repo, archived).Execute(inviteApp.CreateInviteCommand{CampaignID: 1, UserID: dm})
+		if !errors.Is(err, campaignDomain.ErrCampaignArchived) || repo.created {
+			t.Fatalf("expected ErrCampaignArchived without creating, got %v created=%v", err, repo.created)
+		}
+	})
+
 	t.Run("invite already exists", func(t *testing.T) {
 		repo := &fakeInviteRepo{alreadyExists: true}
 		_, err := inviteUsecases.NewCreateInvite(repo, finder).Execute(inviteApp.CreateInviteCommand{CampaignID: 1, UserID: dm})

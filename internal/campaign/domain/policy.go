@@ -20,6 +20,32 @@ func (c *Campaign) CanView(userID userDomain.UserID, hasCharacter bool) error {
 	return ErrNotCampaignMember
 }
 
+// CanInvite allows the DM to create an invite while the campaign is not archived.
+func (c *Campaign) CanInvite(userID userDomain.UserID) error {
+	if err := c.CanEdit(userID); err != nil {
+		return err
+	}
+
+	if c.Status == StatusArchived {
+		return ErrCampaignArchived
+	}
+
+	return nil
+}
+
+// CanJoin allows anyone but the DM to join through an invite while the campaign is not archived.
+func (c *Campaign) CanJoin(userID userDomain.UserID) error {
+	if c.Status == StatusArchived {
+		return ErrCampaignArchived
+	}
+
+	if c.IsDM(userID) {
+		return ErrDMCannotJoin
+	}
+
+	return nil
+}
+
 func (c *Campaign) CanDelete(userID userDomain.UserID) error {
 	if !c.IsDM(userID) {
 		return ErrNotDM

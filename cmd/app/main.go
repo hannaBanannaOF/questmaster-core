@@ -10,6 +10,7 @@ import (
 	"os"
 	"questmaster-core/cmd/app/bootstrap"
 	"questmaster-core/cmd/app/routes"
+	"questmaster-core/internal/shared/dbmigrate"
 	"questmaster-core/internal/shared/middleware"
 
 	_ "questmaster-core/docs"
@@ -37,7 +38,26 @@ func main() {
 		runAddr = "0.0.0.0:8080"
 	}
 	healthCheck := flag.Bool("check-health", false, "Executa o healthcheck")
+	runMigrations := flag.Bool("migrate", false, "Applies pending database migrations and exits")
+	forceVersion := flag.Int("migrate-force", -1, "Records a migration version without running migrations (baseline or failed-migration recovery) and exits")
 	flag.Parse()
+
+	if *runMigrations {
+		version, err := dbmigrate.Up(os.Getenv("DB_URL"))
+		if err != nil {
+			log.Fatalf("migration failed: %s", err)
+		}
+		log.Printf("database is at migration version %d", version)
+		os.Exit(0)
+	}
+
+	if *forceVersion >= 0 {
+		if err := dbmigrate.Force(os.Getenv("DB_URL"), *forceVersion); err != nil {
+			log.Fatalf("forcing migration version failed: %s", err)
+		}
+		log.Printf("migration version forced to %d", *forceVersion)
+		os.Exit(0)
+	}
 
 	if *healthCheck {
 		_, port, _ := net.SplitHostPort(runAddr)

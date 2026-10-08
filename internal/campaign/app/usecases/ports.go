@@ -13,7 +13,3 @@ type CampaignCharacterFinder interface {
 type CampaignInviteFinder interface {
 	GetByCampaignID(campaignID campaignDomain.CampaignID) (*inviteDomain.Invite, error)
 }
-
-type CampaignInviteDeleter interface {
-	DeleteByCampaignID(campaignID campaignDomain.CampaignID) error
-}

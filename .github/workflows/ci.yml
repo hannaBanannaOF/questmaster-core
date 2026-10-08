@@ -15,6 +15,25 @@ jobs:
     permissions:
       contents: read
 
+    # Repository tests run against a real database; they skip when TEST_DB_URL is unset
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: questmaster
+          POSTGRES_PASSWORD: questmaster
+          POSTGRES_DB: questmaster
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U questmaster"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      TEST_DB_URL: postgres://questmaster:questmaster@localhost:5432/questmaster?sslmode=disable
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -24,11 +43,40 @@ jobs:
         with:
           go-version-file: go.mod
 
+      # Same command as the Compose migrate service. Rollbacks are covered by the
+      # dbmigrate tests, which use their own throwaway databases
+      - name: Apply migrations
+        run: go run ./cmd/app -migrate
+        env:
+          DB_URL: ${{ env.TEST_DB_URL }}
+
       - name: Vet
         run: go vet ./...
 
       - name: Test
         run: go test ./...
+
+  docker:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Builds the image without publishing it, to catch Dockerfile breakage before a release tag
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   swagger:
     needs: test
@@ -45,9 +93,9 @@ jobs:
         with:
           go-version-file: go.mod
 
-      # Uses the swag version pinned in go.mod
+      # swag is declared as a tool in go.mod, so its version is pinned there
       - name: Generate Swagger docs
-        run: go run github.com/swaggo/swag/cmd/swag init -g cmd/app/main.go --parseInternal
+        run: go tool swag init -g cmd/app/main.go --parseInternal
 
       # Commits made with GITHUB_TOKEN don't trigger new workflow runs, so this can't loop
       - name: Commit updated docs

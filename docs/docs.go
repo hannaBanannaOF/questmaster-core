@@ -702,6 +702,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/invite.InviteCreateResponse"
                         }
                     },
+                    "400": {
+                        "description": "Campaign is archived",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
                     "401": {
                         "description": "Unauthorized - missing or invalid access_token",
                         "schema": {
@@ -827,6 +833,12 @@ const docTemplate = `{
                     "204": {
                         "description": "No Content"
                     },
+                    "400": {
+                        "description": "Campaign is archived, or the character is not the requester's, is already in a campaign or has another game system",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
                     "401": {
                         "description": "Unauthorized - missing or invalid access_token",
                         "schema": {
@@ -834,7 +846,7 @@ const docTemplate = `{
                         }
                     },
                     "403": {
-                        "description": "Forbidden - Not character player",
+                        "description": "The DM can't join their own campaign",
                         "schema": {
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
