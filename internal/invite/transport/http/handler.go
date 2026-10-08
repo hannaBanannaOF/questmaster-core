@@ -55,8 +55,9 @@ func (h *InviteHandler) GetInviteDetails(ctx *context.AppContext) error {
 // @Param inviteHash path string true "Invite hash"
 // @Produce json
 // @Success 204
+// @Failure 400 {object} httperrors.HttpError "Campaign is archived, or the character is not the requester's, is already in a campaign or has another game system"
 // @Failure 401 {object} httperrors.HttpError "Unauthorized - missing or invalid access_token"
-// @Failure 403 {object} httperrors.HttpError "Forbidden - Not character player"
+// @Failure 403 {object} httperrors.HttpError "The DM can't join their own campaign"
 // @Failure 404 {object} httperrors.HttpError "Invite not found"
 // @Failure 500 {object} httperrors.HttpError "Internal server error"
 // @Security BearerAuth
@@ -88,6 +89,7 @@ func (h *InviteHandler) AcceptInvite(ctx *context.AppContext) error {
 // @Param request body CreateInviteRequest true "Invite data"
 // @Produce json
 // @Success 201 {object} InviteCreateResponse
+// @Failure 400 {object} httperrors.HttpError "Campaign is archived"
 // @Failure 401 {object} httperrors.HttpError "Unauthorized - missing or invalid access_token"
 // @Failure 403 {object} httperrors.HttpError "Only the DM can create a campaign invite"
 // @Failure 404 {object} httperrors.HttpError "Campaign not found"

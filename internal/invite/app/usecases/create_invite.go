@@ -23,7 +23,7 @@ func (uc *CreateInviteUseCase) Execute(cmd inviteApp.CreateInviteCommand) (invit
 		return inviteDomain.Invite{}, err
 	}
 
-	if err := campaign.CanEdit(cmd.UserID); err != nil {
+	if err := campaign.CanInvite(cmd.UserID); err != nil {
 		return inviteDomain.Invite{}, err
 	}
 

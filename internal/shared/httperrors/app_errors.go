@@ -33,6 +33,7 @@ func From(err error) HttpError {
 		}
 	case errors.Is(err, campaignDomainErr.ErrNotDM),
 		errors.Is(err, campaignDomainErr.ErrNotCampaignMember),
+		errors.Is(err, campaignDomainErr.ErrDMCannotJoin),
 		errors.Is(err, campaignDomainErr.ErrNotDeletableStatus),
 		errors.Is(err, campaignDomainErr.ErrInvalidStatusTransition),
 		errors.Is(err, characterDomainErr.ErrNotPlayer),
@@ -44,6 +45,7 @@ func From(err error) HttpError {
 	case errors.Is(err, characterDomainErr.ErrInvalidCurrentHP),
 		errors.Is(err, campaignDomainErr.ErrEmptyCampaignName),
 		errors.Is(err, campaignDomainErr.ErrInvalidCampaignStatus),
+		errors.Is(err, campaignDomainErr.ErrCampaignArchived),
 		errors.Is(err, characterDomainErr.ErrInvalidMaxHP),
 		errors.Is(err, characterDomainErr.ErrCharacterWithoutHP),
 		errors.Is(err, characterDomainErr.ErrInvalidCharacterName),

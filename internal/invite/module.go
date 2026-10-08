@@ -24,7 +24,7 @@ func NewInviteModule(
 		createInviteUC:          inviteUsecases.NewCreateInvite(r, inviteCampaignFinder),
 		getInviteByCampaignIDUC: inviteUsecases.NewGetInviteByCampaignID(r),
 		getInviteDetailsUC:      inviteUsecases.NewGetInviteDetail(r, inviteCampaignFinder),
-		acceptInviteUC:          inviteUsecases.NewAcceptInvite(r, inviteCharacterCampaignLinker),
+		acceptInviteUC:          inviteUsecases.NewAcceptInvite(r, inviteCampaignFinder, inviteCharacterCampaignLinker),
 	}
 }
 
