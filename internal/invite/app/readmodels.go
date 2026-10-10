@@ -9,4 +9,5 @@ type InviteDetailReadModel struct {
 	CampaignSystem      string
 	CampaignOverview    *string
 	CampaignPlayerCount int
+	IsDM                bool
 }
