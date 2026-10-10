@@ -9,6 +9,7 @@ type InviteDetailsResponse struct {
 	CampaignOverview    *string   `json:"campaign_overview"`
 	CampaignSystem      string    `json:"campaign_system"`
 	CampaignPlayerCount int       `json:"campaign_player_count"`
+	IsDM                bool      `json:"is_dm"`
 }
 
 type InviteCreateResponse struct {

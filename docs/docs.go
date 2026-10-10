@@ -17,7 +17,7 @@ const docTemplate = `{
     "paths": {
         "/core/api/v1/campaign": {
             "get": {
-                "description": "Get current user campaigns as **player** and **DM**",
+                "description": "Get a page of the current user campaigns as **player** and **DM**, ordered by name (ignoring case and accents), then id",
                 "produces": [
                     "application/json"
                 ],
@@ -25,11 +25,55 @@ const docTemplate = `{
                     "v1:campaign"
                 ],
                 "summary": "Get current user campaigns",
+                "parameters": [
+                    {
+                        "enum": [
+                            "dm",
+                            "player"
+                        ],
+                        "type": "string",
+                        "description": "Only campaigns where the user has this role",
+                        "name": "role",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "DRAFT",
+                            "ACTIVE",
+                            "PAUSED",
+                            "ARCHIVED"
+                        ],
+                        "type": "string",
+                        "description": "Only campaigns with this status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "Page size, 1 to 100",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Number of campaigns to skip",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/campaign.CampaignListResponse"
+                            "$ref": "#/definitions/campaign.CampaignListPageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid role, status, limit or offset",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
                         }
                     },
                     "401": {
@@ -83,6 +127,61 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Invalid campaign data",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid access_token",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/core/api/v1/campaign/counts": {
+            "get": {
+                "description": "Number of the current user campaigns in each status. Every status is present, with 0 when there is none",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v1:campaign"
+                ],
+                "summary": "Get current user campaign counts by status",
+                "parameters": [
+                    {
+                        "enum": [
+                            "dm",
+                            "player"
+                        ],
+                        "type": "string",
+                        "description": "Only campaigns where the user has this role",
+                        "name": "role",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/campaign.CampaignStatusCountsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid role",
                         "schema": {
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
@@ -348,7 +447,7 @@ const docTemplate = `{
         },
         "/core/api/v1/character": {
             "get": {
-                "description": "Get current user characters",
+                "description": "Get a page of the current user characters, ordered by name (ignoring case and accents), then id",
                 "produces": [
                     "application/json"
                 ],
@@ -356,11 +455,45 @@ const docTemplate = `{
                     "v1:character"
                 ],
                 "summary": "Get current user characters",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Only characters of this game system",
+                        "name": "game_system",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "true: only characters without a campaign; false: only characters in a campaign",
+                        "name": "without_campaign",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "Page size, 1 to 100",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Number of characters to skip",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/character.CharacterListResponse"
+                            "$ref": "#/definitions/character.CharacterListPageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid game_system, limit or offset",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
                         }
                     },
                     "401": {
@@ -748,7 +881,7 @@ const docTemplate = `{
         },
         "/core/api/v1/invite/{inviteHash}": {
             "get": {
-                "description": "Gets campaign invite details such as available characters, campaign overview and name, etc",
+                "description": "Gets the invite's campaign details (name, overview, game system, player count) for any user holding the hash. ` + "`" + `is_dm` + "`" + ` tells whether the requester is the campaign DM, who can't accept the invite",
                 "produces": [
                     "application/json"
                 ],
@@ -924,6 +1057,17 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "campaign.CampaignCharacterRefResponse": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                }
+            }
+        },
         "campaign.CampaignDetailResponse": {
             "type": "object",
             "properties": {
@@ -973,11 +1117,32 @@ const docTemplate = `{
                 }
             }
         },
+        "campaign.CampaignListPageResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/campaign.CampaignListResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "campaign.CampaignListResponse": {
             "type": "object",
             "properties": {
                 "is_dm": {
                     "type": "boolean"
+                },
+                "my_characters": {
+                    "description": "The requester characters in the campaign, ordered by name; empty when the requester only runs it",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/campaign.CampaignCharacterRefResponse"
+                    }
                 },
                 "name": {
                     "type": "string"
@@ -993,6 +1158,23 @@ const docTemplate = `{
                 },
                 "system": {
                     "type": "string"
+                }
+            }
+        },
+        "campaign.CampaignStatusCountsResponse": {
+            "type": "object",
+            "properties": {
+                "ACTIVE": {
+                    "type": "integer"
+                },
+                "ARCHIVED": {
+                    "type": "integer"
+                },
+                "DRAFT": {
+                    "type": "integer"
+                },
+                "PAUSED": {
+                    "type": "integer"
                 }
             }
         },
@@ -1057,6 +1239,20 @@ const docTemplate = `{
                 },
                 "system": {
                     "type": "string"
+                }
+            }
+        },
+        "character.CharacterListPageResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/character.CharacterListResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
@@ -1157,6 +1353,9 @@ const docTemplate = `{
                 },
                 "invite_hash": {
                     "type": "string"
+                },
+                "is_dm": {
+                    "type": "boolean"
                 }
             }
         },

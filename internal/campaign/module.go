@@ -15,23 +15,26 @@ type CampaignModule struct {
 	getCampaignFromIDUC       *campaignUsecases.GetCampaignFromIDUseCase
 	resolveCampaignSlugUC     *campaignUsecases.ResolveCampaignSlugUseCase
 	updateCampaignStatusUC    *campaignUsecases.UpdateCampaignStatusUseCase
+	getCampaignStatusCountsUC *campaignUsecases.GetCampaignStatusCountsUseCase
 }
 
 func NewCampaignModule(
 	db *pgxpool.Pool,
 	charactersFinder campaignUsecases.CampaignCharacterFinder,
 	inviteFinder campaignUsecases.CampaignInviteFinder,
+	myCharactersFinder campaignUsecases.CampaignPlayerCharactersFinder,
 ) *CampaignModule {
 	r := campaignInfra.NewCampaignRepositoryPG(db)
 	getCampaignFromIDUC := campaignUsecases.NewGetCampaignFromID(r)
 	return &CampaignModule{
 		createcampaignUC:          campaignUsecases.NewCreateCampaign(r),
 		deleteCampaignUC:          campaignUsecases.NewDeleteCampaign(r),
-		getCurrentUserCampaignsUC: campaignUsecases.NewGetCurrentUserMyCampaigns(r),
+		getCurrentUserCampaignsUC: campaignUsecases.NewGetCurrentUserMyCampaigns(r, myCharactersFinder),
 		getCampaignDetailUC:       campaignUsecases.NewGetCampaignDetails(*getCampaignFromIDUC, charactersFinder, inviteFinder),
 		getCampaignFromIDUC:       getCampaignFromIDUC,
 		resolveCampaignSlugUC:     campaignUsecases.NewResolveCampaignSlug(r),
 		updateCampaignStatusUC:    campaignUsecases.NewUpdateStatus(r),
+		getCampaignStatusCountsUC: campaignUsecases.NewGetCampaignStatusCounts(r),
 	}
 }
 
@@ -61,4 +64,8 @@ func (m *CampaignModule) ResolveCampaignSlugUC() *campaignUsecases.ResolveCampai
 
 func (m *CampaignModule) UpdateCampaignStatusUC() *campaignUsecases.UpdateCampaignStatusUseCase {
 	return m.updateCampaignStatusUC
+}
+
+func (m *CampaignModule) GetCampaignStatusCountsUC() *campaignUsecases.GetCampaignStatusCountsUseCase {
+	return m.getCampaignStatusCountsUC
 }

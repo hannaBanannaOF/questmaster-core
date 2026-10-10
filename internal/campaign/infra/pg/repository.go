@@ -3,11 +3,13 @@ package campaign
 import (
 	"context"
 	"errors"
+	"strconv"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	campaignDomain "questmaster-core/internal/campaign/domain"
+	"questmaster-core/internal/shared/pagination"
 	rpgDomain "questmaster-core/internal/rpg/domain"
 	userDomain "questmaster-core/internal/user/domain"
 )
@@ -28,59 +30,99 @@ const selectCampaign = `
 	FROM campaign c
 `
 
-func (r *CampaignRepositoryPG) GetByDmId(userID userDomain.UserID) ([]campaignDomain.Campaign, error) {
-	rows, err := r.db.Query(context.Background(), selectCampaign+`
-		WHERE c.dm_id = $1
-	`, userID.Value())
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	record, err := pgx.CollectRows(rows, pgx.RowToStructByName[CampaignRow])
-	if err != nil {
-		return nil, err
-	}
+// userCampaignsWhere restricts campaigns to the ones where userID is the DM or has a character,
+// narrowed by the list filters. Returns the WHERE clause and its arguments, starting at $1.
+func userCampaignsWhere(userID userDomain.UserID, filters campaignDomain.CampaignListFilters) (string, []any) {
+	const isDM = "c.dm_id = $1"
+	const hasCharacter = "EXISTS (SELECT 1 FROM character_sheet p WHERE p.campaign_id = c.id AND p.player_id = $1)"
 
-	domain := make([]campaignDomain.Campaign, 0)
-
-	for _, c := range record {
-		val, err := MapRowToDomain(c)
-		if err != nil {
-			return nil, err
-		}
-		domain = append(domain, val)
+	var where string
+	switch {
+	case filters.Role == nil:
+		where = "(" + isDM + " OR " + hasCharacter + ")"
+	case *filters.Role == campaignDomain.RoleDM:
+		where = isDM
+	default:
+		where = "c.dm_id <> $1 AND " + hasCharacter
 	}
 
-	return domain, nil
+	args := []any{userID.Value()}
+	if filters.Status != nil {
+		args = append(args, filters.Status.Value())
+		where += " AND c.status = $" + strconv.Itoa(len(args))
+	}
+
+	return " WHERE " + where, args
 }
 
-func (r *CampaignRepositoryPG) GetByPlayerId(userID userDomain.UserID) ([]campaignDomain.Campaign, error) {
-	rows, err := r.db.Query(context.Background(), selectCampaign+`
-		WHERE EXISTS (
-			SELECT 1 FROM character_sheet p
-			WHERE p.campaign_id = c.id AND p.player_id = $1
-		)
-	`, userID.Value())
+// ListForUser returns a page of the campaigns where userID is the DM or has a character,
+// ordered by name ignoring case and accents, then id, and the number of campaigns matching the filters.
+func (r *CampaignRepositoryPG) ListForUser(
+	userID userDomain.UserID,
+	filters campaignDomain.CampaignListFilters,
+	page pagination.Page,
+) (pagination.Result[campaignDomain.Campaign], error) {
+	ctx := context.Background()
+	where, args := userCampaignsWhere(userID, filters)
+
+	var total int
+	if err := r.db.QueryRow(ctx, "SELECT COUNT(*) FROM campaign c"+where, args...).Scan(&total); err != nil {
+		return pagination.Result[campaignDomain.Campaign]{}, err
+	}
+
+	args = append(args, page.Limit, page.Offset)
+	rows, err := r.db.Query(ctx, selectCampaign+where+
+		" ORDER BY unaccent(lower(c.name)), c.id"+
+		" LIMIT $"+strconv.Itoa(len(args)-1)+" OFFSET $"+strconv.Itoa(len(args)), args...)
 	if err != nil {
-		return nil, err
+		return pagination.Result[campaignDomain.Campaign]{}, err
 	}
 	defer rows.Close()
 	record, err := pgx.CollectRows(rows, pgx.RowToStructByName[CampaignRow])
 	if err != nil {
-		return nil, err
+		return pagination.Result[campaignDomain.Campaign]{}, err
 	}
 
-	domain := make([]campaignDomain.Campaign, 0)
-
+	items := make([]campaignDomain.Campaign, 0, len(record))
 	for _, c := range record {
 		val, err := MapRowToDomain(c)
 		if err != nil {
-			return nil, err
+			return pagination.Result[campaignDomain.Campaign]{}, err
 		}
-		domain = append(domain, val)
+		items = append(items, val)
 	}
 
-	return domain, nil
+	return pagination.Result[campaignDomain.Campaign]{Items: items, Total: total}, nil
+}
+
+// CountByStatusForUser counts the campaigns where userID is the DM or has a character, by status.
+// Statuses without campaigns are absent from the result.
+func (r *CampaignRepositoryPG) CountByStatusForUser(
+	userID userDomain.UserID,
+	filters campaignDomain.CampaignListFilters,
+) (map[campaignDomain.CampaignStatus]int, error) {
+	where, args := userCampaignsWhere(userID, filters)
+	rows, err := r.db.Query(context.Background(), "SELECT c.status, COUNT(*) FROM campaign c"+where+" GROUP BY c.status", args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	counts := make(map[campaignDomain.CampaignStatus]int)
+	for rows.Next() {
+		var rawStatus string
+		var count int
+		if err := rows.Scan(&rawStatus, &count); err != nil {
+			return nil, err
+		}
+		status, err := campaignDomain.NewCampaignStatus(rawStatus)
+		if err != nil {
+			return nil, err
+		}
+		counts[status] = count
+	}
+
+	return counts, rows.Err()
 }
 
 func (r *CampaignRepositoryPG) FindBySlug(slug rpgDomain.Slug) (*campaignDomain.Campaign, error) {

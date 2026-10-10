@@ -9,12 +9,30 @@ import (
 	characterInfra "questmaster-core/internal/character/infra/pg"
 	inviteInfra "questmaster-core/internal/invite/infra/pg"
 	rpgDomain "questmaster-core/internal/rpg/domain"
+	"questmaster-core/internal/shared/pagination"
 	"questmaster-core/internal/shared/testdb"
 	userDomain "questmaster-core/internal/user/domain"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+var firstPage = pagination.Page{Limit: pagination.DefaultLimit}
+
+func listFor(
+	t *testing.T,
+	r *CampaignRepositoryPG,
+	user userDomain.UserID,
+	filters campaignDomain.CampaignListFilters,
+	page pagination.Page,
+) pagination.Result[campaignDomain.Campaign] {
+	t.Helper()
+	list, err := r.ListForUser(user, filters, page)
+	if err != nil {
+		t.Fatalf("list campaigns: %v", err)
+	}
+	return list
+}
 
 func newUser() userDomain.UserID {
 	return userDomain.NewUserID(uuid.New())
@@ -66,9 +84,9 @@ func TestCampaignSlugs(t *testing.T) {
 			t.Fatalf("unexpected slug %q", c.Slug.Value())
 		}
 
-		list, err := campaigns.GetByDmId(dm)
-		if err != nil || len(list) != 1 || list[0].Id != c.Id {
-			t.Fatalf("expected the campaign in the DM list, got %v err=%v", list, err)
+		list := listFor(t, campaigns, dm, campaignDomain.CampaignListFilters{}, firstPage)
+		if len(list.Items) != 1 || list.Items[0].Id != c.Id {
+			t.Fatalf("expected the campaign in the DM list, got %v", list.Items)
 		}
 	})
 }
@@ -119,30 +137,26 @@ func TestPlayerCountCountsDistinctPlayers(t *testing.T) {
 	createLinkedCharacter(t, db, campaign.Id, twoCharacters)
 	createLinkedCharacter(t, db, campaign.Id, oneCharacter)
 
-	expectCount := func(source string, list []campaignDomain.Campaign, err error) {
+	expectCount := func(source string, list []campaignDomain.Campaign) {
 		t.Helper()
-		if err != nil || len(list) != 1 || list[0].Id != campaign.Id {
-			t.Fatalf("%s: expected only campaign %d, got %v err=%v", source, campaign.Id, list, err)
+		if len(list) != 1 || list[0].Id != campaign.Id {
+			t.Fatalf("%s: expected only campaign %d, got %v", source, campaign.Id, list)
 		}
 		if list[0].PlayerCount.Value() != 2 {
 			t.Fatalf("%s: expected player count 2, got %d", source, list[0].PlayerCount.Value())
 		}
 	}
 
-	list, err := campaigns.GetByDmId(dm)
-	expectCount("DM list", list, err)
-
-	list, err = campaigns.GetByPlayerId(twoCharacters)
-	expectCount("list of player with two characters", list, err)
-
-	list, err = campaigns.GetByPlayerId(oneCharacter)
-	expectCount("list of player with one character", list, err)
+	all := campaignDomain.CampaignListFilters{}
+	expectCount("DM list", listFor(t, campaigns, dm, all, firstPage).Items)
+	expectCount("list of player with two characters", listFor(t, campaigns, twoCharacters, all, firstPage).Items)
+	expectCount("list of player with one character", listFor(t, campaigns, oneCharacter, all, firstPage).Items)
 
 	found, err := campaigns.FindById(campaign.Id)
 	if err != nil || found == nil {
 		t.Fatalf("find by id: %v", err)
 	}
-	expectCount("find by id", []campaignDomain.Campaign{*found}, nil)
+	expectCount("find by id", []campaignDomain.Campaign{*found})
 
 	t.Run("campaign without characters", func(t *testing.T) {
 		empty := createCampaign(t, campaigns, "Empty campaign", newUser())
@@ -151,4 +165,124 @@ func TestPlayerCountCountsDistinctPlayers(t *testing.T) {
 			t.Fatalf("expected player count 0, got %v err=%v", found, err)
 		}
 	})
+}
+
+func names(list pagination.Result[campaignDomain.Campaign]) []string {
+	out := make([]string, 0, len(list.Items))
+	for _, c := range list.Items {
+		out = append(out, c.Name.Value())
+	}
+	return out
+}
+
+func TestListForUserOrdersAndPaginates(t *testing.T) {
+	campaigns := NewCampaignRepositoryPG(testdb.Pool(t))
+	dm := newUser()
+	for _, name := range []string{"Beta", "alfa", "Ômega"} {
+		createCampaign(t, campaigns, name, dm)
+	}
+	all := campaignDomain.CampaignListFilters{}
+
+	first := listFor(t, campaigns, dm, all, pagination.Page{Limit: 2})
+	if got := names(first); len(got) != 2 || got[0] != "alfa" || got[1] != "Beta" || first.Total != 3 {
+		t.Fatalf("first page: expected [alfa Beta] of 3, got %v of %d", got, first.Total)
+	}
+
+	next := listFor(t, campaigns, dm, all, pagination.Page{Limit: 2, Offset: 2})
+	if got := names(next); len(got) != 1 || got[0] != "Ômega" || next.Total != 3 {
+		t.Fatalf("next page: expected [Ômega] of 3, got %v of %d", got, next.Total)
+	}
+}
+
+func TestListForUserFilters(t *testing.T) {
+	db := testdb.Pool(t)
+	campaigns := NewCampaignRepositoryPG(db)
+	user := newUser()
+
+	// user runs a DRAFT campaign and plays in an ACTIVE one; a third campaign is unrelated
+	createCampaign(t, campaigns, "Mastered", user)
+	played := createCampaign(t, campaigns, "Played", newUser())
+	createLinkedCharacter(t, db, played.Id, user)
+	if _, err := campaigns.UpdateStatus(campaignDomain.StatusActive, played.Id); err != nil {
+		t.Fatalf("activate campaign: %v", err)
+	}
+	createCampaign(t, campaigns, "Someone else's", newUser())
+
+	dm, player := campaignDomain.RoleDM, campaignDomain.RolePlayer
+	active, draft := campaignDomain.StatusActive, campaignDomain.StatusDraft
+
+	cases := []struct {
+		name    string
+		filters campaignDomain.CampaignListFilters
+		want    []string
+	}{
+		{"both roles", campaignDomain.CampaignListFilters{}, []string{"Mastered", "Played"}},
+		{"role dm", campaignDomain.CampaignListFilters{Role: &dm}, []string{"Mastered"}},
+		{"role player", campaignDomain.CampaignListFilters{Role: &player}, []string{"Played"}},
+		{"player and active", campaignDomain.CampaignListFilters{Role: &player, Status: &active}, []string{"Played"}},
+		{"player and draft", campaignDomain.CampaignListFilters{Role: &player, Status: &draft}, []string{}},
+		{"status draft", campaignDomain.CampaignListFilters{Status: &draft}, []string{"Mastered"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			list := listFor(t, campaigns, user, tc.filters, firstPage)
+			got := names(list)
+			if len(got) != len(tc.want) || list.Total != len(tc.want) {
+				t.Fatalf("expected %v (total %d), got %v (total %d)", tc.want, len(tc.want), got, list.Total)
+			}
+			for i := range got {
+				if got[i] != tc.want[i] {
+					t.Fatalf("expected %v, got %v", tc.want, got)
+				}
+			}
+		})
+	}
+}
+
+func TestCountByStatusForUser(t *testing.T) {
+	db := testdb.Pool(t)
+	campaigns := NewCampaignRepositoryPG(db)
+	user := newUser()
+
+	// Runs 2 ACTIVE and 1 DRAFT, plays in 1 ACTIVE; another user's campaign must not count
+	for _, name := range []string{"Active one", "Active two"} {
+		c := createCampaign(t, campaigns, name, user)
+		if _, err := campaigns.UpdateStatus(campaignDomain.StatusActive, c.Id); err != nil {
+			t.Fatalf("activate: %v", err)
+		}
+	}
+	createCampaign(t, campaigns, "Draft", user)
+	played := createCampaign(t, campaigns, "Played", newUser())
+	createLinkedCharacter(t, db, played.Id, user)
+	if _, err := campaigns.UpdateStatus(campaignDomain.StatusActive, played.Id); err != nil {
+		t.Fatalf("activate: %v", err)
+	}
+	createCampaign(t, campaigns, "Someone else's", newUser())
+
+	dm, player := campaignDomain.RoleDM, campaignDomain.RolePlayer
+	cases := []struct {
+		name    string
+		filters campaignDomain.CampaignListFilters
+		want    map[campaignDomain.CampaignStatus]int
+	}{
+		{"role dm", campaignDomain.CampaignListFilters{Role: &dm},
+			map[campaignDomain.CampaignStatus]int{campaignDomain.StatusActive: 2, campaignDomain.StatusDraft: 1}},
+		{"role player", campaignDomain.CampaignListFilters{Role: &player},
+			map[campaignDomain.CampaignStatus]int{campaignDomain.StatusActive: 1}},
+		{"both roles", campaignDomain.CampaignListFilters{},
+			map[campaignDomain.CampaignStatus]int{campaignDomain.StatusActive: 3, campaignDomain.StatusDraft: 1}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := campaigns.CountByStatusForUser(user, tc.filters)
+			if err != nil || len(got) != len(tc.want) {
+				t.Fatalf("expected %v, got %v err=%v", tc.want, got, err)
+			}
+			for status, n := range tc.want {
+				if got[status] != n {
+					t.Fatalf("expected %v, got %v", tc.want, got)
+				}
+			}
+		})
+	}
 }

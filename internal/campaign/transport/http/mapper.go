@@ -4,6 +4,7 @@ import (
 	campaignApp "questmaster-core/internal/campaign/app"
 	campaignDomain "questmaster-core/internal/campaign/domain"
 	rpgTransport "questmaster-core/internal/rpg/transport/http"
+	"questmaster-core/internal/shared/pagination"
 	user "questmaster-core/internal/user/domain"
 )
 
@@ -58,5 +59,31 @@ func MapResolveSlugReadModelToResponse(rm campaignApp.ResolveCampaignSlugReadMod
 func MapCreateCampaignReadModelToResponse(rm campaignApp.CreateCampaignReadModel) rpgTransport.RpgSlugResponse {
 	return rpgTransport.RpgSlugResponse{
 		Slug: rm.Slug,
+	}
+}
+
+func MapListPageToResponse(page pagination.Result[campaignApp.CampaignListItemReadModel], userID user.UserID) CampaignListPageResponse {
+	items := make([]CampaignListResponse, 0, len(page.Items))
+	for _, item := range page.Items {
+		resp := MapListReadModelToResponse(item.Campaign, userID)
+		resp.MyCharacters = make([]CampaignCharacterRefResponse, 0, len(item.MyCharacters))
+		for _, ch := range item.MyCharacters {
+			resp.MyCharacters = append(resp.MyCharacters, CampaignCharacterRefResponse{Slug: ch.Slug, Name: ch.Name})
+		}
+		items = append(items, resp)
+	}
+
+	return CampaignListPageResponse{
+		Items: items,
+		Total: page.Total,
+	}
+}
+
+func MapStatusCountsToResponse(counts campaignApp.CampaignStatusCountsReadModel) CampaignStatusCountsResponse {
+	return CampaignStatusCountsResponse{
+		Draft:    counts[campaignDomain.StatusDraft.Value()],
+		Active:   counts[campaignDomain.StatusActive.Value()],
+		Paused:   counts[campaignDomain.StatusPaused.Value()],
+		Archived: counts[campaignDomain.StatusArchived.Value()],
 	}
 }

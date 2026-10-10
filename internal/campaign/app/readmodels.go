@@ -1,6 +1,10 @@
 package campaign
 
-import "github.com/google/uuid"
+import (
+	campaignDomain "questmaster-core/internal/campaign/domain"
+
+	"github.com/google/uuid"
+)
 
 type CampaignDetailsReadModel struct {
 	Id         int
@@ -20,6 +24,17 @@ type CampaignCharacterReadModel struct {
 	CurrentHP *int
 }
 
+// CampaignListItemReadModel is a campaign of the requester list, with the requester characters in it
+type CampaignListItemReadModel struct {
+	Campaign     campaignDomain.Campaign
+	MyCharacters []CampaignCharacterRefReadModel
+}
+
+type CampaignCharacterRefReadModel struct {
+	Slug string
+	Name string
+}
+
 type CreateCampaignReadModel struct {
 	Slug string
 }
@@ -27,6 +42,9 @@ type CreateCampaignReadModel struct {
 type ResolveCampaignSlugReadModel struct {
 	ID int
 }
+
+// CampaignStatusCountsReadModel has an entry for every campaign status
+type CampaignStatusCountsReadModel map[string]int
 
 type UpdateCampaignStatusReadModel struct {
 	Status string

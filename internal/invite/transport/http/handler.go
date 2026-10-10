@@ -24,7 +24,7 @@ func NewInviteHandler(getInviteDetailUC *inviteUsecases.GetInviteDetailUseCase, 
 }
 
 // @Summary Get campaign invite details
-// @Description Gets campaign invite details such as available characters, campaign overview and name, etc
+// @Description Gets the invite's campaign details (name, overview, game system, player count) for any user holding the hash. `is_dm` tells whether the requester is the campaign DM, who can't accept the invite
 // @Tags v1:invite
 // @Param inviteHash path string true "Invite hash"
 // @Produce json

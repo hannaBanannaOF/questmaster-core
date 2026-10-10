@@ -1,4 +1,11 @@
 definitions:
+  campaign.CampaignCharacterRefResponse:
+    properties:
+      name:
+        type: string
+      slug:
+        type: string
+    type: object
   campaign.CampaignDetailResponse:
     properties:
       characters:
@@ -31,10 +38,25 @@ definitions:
       name:
         type: string
     type: object
+  campaign.CampaignListPageResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/campaign.CampaignListResponse'
+        type: array
+      total:
+        type: integer
+    type: object
   campaign.CampaignListResponse:
     properties:
       is_dm:
         type: boolean
+      my_characters:
+        description: The requester characters in the campaign, ordered by name; empty
+          when the requester only runs it
+        items:
+          $ref: '#/definitions/campaign.CampaignCharacterRefResponse'
+        type: array
       name:
         type: string
       player_count:
@@ -45,6 +67,17 @@ definitions:
         type: string
       system:
         type: string
+    type: object
+  campaign.CampaignStatusCountsResponse:
+    properties:
+      ACTIVE:
+        type: integer
+      ARCHIVED:
+        type: integer
+      DRAFT:
+        type: integer
+      PAUSED:
+        type: integer
     type: object
   campaign.CampaignStatusResponse:
     properties:
@@ -86,6 +119,15 @@ definitions:
         type: string
       system:
         type: string
+    type: object
+  character.CharacterListPageResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/character.CharacterListResponse'
+        type: array
+      total:
+        type: integer
     type: object
   character.CharacterListResponse:
     properties:
@@ -150,6 +192,8 @@ definitions:
         type: string
       invite_hash:
         type: string
+      is_dm:
+        type: boolean
     type: object
   rpg.RpgIdResponse:
     properties:
@@ -180,14 +224,46 @@ info:
 paths:
   /core/api/v1/campaign:
     get:
-      description: Get current user campaigns as **player** and **DM**
+      description: Get a page of the current user campaigns as **player** and **DM**,
+        ordered by name (ignoring case and accents), then id
+      parameters:
+      - description: Only campaigns where the user has this role
+        enum:
+        - dm
+        - player
+        in: query
+        name: role
+        type: string
+      - description: Only campaigns with this status
+        enum:
+        - DRAFT
+        - ACTIVE
+        - PAUSED
+        - ARCHIVED
+        in: query
+        name: status
+        type: string
+      - default: 50
+        description: Page size, 1 to 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Number of campaigns to skip
+        in: query
+        name: offset
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/campaign.CampaignListResponse'
+            $ref: '#/definitions/campaign.CampaignListPageResponse'
+        "400":
+          description: Invalid role, status, limit or offset
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
         "401":
           description: Unauthorized - missing or invalid access_token
           schema:
@@ -359,6 +435,42 @@ paths:
       summary: Update Status
       tags:
       - v1:campaign
+  /core/api/v1/campaign/counts:
+    get:
+      description: Number of the current user campaigns in each status. Every status
+        is present, with 0 when there is none
+      parameters:
+      - description: Only campaigns where the user has this role
+        enum:
+        - dm
+        - player
+        in: query
+        name: role
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/campaign.CampaignStatusCountsResponse'
+        "400":
+          description: Invalid role
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "401":
+          description: Unauthorized - missing or invalid access_token
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+      security:
+      - BearerAuth: []
+      summary: Get current user campaign counts by status
+      tags:
+      - v1:campaign
   /core/api/v1/campaign/resolve/{slug}:
     get:
       description: Resolves the campaign slug to the internal ID
@@ -398,14 +510,39 @@ paths:
       - v1:campaign
   /core/api/v1/character:
     get:
-      description: Get current user characters
+      description: Get a page of the current user characters, ordered by name (ignoring
+        case and accents), then id
+      parameters:
+      - description: Only characters of this game system
+        in: query
+        name: game_system
+        type: string
+      - description: 'true: only characters without a campaign; false: only characters
+          in a campaign'
+        in: query
+        name: without_campaign
+        type: boolean
+      - default: 50
+        description: Page size, 1 to 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Number of characters to skip
+        in: query
+        name: offset
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/character.CharacterListResponse'
+            $ref: '#/definitions/character.CharacterListPageResponse'
+        "400":
+          description: Invalid game_system, limit or offset
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
         "401":
           description: Unauthorized - missing or invalid access_token
           schema:
@@ -653,8 +790,9 @@ paths:
       - v1:invite
   /core/api/v1/invite/{inviteHash}:
     get:
-      description: Gets campaign invite details such as available characters, campaign
-        overview and name, etc
+      description: Gets the invite's campaign details (name, overview, game system,
+        player count) for any user holding the hash. `is_dm` tells whether the requester
+        is the campaign DM, who can't accept the invite
       parameters:
       - description: Invite hash
         in: path

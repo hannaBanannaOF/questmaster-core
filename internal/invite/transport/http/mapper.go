@@ -15,6 +15,7 @@ func MapInviteDetailsReadModelToResponse(rm inviteApp.InviteDetailReadModel) Inv
 		CampaignOverview:    rm.CampaignOverview,
 		CampaignSystem:      rm.CampaignSystem,
 		CampaignPlayerCount: rm.CampaignPlayerCount,
+		IsDM:                rm.IsDM,
 	}
 }
 

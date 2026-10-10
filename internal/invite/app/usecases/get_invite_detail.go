@@ -33,5 +33,5 @@ func (uc *GetInviteDetailUseCase) Execute(cmd inviteApp.GetinviteDetailsCommand)
 		return inviteApp.InviteDetailReadModel{}, err
 	}
 
-	return inviteApp.MapDomainToInviteDetailsReadModel(cmd.Hash, campaign), nil
+	return inviteApp.MapDomainToInviteDetailsReadModel(cmd.Hash, campaign, cmd.UserID), nil
 }

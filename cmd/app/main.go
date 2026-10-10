@@ -97,7 +97,6 @@ func main() {
 		gin.Logger(),
 		gin.Recovery(),
 		middleware.ErrorHandlerMiddleware(),
-		middleware.QueryParamsMiddleware(),
 	)
 
 	routes.RegisterV1Routes(router, routes.V1RoutesDeps{

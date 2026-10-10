@@ -3,6 +3,7 @@ package character
 import (
 	characterDomain "questmaster-core/internal/character/domain"
 	rpgDomain "questmaster-core/internal/rpg/domain"
+	"questmaster-core/internal/shared/pagination"
 	userDomain "questmaster-core/internal/user/domain"
 )
 
@@ -24,7 +25,8 @@ type GetCharacterDetailsCommand struct {
 
 type GetCurrentUserCharactersCommand struct {
 	UserID  userDomain.UserID
-	Filters *characterDomain.CharacterListFilters
+	Filters characterDomain.CharacterListFilters
+	Page    pagination.Page
 }
 
 type UpdateHPCommand struct {
