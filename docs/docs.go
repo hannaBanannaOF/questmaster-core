@@ -151,6 +151,61 @@ const docTemplate = `{
                 ]
             }
         },
+        "/core/api/v1/campaign/counts": {
+            "get": {
+                "description": "Number of the current user campaigns in each status. Every status is present, with 0 when there is none",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v1:campaign"
+                ],
+                "summary": "Get current user campaign counts by status",
+                "parameters": [
+                    {
+                        "enum": [
+                            "dm",
+                            "player"
+                        ],
+                        "type": "string",
+                        "description": "Only campaigns where the user has this role",
+                        "name": "role",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/campaign.CampaignStatusCountsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid role",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid access_token",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
         "/core/api/v1/campaign/resolve/{slug}": {
             "get": {
                 "description": "Resolves the campaign slug to the internal ID",
@@ -1002,6 +1057,17 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "campaign.CampaignCharacterRefResponse": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                }
+            }
+        },
         "campaign.CampaignDetailResponse": {
             "type": "object",
             "properties": {
@@ -1071,6 +1137,13 @@ const docTemplate = `{
                 "is_dm": {
                     "type": "boolean"
                 },
+                "my_characters": {
+                    "description": "The requester characters in the campaign, ordered by name; empty when the requester only runs it",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/campaign.CampaignCharacterRefResponse"
+                    }
+                },
                 "name": {
                     "type": "string"
                 },
@@ -1085,6 +1158,23 @@ const docTemplate = `{
                 },
                 "system": {
                     "type": "string"
+                }
+            }
+        },
+        "campaign.CampaignStatusCountsResponse": {
+            "type": "object",
+            "properties": {
+                "ACTIVE": {
+                    "type": "integer"
+                },
+                "ARCHIVED": {
+                    "type": "integer"
+                },
+                "DRAFT": {
+                    "type": "integer"
+                },
+                "PAUSED": {
+                    "type": "integer"
                 }
             }
         },

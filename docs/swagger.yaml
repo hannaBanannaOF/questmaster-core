@@ -1,4 +1,11 @@
 definitions:
+  campaign.CampaignCharacterRefResponse:
+    properties:
+      name:
+        type: string
+      slug:
+        type: string
+    type: object
   campaign.CampaignDetailResponse:
     properties:
       characters:
@@ -44,6 +51,12 @@ definitions:
     properties:
       is_dm:
         type: boolean
+      my_characters:
+        description: The requester characters in the campaign, ordered by name; empty
+          when the requester only runs it
+        items:
+          $ref: '#/definitions/campaign.CampaignCharacterRefResponse'
+        type: array
       name:
         type: string
       player_count:
@@ -54,6 +67,17 @@ definitions:
         type: string
       system:
         type: string
+    type: object
+  campaign.CampaignStatusCountsResponse:
+    properties:
+      ACTIVE:
+        type: integer
+      ARCHIVED:
+        type: integer
+      DRAFT:
+        type: integer
+      PAUSED:
+        type: integer
     type: object
   campaign.CampaignStatusResponse:
     properties:
@@ -409,6 +433,42 @@ paths:
       security:
       - BearerAuth: []
       summary: Update Status
+      tags:
+      - v1:campaign
+  /core/api/v1/campaign/counts:
+    get:
+      description: Number of the current user campaigns in each status. Every status
+        is present, with 0 when there is none
+      parameters:
+      - description: Only campaigns where the user has this role
+        enum:
+        - dm
+        - player
+        in: query
+        name: role
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/campaign.CampaignStatusCountsResponse'
+        "400":
+          description: Invalid role
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "401":
+          description: Unauthorized - missing or invalid access_token
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+      security:
+      - BearerAuth: []
+      summary: Get current user campaign counts by status
       tags:
       - v1:campaign
   /core/api/v1/campaign/resolve/{slug}:
