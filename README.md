@@ -2,6 +2,8 @@
 
 **Questmaster Core** is the authenticated core backend API for the Questmaster platform. Built with Go and the Gin framework, it manages campaigns, player character sheets, and campaign invitation flows while providing OpenID Connect (OIDC) JWT validation and swagger-driven API documentation.
 
+**API documentation:** https://hannabananaof.github.io/questmaster-core/
+
 ---
 
 ## Features & Capabilities
@@ -194,6 +196,10 @@ To generate it locally anyway (`swag` is declared as a tool in `go.mod`, which p
 ```bash
 go tool swag init -g cmd/app/main.go --parseInternal
 ```
+
+### Published API Documentation
+
+The Pages workflow (`.github/workflows/pages.yml`) publishes the Swagger UI to [GitHub Pages](https://hannabananaof.github.io/questmaster-core/) on every push to `main`, generating `swagger.json` from the source at that commit. The page is read-only: "Try it out" is disabled, since every endpoint needs a Keycloak token. The page itself is `pages/index.html`.
 
 ---
 
