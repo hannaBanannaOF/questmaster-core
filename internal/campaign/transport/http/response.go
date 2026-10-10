@@ -32,3 +32,8 @@ type CampaignDetailResponseCharacterItem struct {
 	Name      string `json:"name"`
 	CurrentHP *int   `json:"current_hp"`
 }
+
+type CampaignListPageResponse struct {
+	Items []CampaignListResponse `json:"items"`
+	Total int                    `json:"total"`
+}

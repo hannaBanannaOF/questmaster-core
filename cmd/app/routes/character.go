@@ -4,6 +4,7 @@ import (
 	characterTransport "questmaster-core/internal/character/transport/http"
 	rpgTransport "questmaster-core/internal/rpg/transport/http"
 	appContext "questmaster-core/internal/shared/context"
+	"questmaster-core/internal/shared/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,7 +15,7 @@ func registerCharacterRoutes(
 ) {
 	character := v1.Group("/character")
 	{
-		character.GET("", appContext.Adapt(handler.GetCurrentUserCharacters))
+		character.GET("", middleware.PageMiddleware(), characterTransport.CharacterListFiltersMiddleware(), appContext.Adapt(handler.GetCurrentUserCharacters))
 		character.POST("", appContext.Adapt(handler.CreateCharacter))
 		character.GET("/resolve/:slug", rpgTransport.SlugMiddleware(), appContext.Adapt(handler.ResolveSlug))
 		character.GET("/:characterID", characterTransport.CharacterIDMiddleware(), appContext.Adapt(handler.GetDetails))

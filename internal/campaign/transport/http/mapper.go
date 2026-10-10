@@ -4,6 +4,7 @@ import (
 	campaignApp "questmaster-core/internal/campaign/app"
 	campaignDomain "questmaster-core/internal/campaign/domain"
 	rpgTransport "questmaster-core/internal/rpg/transport/http"
+	"questmaster-core/internal/shared/pagination"
 	user "questmaster-core/internal/user/domain"
 )
 
@@ -58,5 +59,17 @@ func MapResolveSlugReadModelToResponse(rm campaignApp.ResolveCampaignSlugReadMod
 func MapCreateCampaignReadModelToResponse(rm campaignApp.CreateCampaignReadModel) rpgTransport.RpgSlugResponse {
 	return rpgTransport.RpgSlugResponse{
 		Slug: rm.Slug,
+	}
+}
+
+func MapListPageToResponse(page pagination.Result[campaignDomain.Campaign], userID user.UserID) CampaignListPageResponse {
+	items := make([]CampaignListResponse, 0, len(page.Items))
+	for _, c := range page.Items {
+		items = append(items, MapListReadModelToResponse(c, userID))
+	}
+
+	return CampaignListPageResponse{
+		Items: items,
+		Total: page.Total,
 	}
 }

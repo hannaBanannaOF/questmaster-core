@@ -21,3 +21,8 @@ type CharacterDetailResponse struct {
 type CharacterCurrentHpResponse struct {
 	CurrentHP int `json:"current_hp"`
 }
+
+type CharacterListPageResponse struct {
+	Items []CharacterListResponse `json:"items"`
+	Total int                     `json:"total"`
+}

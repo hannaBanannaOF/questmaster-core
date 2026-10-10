@@ -2,6 +2,7 @@ package campaign
 
 import (
 	campaignDomain "questmaster-core/internal/campaign/domain"
+	"questmaster-core/internal/shared/pagination"
 	rpgDomain "questmaster-core/internal/rpg/domain"
 	userDomain "questmaster-core/internal/user/domain"
 )
@@ -19,7 +20,9 @@ type DeleteCampaignCommand struct {
 }
 
 type GetCurrentUserCampaignsCommand struct {
-	UserID userDomain.UserID
+	UserID  userDomain.UserID
+	Filters campaignDomain.CampaignListFilters
+	Page    pagination.Page
 }
 
 type GetCampaignDetailsCommand struct {

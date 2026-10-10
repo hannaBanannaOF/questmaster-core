@@ -40,10 +40,15 @@ func NewCharactersHandler(
 }
 
 // @Summary Get current user characters
-// @Description Get current user characters
+// @Description Get a page of the current user characters, ordered by name (ignoring case and accents), then id
 // @Tags v1:character
+// @Param game_system query string false "Only characters of this game system"
+// @Param without_campaign query boolean false "true: only characters without a campaign; false: only characters in a campaign"
+// @Param limit query integer false "Page size, 1 to 100" default(50)
+// @Param offset query integer false "Number of characters to skip" default(0)
 // @Produce json
-// @Success 200 {object} CharacterListResponse
+// @Success 200 {object} CharacterListPageResponse
+// @Failure 400 {object} httperrors.HttpError "Invalid game_system, limit or offset"
 // @Failure 401 {object} httperrors.HttpError "Unauthorized - missing or invalid access_token"
 // @Failure 500 {object} httperrors.HttpError "Internal server error"
 // @Security BearerAuth
@@ -51,19 +56,14 @@ func NewCharactersHandler(
 func (h *CharactersHandler) GetCurrentUserCharacters(ctx *context.AppContext) error {
 	characters, err := h.getCurrentUserCharactersUC.Execute(characterApp.GetCurrentUserCharactersCommand{
 		UserID:  ctx.UserID(),
-		Filters: ctx.Filters().CharacterListFilters,
+		Filters: ctx.CharacterListFilters(),
+		Page:    ctx.Page(),
 	})
 	if err != nil {
 		return err
 	}
 
-	response := make([]CharacterListResponse, 0, len(characters))
-
-	for _, c := range characters {
-		response = append(response, MapListReadModelToResponse(c))
-	}
-
-	ctx.JSON(http.StatusOK, response)
+	ctx.JSON(http.StatusOK, MapListPageToResponse(characters))
 	return nil
 }
 

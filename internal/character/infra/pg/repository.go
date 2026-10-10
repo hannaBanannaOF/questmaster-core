@@ -11,6 +11,7 @@ import (
 	campaignDomain "questmaster-core/internal/campaign/domain"
 	characterDomain "questmaster-core/internal/character/domain"
 	rpgDomain "questmaster-core/internal/rpg/domain"
+	"questmaster-core/internal/shared/pagination"
 	userDomain "questmaster-core/internal/user/domain"
 )
 
@@ -22,53 +23,59 @@ func NewCharacterRepositoryPG(db *pgxpool.Pool) *CharacterRepositoryPG {
 	return &CharacterRepositoryPG{db: db}
 }
 
+// GetAllByPlayerIDWithFilters returns a page of the player characters matching the filters,
+// ordered by name ignoring case and accents, then id, and the number of characters matching the filters.
 func (r *CharacterRepositoryPG) GetAllByPlayerIDWithFilters(
 	userID userDomain.UserID,
-	filters *characterDomain.CharacterListFilters,
-) ([]characterDomain.Character, error) {
-	query := `
-        SELECT cs.*
-        FROM character_sheet cs
-        WHERE cs.player_id = $1
-    `
+	filters characterDomain.CharacterListFilters,
+	page pagination.Page,
+) (pagination.Result[characterDomain.Character], error) {
+	ctx := context.Background()
+	where := " WHERE cs.player_id = $1"
 	args := []any{userID.Value()}
-	argCount := 1
+
 	if filters.GameSystem != nil {
-		argCount++
-		query += " AND cs.game_system = $" + strconv.Itoa(argCount)
 		args = append(args, filters.GameSystem.Value())
+		where += " AND cs.game_system = $" + strconv.Itoa(len(args))
 	}
 
 	if filters.WithoutCampaign != nil {
-		if *filters.WithoutCampaign == true {
-			query += " AND cs.campaign_id IS NULL"
+		if *filters.WithoutCampaign {
+			where += " AND cs.campaign_id IS NULL"
 		} else {
-			query += " AND cs.campaign_id IS NOT NULL"
+			where += " AND cs.campaign_id IS NOT NULL"
 		}
-
 	}
 
-	rows, err := r.db.Query(context.Background(), query, args...)
+	var total int
+	if err := r.db.QueryRow(ctx, "SELECT COUNT(*) FROM character_sheet cs"+where, args...).Scan(&total); err != nil {
+		return pagination.Result[characterDomain.Character]{}, err
+	}
+
+	args = append(args, page.Limit, page.Offset)
+	rows, err := r.db.Query(ctx, "SELECT cs.* FROM character_sheet cs"+where+
+		" ORDER BY unaccent(lower(cs.name)), cs.id"+
+		" LIMIT $"+strconv.Itoa(len(args)-1)+" OFFSET $"+strconv.Itoa(len(args)), args...)
 	if err != nil {
-		return nil, err
+		return pagination.Result[characterDomain.Character]{}, err
 	}
 	defer rows.Close()
 
 	record, err := pgx.CollectRows(rows, pgx.RowToStructByName[CharacterRow])
 	if err != nil {
-		return nil, err
+		return pagination.Result[characterDomain.Character]{}, err
 	}
 
-	domain := make([]characterDomain.Character, 0, len(record))
+	items := make([]characterDomain.Character, 0, len(record))
 	for _, c := range record {
 		val, err := MapRowToDomain(c)
 		if err != nil {
-			return nil, err
+			return pagination.Result[characterDomain.Character]{}, err
 		}
-		domain = append(domain, val)
+		items = append(items, val)
 	}
 
-	return domain, nil
+	return pagination.Result[characterDomain.Character]{Items: items, Total: total}, nil
 }
 
 func (r *CharacterRepositoryPG) GetAllByCampaignID(campaignID campaignDomain.CampaignID) ([]characterDomain.Character, error) {

@@ -39,29 +39,30 @@ func NewCampaignHandler(
 }
 
 // @Summary Get current user campaigns
-// @Description Get current user campaigns as **player** and **DM**
+// @Description Get a page of the current user campaigns as **player** and **DM**, ordered by name (ignoring case and accents), then id
 // @Tags v1:campaign
+// @Param role query string false "Only campaigns where the user has this role" Enums(dm, player)
+// @Param status query string false "Only campaigns with this status" Enums(DRAFT, ACTIVE, PAUSED, ARCHIVED)
+// @Param limit query integer false "Page size, 1 to 100" default(50)
+// @Param offset query integer false "Number of campaigns to skip" default(0)
 // @Produce json
-// @Success 200 {object} CampaignListResponse
+// @Success 200 {object} CampaignListPageResponse
+// @Failure 400 {object} httperrors.HttpError "Invalid role, status, limit or offset"
 // @Failure 401 {object} httperrors.HttpError "Unauthorized - missing or invalid access_token"
 // @Failure 500 {object} httperrors.HttpError "Internal server error"
 // @Security BearerAuth
 // @Router /core/api/v1/campaign [get]
 func (h *CampaignHandler) GetCurrentUserCampaigns(ctx *context.AppContext) error {
 	campaigns, err := h.getCurrentUserCampaignsUC.Execute(campaignApp.GetCurrentUserCampaignsCommand{
-		UserID: ctx.UserID(),
+		UserID:  ctx.UserID(),
+		Filters: ctx.CampaignListFilters(),
+		Page:    ctx.Page(),
 	})
 	if err != nil {
 		return err
 	}
 
-	response := make([]CampaignListResponse, 0, len(campaigns))
-
-	for _, c := range campaigns {
-		response = append(response, MapListReadModelToResponse(c, ctx.UserID()))
-	}
-
-	ctx.JSON(http.StatusOK, response)
+	ctx.JSON(http.StatusOK, MapListPageToResponse(campaigns, ctx.UserID()))
 	return nil
 }
 

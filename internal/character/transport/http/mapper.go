@@ -4,6 +4,7 @@ import (
 	characterApp "questmaster-core/internal/character/app"
 	characterDomain "questmaster-core/internal/character/domain"
 	rpgTransport "questmaster-core/internal/rpg/transport/http"
+	"questmaster-core/internal/shared/pagination"
 	userDomain "questmaster-core/internal/user/domain"
 )
 
@@ -66,5 +67,17 @@ func MapCreateCharacterReadModelToResponse(rm characterApp.CreateCharacterReadMo
 func MapResolveSlugReadModelToResponse(rm characterApp.CharacterResolveSlugReadModel) rpgTransport.RpgIdResponse {
 	return rpgTransport.RpgIdResponse{
 		ID: rm.ID,
+	}
+}
+
+func MapListPageToResponse(page pagination.Result[characterDomain.Character]) CharacterListPageResponse {
+	items := make([]CharacterListResponse, 0, len(page.Items))
+	for _, c := range page.Items {
+		items = append(items, MapListReadModelToResponse(c))
+	}
+
+	return CharacterListPageResponse{
+		Items: items,
+		Total: page.Total,
 	}
 }

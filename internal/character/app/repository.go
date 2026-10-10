@@ -4,11 +4,12 @@ import (
 	campaignDomain "questmaster-core/internal/campaign/domain"
 	characterDomain "questmaster-core/internal/character/domain"
 	rpgDomain "questmaster-core/internal/rpg/domain"
+	"questmaster-core/internal/shared/pagination"
 	userDomain "questmaster-core/internal/user/domain"
 )
 
 type CharacterRepository interface {
-	GetAllByPlayerIDWithFilters(userID userDomain.UserID, filters *characterDomain.CharacterListFilters) ([]characterDomain.Character, error)
+	GetAllByPlayerIDWithFilters(userID userDomain.UserID, filters characterDomain.CharacterListFilters, page pagination.Page) (pagination.Result[characterDomain.Character], error)
 	GetAllByCampaignID(campaignID campaignDomain.CampaignID) ([]characterDomain.Character, error)
 	FindBySlug(slug rpgDomain.Slug) (*characterDomain.Character, error)
 	FindByID(characterID characterDomain.CharacterID) (*characterDomain.Character, error)
