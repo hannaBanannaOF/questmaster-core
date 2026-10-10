@@ -1,0 +1,59 @@
+name: Pages
+
+on:
+  push:
+    branches:
+      - main
+  # Builds the site on PRs to catch breakage; only main deploys
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      # Generated here instead of reading docs/: the CI commit that refreshes docs/ uses
+      # GITHUB_TOKEN, which doesn't trigger this workflow, so docs/ on main can lag one push
+      - name: Generate swagger.json
+        run: go tool swag init -g cmd/app/main.go --parseInternal --outputTypes json --output _site
+
+      - name: Add Swagger UI page
+        run: cp pages/index.html _site/
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
