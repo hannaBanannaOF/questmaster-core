@@ -23,6 +23,7 @@ func BuildCampaignHandler(db *pgxpool.Pool) *campaignTransport.CampaignHandler {
 		db,
 		characterModule.GetCampaignCharactersUC(),
 		inviteModule.GetInviteByCampaignIDUC(),
+		characterModule.GetPlayerCharactersInCampaignsUC(),
 	)
 
 	return campaignTransport.NewCampaignHandler(

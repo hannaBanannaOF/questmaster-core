@@ -9,6 +9,13 @@ type CampaignListResponse struct {
 	Status      string `json:"status"`
 	System      string `json:"system"`
 	PlayerCount int    `json:"player_count"`
+	// The requester characters in the campaign, ordered by name; empty when the requester only runs it
+	MyCharacters []CampaignCharacterRefResponse `json:"my_characters"`
+}
+
+type CampaignCharacterRefResponse struct {
+	Slug string `json:"slug"`
+	Name string `json:"name"`
 }
 
 type CampaignStatusResponse struct {

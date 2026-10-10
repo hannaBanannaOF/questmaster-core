@@ -62,10 +62,15 @@ func MapCreateCampaignReadModelToResponse(rm campaignApp.CreateCampaignReadModel
 	}
 }
 
-func MapListPageToResponse(page pagination.Result[campaignDomain.Campaign], userID user.UserID) CampaignListPageResponse {
+func MapListPageToResponse(page pagination.Result[campaignApp.CampaignListItemReadModel], userID user.UserID) CampaignListPageResponse {
 	items := make([]CampaignListResponse, 0, len(page.Items))
-	for _, c := range page.Items {
-		items = append(items, MapListReadModelToResponse(c, userID))
+	for _, item := range page.Items {
+		resp := MapListReadModelToResponse(item.Campaign, userID)
+		resp.MyCharacters = make([]CampaignCharacterRefResponse, 0, len(item.MyCharacters))
+		for _, ch := range item.MyCharacters {
+			resp.MyCharacters = append(resp.MyCharacters, CampaignCharacterRefResponse{Slug: ch.Slug, Name: ch.Name})
+		}
+		items = append(items, resp)
 	}
 
 	return CampaignListPageResponse{

@@ -17,6 +17,7 @@ type CharacterModule struct {
 	updateHPUC                       *characterUsecases.UpdateHPUseCase
 	getMyCharactersWithoutCampaignUC *characterUsecases.GetMyCharactersWithoutCampaignUseCase
 	linkCharacterToCampaingUC        *characterUsecases.LinkCharacterToCampaignUseCase
+	getPlayerCharactersInCampaignsUC *characterUsecases.GetPlayerCharactersInCampaignsUseCase
 }
 
 func NewCharacterModule(db *pgxpool.Pool, campaignFinder characterUsecases.CharacterCampaingFinder) *CharacterModule {
@@ -31,6 +32,7 @@ func NewCharacterModule(db *pgxpool.Pool, campaignFinder characterUsecases.Chara
 		updateHPUC:                       characterUsecases.NewUpdateHP(r, campaignFinder),
 		getMyCharactersWithoutCampaignUC: characterUsecases.NewMyGetCharactersWithoutCampaign(r),
 		linkCharacterToCampaingUC:        characterUsecases.NewLinkCharacterToCampaign(r),
+		getPlayerCharactersInCampaignsUC: characterUsecases.NewGetPlayerCharactersInCampaigns(r),
 	}
 }
 
@@ -68,4 +70,8 @@ func (m *CharacterModule) GetMyCharactersWithoutCampaignUC() *characterUsecases.
 
 func (m *CharacterModule) LinkCharacterToCampaignUC() *characterUsecases.LinkCharacterToCampaignUseCase {
 	return m.linkCharacterToCampaingUC
+}
+
+func (m *CharacterModule) GetPlayerCharactersInCampaignsUC() *characterUsecases.GetPlayerCharactersInCampaignsUseCase {
+	return m.getPlayerCharactersInCampaignsUC
 }

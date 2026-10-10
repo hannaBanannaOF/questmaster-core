@@ -10,6 +10,7 @@ import (
 
 type CharacterRepository interface {
 	GetAllByPlayerIDWithFilters(userID userDomain.UserID, filters characterDomain.CharacterListFilters, page pagination.Page) (pagination.Result[characterDomain.Character], error)
+	GetByPlayerInCampaigns(userID userDomain.UserID, campaignIDs []campaignDomain.CampaignID) ([]characterDomain.Character, error)
 	GetAllByCampaignID(campaignID campaignDomain.CampaignID) ([]characterDomain.Character, error)
 	FindBySlug(slug rpgDomain.Slug) (*characterDomain.Character, error)
 	FindByID(characterID characterDomain.CharacterID) (*characterDomain.Character, error)

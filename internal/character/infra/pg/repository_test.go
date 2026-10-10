@@ -228,3 +228,54 @@ func TestCharacterListFilters(t *testing.T) {
 		t.Fatalf("game_system: expected [Investigator], got %v", got)
 	}
 }
+
+func TestGetByPlayerInCampaigns(t *testing.T) {
+	db := testdb.Pool(t)
+	r := NewCharacterRepositoryPG(db)
+	campaigns := campaignInfra.NewCampaignRepositoryPG(db)
+
+	dm := userDomain.NewUserID(uuid.New())
+	newCampaign := func(name string) campaignDomain.Campaign {
+		c, err := campaigns.Create(campaignDomain.CampaignName(name), nil, dm, rpgDomain.DungeonsAndDragons)
+		if err != nil {
+			t.Fatalf("create campaign: %v", err)
+		}
+		return c
+	}
+	link := func(campaign campaignDomain.Campaign, name string, player userDomain.UserID) {
+		c := createCharacter(t, r, name, player)
+		if l, err := r.UpdateCampaign(campaign.Id, c.Slug, player); err != nil || l == nil {
+			t.Fatalf("link %s: %v", name, err)
+		}
+	}
+
+	solo, crowded := newCampaign("Solo"), newCampaign("Crowded")
+	player, other := userDomain.NewUserID(uuid.New()), userDomain.NewUserID(uuid.New())
+	link(solo, "Harvey Walters", player)
+	link(crowded, "Zed", player)
+	link(crowded, "alma", player)
+	link(crowded, "Not mine", other)
+	ids := []campaignDomain.CampaignID{solo.Id, crowded.Id}
+
+	got, err := r.GetByPlayerInCampaigns(player, ids)
+	if err != nil {
+		t.Fatalf("get characters: %v", err)
+	}
+	byCampaign := map[campaignDomain.CampaignID][]string{}
+	for _, c := range got {
+		byCampaign[*c.CampaignID] = append(byCampaign[*c.CampaignID], c.Name.Value())
+	}
+	if s := byCampaign[solo.Id]; len(s) != 1 || s[0] != "Harvey Walters" {
+		t.Fatalf("one character: expected [Harvey Walters], got %v", s)
+	}
+	if c := byCampaign[crowded.Id]; len(c) != 2 || c[0] != "alma" || c[1] != "Zed" {
+		t.Fatalf("several characters: expected [alma Zed], got %v", c)
+	}
+
+	t.Run("DM does not get players' characters", func(t *testing.T) {
+		got, err := r.GetByPlayerInCampaigns(dm, ids)
+		if err != nil || len(got) != 0 {
+			t.Fatalf("expected no characters for the DM, got %v err=%v", got, err)
+		}
+	})
+}

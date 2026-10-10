@@ -78,6 +78,45 @@ func (r *CharacterRepositoryPG) GetAllByPlayerIDWithFilters(
 	return pagination.Result[characterDomain.Character]{Items: items, Total: total}, nil
 }
 
+// GetByPlayerInCampaigns returns the player characters linked to any of the campaigns,
+// ordered by name ignoring case and accents, then id.
+func (r *CharacterRepositoryPG) GetByPlayerInCampaigns(
+	userID userDomain.UserID,
+	campaignIDs []campaignDomain.CampaignID,
+) ([]characterDomain.Character, error) {
+	ids := make([]int, 0, len(campaignIDs))
+	for _, id := range campaignIDs {
+		ids = append(ids, id.Value())
+	}
+
+	rows, err := r.db.Query(context.Background(), `
+		SELECT cs.*
+		FROM character_sheet cs
+		WHERE cs.player_id = $1 AND cs.campaign_id = ANY($2)
+		ORDER BY unaccent(lower(cs.name)), cs.id
+	`, userID.Value(), ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	record, err := pgx.CollectRows(rows, pgx.RowToStructByName[CharacterRow])
+	if err != nil {
+		return nil, err
+	}
+
+	characters := make([]characterDomain.Character, 0, len(record))
+	for _, c := range record {
+		val, err := MapRowToDomain(c)
+		if err != nil {
+			return nil, err
+		}
+		characters = append(characters, val)
+	}
+
+	return characters, nil
+}
+
 func (r *CharacterRepositoryPG) GetAllByCampaignID(campaignID campaignDomain.CampaignID) ([]characterDomain.Character, error) {
 	rows, err := r.db.Query(context.Background(), `
         SELECT cs.*
