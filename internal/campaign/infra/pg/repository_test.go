@@ -238,3 +238,51 @@ func TestListForUserFilters(t *testing.T) {
 		})
 	}
 }
+
+func TestCountByStatusForUser(t *testing.T) {
+	db := testdb.Pool(t)
+	campaigns := NewCampaignRepositoryPG(db)
+	user := newUser()
+
+	// Runs 2 ACTIVE and 1 DRAFT, plays in 1 ACTIVE; another user's campaign must not count
+	for _, name := range []string{"Active one", "Active two"} {
+		c := createCampaign(t, campaigns, name, user)
+		if _, err := campaigns.UpdateStatus(campaignDomain.StatusActive, c.Id); err != nil {
+			t.Fatalf("activate: %v", err)
+		}
+	}
+	createCampaign(t, campaigns, "Draft", user)
+	played := createCampaign(t, campaigns, "Played", newUser())
+	createLinkedCharacter(t, db, played.Id, user)
+	if _, err := campaigns.UpdateStatus(campaignDomain.StatusActive, played.Id); err != nil {
+		t.Fatalf("activate: %v", err)
+	}
+	createCampaign(t, campaigns, "Someone else's", newUser())
+
+	dm, player := campaignDomain.RoleDM, campaignDomain.RolePlayer
+	cases := []struct {
+		name    string
+		filters campaignDomain.CampaignListFilters
+		want    map[campaignDomain.CampaignStatus]int
+	}{
+		{"role dm", campaignDomain.CampaignListFilters{Role: &dm},
+			map[campaignDomain.CampaignStatus]int{campaignDomain.StatusActive: 2, campaignDomain.StatusDraft: 1}},
+		{"role player", campaignDomain.CampaignListFilters{Role: &player},
+			map[campaignDomain.CampaignStatus]int{campaignDomain.StatusActive: 1}},
+		{"both roles", campaignDomain.CampaignListFilters{},
+			map[campaignDomain.CampaignStatus]int{campaignDomain.StatusActive: 3, campaignDomain.StatusDraft: 1}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := campaigns.CountByStatusForUser(user, tc.filters)
+			if err != nil || len(got) != len(tc.want) {
+				t.Fatalf("expected %v, got %v err=%v", tc.want, got, err)
+			}
+			for status, n := range tc.want {
+				if got[status] != n {
+					t.Fatalf("expected %v, got %v", tc.want, got)
+				}
+			}
+		})
+	}
+}

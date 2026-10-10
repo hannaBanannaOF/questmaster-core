@@ -95,6 +95,36 @@ func (r *CampaignRepositoryPG) ListForUser(
 	return pagination.Result[campaignDomain.Campaign]{Items: items, Total: total}, nil
 }
 
+// CountByStatusForUser counts the campaigns where userID is the DM or has a character, by status.
+// Statuses without campaigns are absent from the result.
+func (r *CampaignRepositoryPG) CountByStatusForUser(
+	userID userDomain.UserID,
+	filters campaignDomain.CampaignListFilters,
+) (map[campaignDomain.CampaignStatus]int, error) {
+	where, args := userCampaignsWhere(userID, filters)
+	rows, err := r.db.Query(context.Background(), "SELECT c.status, COUNT(*) FROM campaign c"+where+" GROUP BY c.status", args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	counts := make(map[campaignDomain.CampaignStatus]int)
+	for rows.Next() {
+		var rawStatus string
+		var count int
+		if err := rows.Scan(&rawStatus, &count); err != nil {
+			return nil, err
+		}
+		status, err := campaignDomain.NewCampaignStatus(rawStatus)
+		if err != nil {
+			return nil, err
+		}
+		counts[status] = count
+	}
+
+	return counts, rows.Err()
+}
+
 func (r *CampaignRepositoryPG) FindBySlug(slug rpgDomain.Slug) (*campaignDomain.Campaign, error) {
 	rows, err := r.db.Query(context.Background(), selectCampaign+`
 		WHERE c.slug = $1

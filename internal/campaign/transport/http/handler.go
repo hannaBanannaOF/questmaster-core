@@ -18,6 +18,7 @@ type CampaignHandler struct {
 	updateStatusUC            *campaignUsecases.UpdateCampaignStatusUseCase
 	getDetailsUC              *campaignUsecases.GetCampaignDetailsUseCase
 	deleteCampaignUc          *campaignUsecases.DeleteCampaignUseCase
+	getStatusCountsUC         *campaignUsecases.GetCampaignStatusCountsUseCase
 }
 
 func NewCampaignHandler(
@@ -27,6 +28,7 @@ func NewCampaignHandler(
 	updateStatusUC *campaignUsecases.UpdateCampaignStatusUseCase,
 	getDetailsUC *campaignUsecases.GetCampaignDetailsUseCase,
 	deleteCampaignUc *campaignUsecases.DeleteCampaignUseCase,
+	getStatusCountsUC *campaignUsecases.GetCampaignStatusCountsUseCase,
 ) *CampaignHandler {
 	return &CampaignHandler{
 		getCurrentUserCampaignsUC: getCurrentUserCampaignsUC,
@@ -35,6 +37,7 @@ func NewCampaignHandler(
 		updateStatusUC:            updateStatusUC,
 		getDetailsUC:              getDetailsUC,
 		deleteCampaignUc:          deleteCampaignUc,
+		getStatusCountsUC:         getStatusCountsUC,
 	}
 }
 
@@ -63,6 +66,30 @@ func (h *CampaignHandler) GetCurrentUserCampaigns(ctx *context.AppContext) error
 	}
 
 	ctx.JSON(http.StatusOK, MapListPageToResponse(campaigns, ctx.UserID()))
+	return nil
+}
+
+// @Summary Get current user campaign counts by status
+// @Description Number of the current user campaigns in each status. Every status is present, with 0 when there is none
+// @Tags v1:campaign
+// @Param role query string false "Only campaigns where the user has this role" Enums(dm, player)
+// @Produce json
+// @Success 200 {object} CampaignStatusCountsResponse
+// @Failure 400 {object} httperrors.HttpError "Invalid role"
+// @Failure 401 {object} httperrors.HttpError "Unauthorized - missing or invalid access_token"
+// @Failure 500 {object} httperrors.HttpError "Internal server error"
+// @Security BearerAuth
+// @Router /core/api/v1/campaign/counts [get]
+func (h *CampaignHandler) GetStatusCounts(ctx *context.AppContext) error {
+	counts, err := h.getStatusCountsUC.Execute(campaignApp.GetCampaignStatusCountsCommand{
+		UserID:  ctx.UserID(),
+		Filters: ctx.CampaignListFilters(),
+	})
+	if err != nil {
+		return err
+	}
+
+	ctx.JSON(http.StatusOK, MapStatusCountsToResponse(counts))
 	return nil
 }
 

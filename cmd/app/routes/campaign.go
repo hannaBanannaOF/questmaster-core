@@ -17,6 +17,7 @@ func registerCampaignRoutes(
 	{
 		campaign.GET("", middleware.PageMiddleware(), campaignTransport.CampaignListFiltersMiddleware(), appContext.Adapt(handler.GetCurrentUserCampaigns))
 		campaign.POST("", appContext.Adapt(handler.CreateCampaign))
+		campaign.GET("/counts", campaignTransport.CampaignRoleFilterMiddleware(), appContext.Adapt(handler.GetStatusCounts))
 		campaign.GET("/resolve/:slug", rpgTransport.SlugMiddleware(), appContext.Adapt(handler.ResolveSlug))
 		campaign.DELETE("/:campaignID", campaignTransport.CampaignIDMiddleware(), appContext.Adapt(handler.DeleteCampaign))
 		campaign.GET("/:campaignID", campaignTransport.CampaignIDMiddleware(), appContext.Adapt(handler.GetCampaignDetails))

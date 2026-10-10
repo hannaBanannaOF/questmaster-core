@@ -37,3 +37,10 @@ type CampaignListPageResponse struct {
 	Items []CampaignListResponse `json:"items"`
 	Total int                    `json:"total"`
 }
+
+type CampaignStatusCountsResponse struct {
+	Draft    int `json:"DRAFT"`
+	Active   int `json:"ACTIVE"`
+	Paused   int `json:"PAUSED"`
+	Archived int `json:"ARCHIVED"`
+}

@@ -73,3 +73,12 @@ func MapListPageToResponse(page pagination.Result[campaignDomain.Campaign], user
 		Total: page.Total,
 	}
 }
+
+func MapStatusCountsToResponse(counts campaignApp.CampaignStatusCountsReadModel) CampaignStatusCountsResponse {
+	return CampaignStatusCountsResponse{
+		Draft:    counts[campaignDomain.StatusDraft.Value()],
+		Active:   counts[campaignDomain.StatusActive.Value()],
+		Paused:   counts[campaignDomain.StatusPaused.Value()],
+		Archived: counts[campaignDomain.StatusArchived.Value()],
+	}
+}

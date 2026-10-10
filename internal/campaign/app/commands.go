@@ -25,6 +25,11 @@ type GetCurrentUserCampaignsCommand struct {
 	Page    pagination.Page
 }
 
+type GetCampaignStatusCountsCommand struct {
+	UserID  userDomain.UserID
+	Filters campaignDomain.CampaignListFilters
+}
+
 type GetCampaignDetailsCommand struct {
 	ID     campaignDomain.CampaignID
 	UserID userDomain.UserID

@@ -15,6 +15,7 @@ type CampaignModule struct {
 	getCampaignFromIDUC       *campaignUsecases.GetCampaignFromIDUseCase
 	resolveCampaignSlugUC     *campaignUsecases.ResolveCampaignSlugUseCase
 	updateCampaignStatusUC    *campaignUsecases.UpdateCampaignStatusUseCase
+	getCampaignStatusCountsUC *campaignUsecases.GetCampaignStatusCountsUseCase
 }
 
 func NewCampaignModule(
@@ -32,6 +33,7 @@ func NewCampaignModule(
 		getCampaignFromIDUC:       getCampaignFromIDUC,
 		resolveCampaignSlugUC:     campaignUsecases.NewResolveCampaignSlug(r),
 		updateCampaignStatusUC:    campaignUsecases.NewUpdateStatus(r),
+		getCampaignStatusCountsUC: campaignUsecases.NewGetCampaignStatusCounts(r),
 	}
 }
 
@@ -61,4 +63,8 @@ func (m *CampaignModule) ResolveCampaignSlugUC() *campaignUsecases.ResolveCampai
 
 func (m *CampaignModule) UpdateCampaignStatusUC() *campaignUsecases.UpdateCampaignStatusUseCase {
 	return m.updateCampaignStatusUC
+}
+
+func (m *CampaignModule) GetCampaignStatusCountsUC() *campaignUsecases.GetCampaignStatusCountsUseCase {
+	return m.getCampaignStatusCountsUC
 }

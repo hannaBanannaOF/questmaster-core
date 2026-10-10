@@ -28,6 +28,9 @@ type ResolveCampaignSlugReadModel struct {
 	ID int
 }
 
+// CampaignStatusCountsReadModel has an entry for every campaign status
+type CampaignStatusCountsReadModel map[string]int
+
 type UpdateCampaignStatusReadModel struct {
 	Status string
 }
