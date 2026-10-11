@@ -17,7 +17,7 @@ const docTemplate = `{
     "paths": {
         "/core/api/v1/campaign": {
             "get": {
-                "description": "Get a page of the current user campaigns as **player** and **DM**, ordered by name (ignoring case and accents), then id",
+                "description": "Get a page of the current user campaigns as **player** and **DM**, ordered by ` + "`" + `sort` + "`" + ` (default: name, ignoring case and accents, then id)",
                 "produces": [
                     "application/json"
                 ],
@@ -49,6 +49,17 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            "name",
+                            "recent"
+                        ],
+                        "type": "string",
+                        "default": "name",
+                        "description": "name: by name; recent: last opened by the user first, never opened after, by name",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "default": 50,
                         "description": "Page size, 1 to 100",
@@ -71,7 +82,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid role, status, limit or offset",
+                        "description": "Invalid role, status, sort, limit or offset",
                         "schema": {
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
@@ -447,7 +458,7 @@ const docTemplate = `{
         },
         "/core/api/v1/character": {
             "get": {
-                "description": "Get a page of the current user characters, ordered by name (ignoring case and accents), then id",
+                "description": "Get a page of the current user characters, ordered by ` + "`" + `sort` + "`" + ` (default: name, ignoring case and accents, then id)",
                 "produces": [
                     "application/json"
                 ],
@@ -466,6 +477,17 @@ const docTemplate = `{
                         "type": "boolean",
                         "description": "true: only characters without a campaign; false: only characters in a campaign",
                         "name": "without_campaign",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "name",
+                            "recent"
+                        ],
+                        "type": "string",
+                        "default": "name",
+                        "description": "name: by name; recent: last opened by the user first, never opened after, by name",
+                        "name": "sort",
                         "in": "query"
                     },
                     {
@@ -491,7 +513,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid game_system, limit or offset",
+                        "description": "Invalid game_system, sort, limit or offset",
                         "schema": {
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
@@ -1137,6 +1159,10 @@ const docTemplate = `{
                 "is_dm": {
                     "type": "boolean"
                 },
+                "last_accessed_at": {
+                    "description": "The requester last open of the campaign details, null if never opened",
+                    "type": "string"
+                },
                 "my_characters": {
                     "description": "The requester characters in the campaign, ordered by name; empty when the requester only runs it",
                     "type": "array",
@@ -1261,6 +1287,10 @@ const docTemplate = `{
             "properties": {
                 "current_hp": {
                     "type": "integer"
+                },
+                "last_accessed_at": {
+                    "description": "The requester last open of the character details, null if never opened",
+                    "type": "string"
                 },
                 "max_hp": {
                     "type": "integer"
