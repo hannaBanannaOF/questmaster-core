@@ -2,7 +2,9 @@ package character
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
+	"time"
 
 	characterDomain "questmaster-core/internal/character/domain"
 	"questmaster-core/internal/shared/pagination"
@@ -25,4 +27,18 @@ func TestMapListPageToResponse(t *testing.T) {
 			t.Fatalf("unexpected body %s err=%v", body, err)
 		}
 	})
+}
+
+func TestMapListReadModelToResponseLastAccessedAt(t *testing.T) {
+	opened := time.Date(2026, 10, 10, 12, 0, 0, 0, time.UTC)
+
+	never, _ := json.Marshal(MapListReadModelToResponse(characterDomain.Character{}))
+	if !strings.Contains(string(never), `"last_accessed_at":null`) {
+		t.Fatalf("expected null last_accessed_at, got %s", never)
+	}
+
+	got, _ := json.Marshal(MapListReadModelToResponse(characterDomain.Character{LastAccessedAt: &opened}))
+	if !strings.Contains(string(got), `"last_accessed_at":"2026-10-10T12:00:00Z"`) {
+		t.Fatalf("expected the access time, got %s", got)
+	}
 }

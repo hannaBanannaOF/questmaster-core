@@ -1,6 +1,8 @@
 package campaign
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 )
 
@@ -13,4 +15,10 @@ type CampaignRow struct {
 	Slug        string    `db:"slug"`
 	Overview    *string   `db:"overview"`
 	PlayerCount int       `db:"player_count"`
+}
+
+// CampaignListRow is a campaign of the requester list, with their last access to it
+type CampaignListRow struct {
+	CampaignRow
+	LastAccessedAt *time.Time `db:"last_accessed_at"`
 }

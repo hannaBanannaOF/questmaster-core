@@ -50,6 +50,7 @@ Database migrations are located in the `migrations/` directory as raw SQL script
 4. `0004_campaign_invite.up.sql`: Creates `campaign_invite` table with `gen_random_uuid()` hash generation.
 5. `0005_campaign_delete_cascade.up.sql`: Deleting a campaign unlinks its characters (`ON DELETE SET NULL`) and removes its invite (`ON DELETE CASCADE`).
 6. `0006_slug_fallback.up.sql`: Slug triggers fall back to `campaign` / `character` when a name has no ASCII letters or digits, and fixes existing empty slugs.
+7. `0007_recent_access.up.sql`: Creates `campaign_access` and `character_access`, the last time each user opened a campaign or one of their characters (for the `recent` list sort).
 
 ### Entity-Relationship Diagram
 

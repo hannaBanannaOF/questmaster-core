@@ -30,7 +30,7 @@ func NewCampaignModule(
 		createcampaignUC:          campaignUsecases.NewCreateCampaign(r),
 		deleteCampaignUC:          campaignUsecases.NewDeleteCampaign(r),
 		getCurrentUserCampaignsUC: campaignUsecases.NewGetCurrentUserMyCampaigns(r, myCharactersFinder),
-		getCampaignDetailUC:       campaignUsecases.NewGetCampaignDetails(*getCampaignFromIDUC, charactersFinder, inviteFinder),
+		getCampaignDetailUC:       campaignUsecases.NewGetCampaignDetails(*getCampaignFromIDUC, charactersFinder, inviteFinder, r),
 		getCampaignFromIDUC:       getCampaignFromIDUC,
 		resolveCampaignSlugUC:     campaignUsecases.NewResolveCampaignSlug(r),
 		updateCampaignStatusUC:    campaignUsecases.NewUpdateStatus(r),

@@ -24,11 +24,9 @@ func NewCampaignRepositoryPG(db *pgxpool.Pool) *CampaignRepositoryPG {
 
 // selectCampaign selects campaigns with player_count: the number of distinct players
 // with a character in the campaign, regardless of the WHERE clause appended to it.
-const selectCampaign = `
-	SELECT c.*,
-		(SELECT COUNT(DISTINCT cs.player_id) FROM character_sheet cs WHERE cs.campaign_id = c.id) AS player_count
-	FROM campaign c
-`
+const playerCountColumn = "(SELECT COUNT(DISTINCT cs.player_id) FROM character_sheet cs WHERE cs.campaign_id = c.id) AS player_count"
+
+const selectCampaign = "SELECT c.*, " + playerCountColumn + " FROM campaign c"
 
 // userCampaignsWhere restricts campaigns to the ones where userID is the DM or has a character,
 // narrowed by the list filters. Returns the WHERE clause and its arguments, starting at $1.
@@ -71,24 +69,27 @@ func (r *CampaignRepositoryPG) ListForUser(
 	}
 
 	args = append(args, page.Limit, page.Offset)
-	rows, err := r.db.Query(ctx, selectCampaign+where+
-		" ORDER BY unaccent(lower(c.name)), c.id"+
+	// $1 is the requester in userCampaignsWhere too
+	rows, err := r.db.Query(ctx, "SELECT c.*, "+playerCountColumn+", a.accessed_at AS last_accessed_at"+
+		" FROM campaign c LEFT JOIN campaign_access a ON a.user_id = $1 AND a.campaign_id = c.id"+where+
+		page.Sort.OrderBy("a.accessed_at", "c.name", "c.id")+
 		" LIMIT $"+strconv.Itoa(len(args)-1)+" OFFSET $"+strconv.Itoa(len(args)), args...)
 	if err != nil {
 		return pagination.Result[campaignDomain.Campaign]{}, err
 	}
 	defer rows.Close()
-	record, err := pgx.CollectRows(rows, pgx.RowToStructByName[CampaignRow])
+	record, err := pgx.CollectRows(rows, pgx.RowToStructByName[CampaignListRow])
 	if err != nil {
 		return pagination.Result[campaignDomain.Campaign]{}, err
 	}
 
 	items := make([]campaignDomain.Campaign, 0, len(record))
 	for _, c := range record {
-		val, err := MapRowToDomain(c)
+		val, err := MapRowToDomain(c.CampaignRow)
 		if err != nil {
 			return pagination.Result[campaignDomain.Campaign]{}, err
 		}
+		val.LastAccessedAt = c.LastAccessedAt
 		items = append(items, val)
 	}
 
@@ -235,4 +236,13 @@ func (r *CampaignRepositoryPG) DeleteById(id campaignDomain.CampaignID) (bool, e
 	}
 
 	return cmdTag.RowsAffected() > 0, nil
+}
+
+// RecordAccess sets the user last access to the campaign to now
+func (r *CampaignRepositoryPG) RecordAccess(userID userDomain.UserID, id campaignDomain.CampaignID) error {
+	_, err := r.db.Exec(context.Background(), `
+		INSERT INTO campaign_access (user_id, campaign_id, accessed_at) VALUES ($1, $2, now())
+		ON CONFLICT (user_id, campaign_id) DO UPDATE SET accessed_at = now()
+	`, userID.Value(), id.Value())
+	return err
 }
