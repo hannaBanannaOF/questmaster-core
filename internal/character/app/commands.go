@@ -20,7 +20,8 @@ type DeleteCharacterCommand struct {
 }
 
 type GetCharacterDetailsCommand struct {
-	ID characterDomain.CharacterID
+	ID     characterDomain.CharacterID
+	UserID userDomain.UserID
 }
 
 type GetCurrentUserCharactersCommand struct {

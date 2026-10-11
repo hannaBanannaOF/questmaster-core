@@ -51,6 +51,10 @@ definitions:
     properties:
       is_dm:
         type: boolean
+      last_accessed_at:
+        description: The requester last open of the campaign details, null if never
+          opened
+        type: string
       my_characters:
         description: The requester characters in the campaign, ordered by name; empty
           when the requester only runs it
@@ -133,6 +137,10 @@ definitions:
     properties:
       current_hp:
         type: integer
+      last_accessed_at:
+        description: The requester last open of the character details, null if never
+          opened
+        type: string
       max_hp:
         type: integer
       name:
@@ -224,8 +232,8 @@ info:
 paths:
   /core/api/v1/campaign:
     get:
-      description: Get a page of the current user campaigns as **player** and **DM**,
-        ordered by name (ignoring case and accents), then id
+      description: 'Get a page of the current user campaigns as **player** and **DM**,
+        ordered by `sort` (default: name, ignoring case and accents, then id)'
       parameters:
       - description: Only campaigns where the user has this role
         enum:
@@ -242,6 +250,15 @@ paths:
         - ARCHIVED
         in: query
         name: status
+        type: string
+      - default: name
+        description: 'name: by name; recent: last opened by the user first, never
+          opened after, by name'
+        enum:
+        - name
+        - recent
+        in: query
+        name: sort
         type: string
       - default: 50
         description: Page size, 1 to 100
@@ -261,7 +278,7 @@ paths:
           schema:
             $ref: '#/definitions/campaign.CampaignListPageResponse'
         "400":
-          description: Invalid role, status, limit or offset
+          description: Invalid role, status, sort, limit or offset
           schema:
             $ref: '#/definitions/httperrors.HttpError'
         "401":
@@ -510,8 +527,8 @@ paths:
       - v1:campaign
   /core/api/v1/character:
     get:
-      description: Get a page of the current user characters, ordered by name (ignoring
-        case and accents), then id
+      description: 'Get a page of the current user characters, ordered by `sort` (default:
+        name, ignoring case and accents, then id)'
       parameters:
       - description: Only characters of this game system
         in: query
@@ -522,6 +539,15 @@ paths:
         in: query
         name: without_campaign
         type: boolean
+      - default: name
+        description: 'name: by name; recent: last opened by the user first, never
+          opened after, by name'
+        enum:
+        - name
+        - recent
+        in: query
+        name: sort
+        type: string
       - default: 50
         description: Page size, 1 to 100
         in: query
@@ -540,7 +566,7 @@ paths:
           schema:
             $ref: '#/definitions/character.CharacterListPageResponse'
         "400":
-          description: Invalid game_system, limit or offset
+          description: Invalid game_system, sort, limit or offset
           schema:
             $ref: '#/definitions/httperrors.HttpError'
         "401":

@@ -23,11 +23,12 @@ func convertHP(hp *characterDomain.HP) (*int, *int) {
 func MapListReadModelToResponse(c characterDomain.Character) CharacterListResponse {
 	current, max := convertHP(c.Hp)
 	return CharacterListResponse{
-		Slug:      c.Slug.Value(),
-		Name:      c.Name.Value(),
-		System:    c.System.Value(),
-		CurrentHP: current,
-		MaxHP:     max,
+		Slug:           c.Slug.Value(),
+		Name:           c.Name.Value(),
+		System:         c.System.Value(),
+		CurrentHP:      current,
+		MaxHP:          max,
+		LastAccessedAt: c.LastAccessedAt,
 	}
 }
 

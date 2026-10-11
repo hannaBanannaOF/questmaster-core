@@ -40,13 +40,28 @@ func (f *fakeInviteFinder) GetByCampaignID(campaignDomain.CampaignID) (*inviteDo
 	return f.invite, nil
 }
 
+type fakeAccessRecorder struct {
+	recorded []userDomain.UserID
+	err      error
+}
+
+func (f *fakeAccessRecorder) RecordAccess(user userDomain.UserID, _ campaignDomain.CampaignID) error {
+	f.recorded = append(f.recorded, user)
+	return f.err
+}
+
 func newDetailsUC(dm, player userDomain.UserID, invites *fakeInviteFinder) *GetCampaignDetailsUseCase {
+	return newDetailsUCWithRecorder(dm, player, invites, &fakeAccessRecorder{})
+}
+
+func newDetailsUCWithRecorder(dm, player userDomain.UserID, invites *fakeInviteFinder, recorder *fakeAccessRecorder) *GetCampaignDetailsUseCase {
 	campaign := &campaignDomain.Campaign{Id: 1, Dm: dm, Status: campaignDomain.StatusActive}
 	characters := []characterDomain.Character{{Id: 10, Name: "Hero", PlayerID: player}}
 	return NewGetCampaignDetails(
 		*NewGetCampaignFromID(fakeCampaignRepo{campaign: campaign}),
 		fakeCharacterFinder{characters: characters},
 		invites,
+		recorder,
 	)
 }
 
@@ -84,6 +99,7 @@ func TestGetCampaignDetails(t *testing.T) {
 			*NewGetCampaignFromID(fakeCampaignRepo{}),
 			fakeCharacterFinder{},
 			&fakeInviteFinder{},
+			&fakeAccessRecorder{},
 		)
 		_, err := uc.Execute(campaignApp.GetCampaignDetailsCommand{ID: 1, UserID: dm})
 		if !errors.Is(err, ErrCampaignNotFound) {
@@ -96,6 +112,37 @@ func TestGetCampaignDetails(t *testing.T) {
 		_, err := uc.Execute(campaignApp.GetCampaignDetailsCommand{ID: 1, UserID: outsider})
 		if !errors.Is(err, campaignDomain.ErrNotCampaignMember) {
 			t.Fatalf("expected ErrNotCampaignMember, got %v", err)
+		}
+	})
+
+	for name, user := range map[string]userDomain.UserID{"DM": dm, "player": player} {
+		t.Run(name+" opening the campaign is recorded", func(t *testing.T) {
+			recorder := &fakeAccessRecorder{}
+			if _, err := newDetailsUCWithRecorder(dm, player, &fakeInviteFinder{}, recorder).
+				Execute(campaignApp.GetCampaignDetailsCommand{ID: 1, UserID: user}); err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if len(recorder.recorded) != 1 || recorder.recorded[0] != user {
+				t.Fatalf("expected one access recorded for %s, got %v", name, recorder.recorded)
+			}
+		})
+	}
+
+	t.Run("outsider is not recorded", func(t *testing.T) {
+		recorder := &fakeAccessRecorder{}
+		_, _ = newDetailsUCWithRecorder(dm, player, &fakeInviteFinder{}, recorder).
+			Execute(campaignApp.GetCampaignDetailsCommand{ID: 1, UserID: outsider})
+		if len(recorder.recorded) != 0 {
+			t.Fatalf("expected nothing recorded, got %v", recorder.recorded)
+		}
+	})
+
+	t.Run("failing recorder still returns the details", func(t *testing.T) {
+		recorder := &fakeAccessRecorder{err: errors.New("database is down")}
+		rm, err := newDetailsUCWithRecorder(dm, player, &fakeInviteFinder{}, recorder).
+			Execute(campaignApp.GetCampaignDetailsCommand{ID: 1, UserID: player})
+		if err != nil || rm.Id != 1 {
+			t.Fatalf("expected the details despite the recorder error, got %+v err=%v", rm, err)
 		}
 	})
 }

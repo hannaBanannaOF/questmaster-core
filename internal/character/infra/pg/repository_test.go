@@ -1,6 +1,7 @@
 package character
 
 import (
+	"context"
 	"regexp"
 	"testing"
 
@@ -276,6 +277,58 @@ func TestGetByPlayerInCampaigns(t *testing.T) {
 		got, err := r.GetByPlayerInCampaigns(dm, ids)
 		if err != nil || len(got) != 0 {
 			t.Fatalf("expected no characters for the DM, got %v err=%v", got, err)
+		}
+	})
+}
+
+func TestCharacterListSortsByRecentAccess(t *testing.T) {
+	db := testdb.Pool(t)
+	r := NewCharacterRepositoryPG(db)
+	player := userDomain.NewUserID(uuid.New())
+	byName := map[string]characterDomain.Character{}
+	for _, name := range []string{"Gimli", "éowyn", "Aragorn", "boromir", "Frodo", "Denethor", "Celeborn"} {
+		byName[name] = createCharacter(t, r, name, player)
+	}
+	// Opened in this order, so Denethor is the most recent
+	for _, name := range []string{"Gimli", "Frodo", "Denethor"} {
+		if err := r.RecordAccess(player, byName[name].Id); err != nil {
+			t.Fatalf("record access: %v", err)
+		}
+	}
+	recent := pagination.Page{Limit: 5, Sort: pagination.SortRecent}
+
+	t.Run("recent preview", func(t *testing.T) {
+		list := listCharacters(t, r, player, characterDomain.CharacterListFilters{}, recent)
+		want := []string{"Denethor", "Frodo", "Gimli", "Aragorn", "boromir"}
+		got := characterNames(list)
+		if len(got) != len(want) || list.Total != 7 {
+			t.Fatalf("expected %v of 7, got %v of %d", want, got, list.Total)
+		}
+		for i := range want {
+			if got[i] != want[i] {
+				t.Fatalf("expected %v, got %v", want, got)
+			}
+		}
+		if list.Items[0].LastAccessedAt == nil || list.Items[3].LastAccessedAt != nil {
+			t.Fatalf("expected last_accessed_at set for opened and null for never opened")
+		}
+	})
+
+	t.Run("combined with filters", func(t *testing.T) {
+		withoutCampaign := true
+		got := characterNames(listCharacters(t, r, player, characterDomain.CharacterListFilters{WithoutCampaign: &withoutCampaign}, recent))
+		if len(got) != 5 || got[0] != "Denethor" {
+			t.Fatalf("expected Denethor first among unlinked characters, got %v", got)
+		}
+	})
+
+	t.Run("access removed with the character", func(t *testing.T) {
+		if _, err := r.DeleteByID(byName["Denethor"].Id); err != nil {
+			t.Fatalf("delete character: %v", err)
+		}
+		var n int
+		if err := db.QueryRow(context.Background(), "SELECT COUNT(*) FROM character_access WHERE character_id = $1", byName["Denethor"].Id.Value()).Scan(&n); err != nil || n != 0 {
+			t.Fatalf("expected access rows removed with the character, got %d err=%v", n, err)
 		}
 	})
 }

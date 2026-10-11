@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 
 	campaignApp "questmaster-core/internal/campaign/app"
 	campaignDomain "questmaster-core/internal/campaign/domain"
@@ -48,4 +49,19 @@ func TestMapListPageToResponse(t *testing.T) {
 			t.Fatalf("unexpected body %s err=%v", body, err)
 		}
 	})
+}
+
+func TestMapListReadModelToResponseLastAccessedAt(t *testing.T) {
+	user := userDomain.NewUserID(uuid.New())
+	opened := time.Date(2026, 10, 10, 12, 0, 0, 0, time.UTC)
+
+	never, _ := json.Marshal(MapListReadModelToResponse(campaignDomain.Campaign{}, user))
+	if !strings.Contains(string(never), `"last_accessed_at":null`) {
+		t.Fatalf("expected null last_accessed_at, got %s", never)
+	}
+
+	got, _ := json.Marshal(MapListReadModelToResponse(campaignDomain.Campaign{LastAccessedAt: &opened}, user))
+	if !strings.Contains(string(got), `"last_accessed_at":"2026-10-10T12:00:00Z"`) {
+		t.Fatalf("expected the access time, got %s", got)
+	}
 }

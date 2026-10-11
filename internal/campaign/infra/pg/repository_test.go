@@ -1,6 +1,7 @@
 package campaign
 
 import (
+	"context"
 	"regexp"
 	"testing"
 
@@ -285,4 +286,89 @@ func TestCountByStatusForUser(t *testing.T) {
 			}
 		})
 	}
+}
+
+func countAccessRows(t *testing.T, db *pgxpool.Pool, campaignID campaignDomain.CampaignID) int {
+	t.Helper()
+	var n int
+	if err := db.QueryRow(context.Background(), "SELECT COUNT(*) FROM campaign_access WHERE campaign_id = $1", campaignID.Value()).Scan(&n); err != nil {
+		t.Fatalf("count access rows: %v", err)
+	}
+	return n
+}
+
+func TestRecordCampaignAccess(t *testing.T) {
+	db := testdb.Pool(t)
+	campaigns := NewCampaignRepositoryPG(db)
+	dm := newUser()
+	campaign := createCampaign(t, campaigns, "Accessed", dm)
+	recent := pagination.Page{Limit: pagination.DefaultLimit, Sort: pagination.SortRecent}
+
+	if err := campaigns.RecordAccess(dm, campaign.Id); err != nil {
+		t.Fatalf("first access: %v", err)
+	}
+	first := listFor(t, campaigns, dm, campaignDomain.CampaignListFilters{}, recent).Items[0].LastAccessedAt
+	if first == nil {
+		t.Fatalf("expected last_accessed_at after the first access")
+	}
+
+	if err := campaigns.RecordAccess(dm, campaign.Id); err != nil {
+		t.Fatalf("repeated access: %v", err)
+	}
+	second := listFor(t, campaigns, dm, campaignDomain.CampaignListFilters{}, recent).Items[0].LastAccessedAt
+	if n := countAccessRows(t, db, campaign.Id); n != 1 || second == nil || second.Before(*first) {
+		t.Fatalf("expected one row moved forward, got %d rows, %v then %v", n, first, second)
+	}
+
+	if _, err := campaigns.DeleteById(campaign.Id); err != nil {
+		t.Fatalf("delete campaign: %v", err)
+	}
+	if n := countAccessRows(t, db, campaign.Id); n != 0 {
+		t.Fatalf("expected access rows removed with the campaign, got %d", n)
+	}
+}
+
+func TestListForUserSortsByRecentAccess(t *testing.T) {
+	db := testdb.Pool(t)
+	campaigns := NewCampaignRepositoryPG(db)
+	dm, otherMember := newUser(), newUser()
+	byName := map[string]campaignDomain.Campaign{}
+	for _, name := range []string{"Beta", "alfa", "Ômega"} {
+		byName[name] = createCampaign(t, campaigns, name, dm)
+	}
+	createLinkedCharacter(t, db, byName["Ômega"].Id, otherMember)
+
+	// "Beta" first, then "alfa"; "Ômega" only opened by another member
+	for _, open := range []struct {
+		user userDomain.UserID
+		name string
+	}{{dm, "Beta"}, {dm, "alfa"}, {otherMember, "Ômega"}} {
+		if err := campaigns.RecordAccess(open.user, byName[open.name].Id); err != nil {
+			t.Fatalf("record access: %v", err)
+		}
+	}
+
+	list := listFor(t, campaigns, dm, campaignDomain.CampaignListFilters{}, pagination.Page{Limit: 10, Sort: pagination.SortRecent})
+	if got := names(list); len(got) != 3 || got[0] != "alfa" || got[1] != "Beta" || got[2] != "Ômega" {
+		t.Fatalf("expected [alfa Beta Ômega], got %v", got)
+	}
+	if list.Items[0].LastAccessedAt == nil || list.Items[2].LastAccessedAt != nil {
+		t.Fatalf("expected last_accessed_at set for opened and null for never opened")
+	}
+
+	t.Run("name sort keeps last_accessed_at", func(t *testing.T) {
+		list := listFor(t, campaigns, dm, campaignDomain.CampaignListFilters{}, pagination.Page{Limit: 10})
+		if got := names(list); got[0] != "alfa" || list.Items[0].LastAccessedAt == nil {
+			t.Fatalf("expected alfa first with its access, got %v", got)
+		}
+	})
+
+	t.Run("combined with filters", func(t *testing.T) {
+		dmRole, draft := campaignDomain.RoleDM, campaignDomain.StatusDraft
+		list := listFor(t, campaigns, dm, campaignDomain.CampaignListFilters{Role: &dmRole, Status: &draft},
+			pagination.Page{Limit: 1, Sort: pagination.SortRecent})
+		if got := names(list); len(got) != 1 || got[0] != "alfa" || list.Total != 3 {
+			t.Fatalf("expected [alfa] of 3, got %v of %d", got, list.Total)
+		}
+	})
 }

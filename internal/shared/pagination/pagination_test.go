@@ -37,3 +37,16 @@ func TestNewPage(t *testing.T) {
 		}
 	}
 }
+
+func TestNewSort(t *testing.T) {
+	for raw, want := range map[string]Sort{"": SortName, "name": SortName, "recent": SortRecent} {
+		if got, err := NewSort(raw); err != nil || got != want {
+			t.Fatalf("NewSort(%q) = %q, %v; want %q", raw, got, err, want)
+		}
+	}
+	for _, raw := range []string{"popular", "RECENT"} {
+		if _, err := NewSort(raw); !errors.Is(err, ErrInvalidSort) {
+			t.Fatalf("NewSort(%q) error = %v; want ErrInvalidSort", raw, err)
+		}
+	}
+}

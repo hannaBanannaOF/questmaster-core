@@ -10,10 +10,13 @@ import (
 	"questmaster-core/internal/shared/pagination"
 )
 
-// PageMiddleware parses the limit and offset query params of a list route
+// PageMiddleware parses the limit, offset and sort query params of a list route
 func PageMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		page, err := pagination.NewPage(c.Query("limit"), c.Query("offset"))
+		if err == nil {
+			page.Sort, err = pagination.NewSort(c.Query("sort"))
+		}
 		if err != nil {
 			_ = c.Error(fmt.Errorf("%w: %w", httperrors.ErrInvalidParam, err))
 			c.Abort()

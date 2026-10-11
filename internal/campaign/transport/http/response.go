@@ -1,6 +1,10 @@
 package campaign
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type CampaignListResponse struct {
 	Slug        string `json:"slug"`
@@ -11,6 +15,8 @@ type CampaignListResponse struct {
 	PlayerCount int    `json:"player_count"`
 	// The requester characters in the campaign, ordered by name; empty when the requester only runs it
 	MyCharacters []CampaignCharacterRefResponse `json:"my_characters"`
+	// The requester last open of the campaign details, null if never opened
+	LastAccessedAt *time.Time `json:"last_accessed_at"`
 }
 
 type CampaignCharacterRefResponse struct {

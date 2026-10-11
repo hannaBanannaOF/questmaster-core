@@ -1,6 +1,8 @@
 package campaign
 
 import (
+	"time"
+
 	rpgDomain "questmaster-core/internal/rpg/domain"
 	userDomain "questmaster-core/internal/user/domain"
 )
@@ -14,6 +16,8 @@ type Campaign struct {
 	Slug        rpgDomain.Slug
 	Overview    *CampaignOverview
 	PlayerCount PlayerCount
+	// The requester last open of the campaign; only set by the campaign list
+	LastAccessedAt *time.Time
 }
 
 func (c Campaign) IsDM(userID userDomain.UserID) bool {

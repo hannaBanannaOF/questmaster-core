@@ -53,25 +53,28 @@ func (r *CharacterRepositoryPG) GetAllByPlayerIDWithFilters(
 	}
 
 	args = append(args, page.Limit, page.Offset)
-	rows, err := r.db.Query(ctx, "SELECT cs.* FROM character_sheet cs"+where+
-		" ORDER BY unaccent(lower(cs.name)), cs.id"+
+	// $1 is the requester, who is also the player filtered by where
+	rows, err := r.db.Query(ctx, "SELECT cs.*, a.accessed_at AS last_accessed_at"+
+		" FROM character_sheet cs LEFT JOIN character_access a ON a.user_id = $1 AND a.character_id = cs.id"+where+
+		page.Sort.OrderBy("a.accessed_at", "cs.name", "cs.id")+
 		" LIMIT $"+strconv.Itoa(len(args)-1)+" OFFSET $"+strconv.Itoa(len(args)), args...)
 	if err != nil {
 		return pagination.Result[characterDomain.Character]{}, err
 	}
 	defer rows.Close()
 
-	record, err := pgx.CollectRows(rows, pgx.RowToStructByName[CharacterRow])
+	record, err := pgx.CollectRows(rows, pgx.RowToStructByName[CharacterListRow])
 	if err != nil {
 		return pagination.Result[characterDomain.Character]{}, err
 	}
 
 	items := make([]characterDomain.Character, 0, len(record))
 	for _, c := range record {
-		val, err := MapRowToDomain(c)
+		val, err := MapRowToDomain(c.CharacterRow)
 		if err != nil {
 			return pagination.Result[characterDomain.Character]{}, err
 		}
+		val.LastAccessedAt = c.LastAccessedAt
 		items = append(items, val)
 	}
 
@@ -327,4 +330,13 @@ func (r *CharacterRepositoryPG) UpdateCampaign(campaignID campaignDomain.Campaig
 	}
 
 	return &val, nil
+}
+
+// RecordAccess sets the user last access to the character to now
+func (r *CharacterRepositoryPG) RecordAccess(userID userDomain.UserID, id characterDomain.CharacterID) error {
+	_, err := r.db.Exec(context.Background(), `
+		INSERT INTO character_access (user_id, character_id, accessed_at) VALUES ($1, $2, now())
+		ON CONFLICT (user_id, character_id) DO UPDATE SET accessed_at = now()
+	`, userID.Value(), id.Value())
+	return err
 }

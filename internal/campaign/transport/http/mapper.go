@@ -10,12 +10,13 @@ import (
 
 func MapListReadModelToResponse(c campaignDomain.Campaign, userID user.UserID) CampaignListResponse {
 	return CampaignListResponse{
-		Slug:        c.Slug.Value(),
-		Name:        c.Name.Value(),
-		IsDM:        c.IsDM(userID),
-		Status:      c.Status.Value(),
-		System:      c.System.Value(),
-		PlayerCount: c.PlayerCount.Value(),
+		Slug:           c.Slug.Value(),
+		Name:           c.Name.Value(),
+		IsDM:           c.IsDM(userID),
+		Status:         c.Status.Value(),
+		System:         c.System.Value(),
+		PlayerCount:    c.PlayerCount.Value(),
+		LastAccessedAt: c.LastAccessedAt,
 	}
 }
 

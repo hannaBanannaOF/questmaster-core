@@ -1,6 +1,8 @@
 package character
 
 import (
+	"log"
+
 	characterApp "questmaster-core/internal/character/app"
 	characterDomain "questmaster-core/internal/character/domain"
 )
@@ -22,6 +24,14 @@ func (uc *GetCharacterDetailUseCase) Execute(cmd characterApp.GetCharacterDetail
 	}
 	if char == nil {
 		return characterDomain.Character{}, ErrCharacterNotFound
+	}
+
+	// Only own characters appear in the character list, so only their opens are recorded.
+	// Losing one recency update is harmless; failing the read is not
+	if char.IsPlayer(cmd.UserID) {
+		if err := uc.r.RecordAccess(cmd.UserID, char.Id); err != nil {
+			log.Printf("recording access to character %d: %v", char.Id.Value(), err)
+		}
 	}
 
 	return *char, nil

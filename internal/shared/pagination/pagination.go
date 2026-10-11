@@ -13,10 +13,42 @@ const (
 
 var ErrInvalidLimit = errors.New("limit must be between 1 and 100")
 var ErrInvalidOffset = errors.New("offset must be 0 or more")
+var ErrInvalidSort = errors.New("sort must be name or recent")
+
+// Sort is the order of a list. The zero value sorts by name.
+type Sort string
+
+const (
+	SortName   Sort = "name"
+	SortRecent Sort = "recent"
+)
+
+// NewSort parses the raw sort query value; empty uses SortName.
+func NewSort(raw string) (Sort, error) {
+	switch Sort(raw) {
+	case "", SortName:
+		return SortName, nil
+	case SortRecent:
+		return SortRecent, nil
+	default:
+		return "", ErrInvalidSort
+	}
+}
+
+// OrderBy returns the ORDER BY clause for the sort: by name ignoring case and accents, then id;
+// SortRecent first orders by accessed (most recent first, never accessed last).
+func (s Sort) OrderBy(accessed, name, id string) string {
+	order := " ORDER BY unaccent(lower(" + name + ")), " + id
+	if s == SortRecent {
+		order = " ORDER BY " + accessed + " DESC NULLS LAST, unaccent(lower(" + name + ")), " + id
+	}
+	return order
+}
 
 type Page struct {
 	Limit  int
 	Offset int
+	Sort   Sort
 }
 
 // NewPage parses the raw limit and offset query values; empty values use the defaults.
