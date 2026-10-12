@@ -20,6 +20,8 @@ type CharactersHandler struct {
 	updateHPUC                 *characterUsecases.UpdateHPUseCase
 	deleteCharacterUC          *characterUsecases.DeleteCharacterUseCase
 	createPremadeUC            *characterUsecases.CreatePremadeCharacterUseCase
+	leaveCampaignUC            *characterUsecases.LeaveCampaignUseCase
+	editUC                     *characterUsecases.EditCharacterUseCase
 }
 
 func NewCharactersHandler(
@@ -30,6 +32,8 @@ func NewCharactersHandler(
 	updateHPUC *characterUsecases.UpdateHPUseCase,
 	deleteCharacterUC *characterUsecases.DeleteCharacterUseCase,
 	createPremadeUC *characterUsecases.CreatePremadeCharacterUseCase,
+	leaveCampaignUC *characterUsecases.LeaveCampaignUseCase,
+	editUC *characterUsecases.EditCharacterUseCase,
 ) *CharactersHandler {
 	return &CharactersHandler{
 		getCurrentUserCharactersUC: getCurrentUserCharactersUC,
@@ -39,7 +43,85 @@ func NewCharactersHandler(
 		updateHPUC:                 updateHPUC,
 		deleteCharacterUC:          deleteCharacterUC,
 		createPremadeUC:            createPremadeUC,
+		leaveCampaignUC:            leaveCampaignUC,
+		editUC:                     editUC,
 	}
+}
+
+// @Summary Edit character
+// @Description Changes the character name and/or max HP, for its player or the DM of its campaign. A new name regenerates the slug; a lower max HP lowers the current HP, and a character without HP gets full HP
+// @Tags v1:character
+// @Param characterID path integer true "Character ID"
+// @Accept json
+// @Param request body EditCharacterRequest true "Fields to change"
+// @Produce json
+// @Success 200 {object} CharacterEditResponse
+// @Failure 400 {object} httperrors.HttpError "Nothing to change, invalid name or max HP"
+// @Failure 401 {object} httperrors.HttpError "Unauthorized - missing or invalid access_token"
+// @Failure 403 {object} httperrors.HttpError "Not the character player nor its campaign DM"
+// @Failure 404 {object} httperrors.HttpError "Character not found"
+// @Failure 500 {object} httperrors.HttpError "Internal server error"
+// @Security BearerAuth
+// @Router /core/api/v1/character/{characterID} [patch]
+func (h *CharactersHandler) Edit(ctx *context.AppContext) error {
+	var body EditCharacterRequest
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		return httperrors.ErrInvalidRequestBody
+	}
+
+	var name *characterDomain.CharacterName
+	if body.Name != nil {
+		n, err := characterDomain.NewCharacterName(*body.Name)
+		if err != nil {
+			return err
+		}
+		name = &n
+	}
+
+	edited, err := h.editUC.Execute(characterApp.EditCharacterCommand{
+		ID:     ctx.CharacterID(),
+		Name:   name,
+		MaxHP:  body.MaxHP,
+		UserID: ctx.UserID(),
+	})
+	if err != nil {
+		return err
+	}
+
+	ctx.JSON(http.StatusOK, CharacterEditResponse{
+		Slug:      edited.Slug,
+		Name:      edited.Name,
+		CurrentHP: edited.CurrentHP,
+		MaxHP:     edited.MaxHP,
+	})
+	return nil
+}
+
+// @Summary Remove character from campaign
+// @Description The character player leaves the campaign, or the campaign DM removes the character. The character keeps its player and HP, with no campaign
+// @Tags v1:character
+// @Param campaignID path integer true "Campaign ID"
+// @Param characterID path integer true "Character ID"
+// @Success 204
+// @Failure 400 {object} httperrors.HttpError "Character not in this campaign, unclaimed premade character, or archived campaign"
+// @Failure 401 {object} httperrors.HttpError "Unauthorized - missing or invalid access_token"
+// @Failure 403 {object} httperrors.HttpError "Not the character player nor the campaign DM"
+// @Failure 404 {object} httperrors.HttpError "Campaign or character not found"
+// @Failure 500 {object} httperrors.HttpError "Internal server error"
+// @Security BearerAuth
+// @Router /core/api/v1/campaign/{campaignID}/character/{characterID} [delete]
+func (h *CharactersHandler) RemoveFromCampaign(ctx *context.AppContext) error {
+	err := h.leaveCampaignUC.Execute(characterApp.LeaveCampaignCommand{
+		CampaignID:  ctx.CampaignID(),
+		CharacterID: ctx.CharacterID(),
+		UserID:      ctx.UserID(),
+	})
+	if err != nil {
+		return err
+	}
+
+	ctx.Status(http.StatusNoContent)
+	return nil
 }
 
 // @Summary Create premade character

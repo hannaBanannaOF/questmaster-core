@@ -269,6 +269,30 @@ func (r *CharacterRepositoryPG) CreatePremade(name characterDomain.CharacterName
 	return MapRowToDomain(record)
 }
 
+// UpdateDetails saves the character name and HP; a new name regenerates the slug (migration 0008)
+func (r *CharacterRepositoryPG) UpdateDetails(character characterDomain.Character) (characterDomain.Character, error) {
+	var currHP, maxHP any
+	if character.Hp != nil {
+		currHP, maxHP = character.Hp.Current(), character.Hp.Max()
+	}
+
+	rows, err := r.db.Query(context.Background(), `
+		UPDATE character_sheet SET name = $1, current_hp = $2, max_hp = $3
+		WHERE id = $4
+		RETURNING *
+	`, character.Name.Value(), currHP, maxHP, character.Id.Value())
+	if err != nil {
+		return characterDomain.Character{}, err
+	}
+	defer rows.Close()
+	record, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[CharacterRow])
+	if err != nil {
+		return characterDomain.Character{}, err
+	}
+
+	return MapRowToDomain(record)
+}
+
 func (r *CharacterRepositoryPG) UpdateHP(newHP characterDomain.HP, characterID characterDomain.CharacterID) (characterDomain.Character, error) {
 	rows, err := r.db.Query(context.Background(), `
 		UPDATE character_sheet SET current_hp = $1, max_hp = $2
@@ -365,6 +389,19 @@ func (r *CharacterRepositoryPG) ClaimPremade(characterID characterDomain.Charact
 		return nil, err
 	}
 	return &val, nil
+}
+
+// UnlinkFromCampaign removes the character from the campaign; false when it was not in it
+func (r *CharacterRepositoryPG) UnlinkFromCampaign(characterID characterDomain.CharacterID, campaignID campaignDomain.CampaignID) (bool, error) {
+	cmdTag, err := r.db.Exec(context.Background(), `
+		UPDATE character_sheet SET campaign_id = NULL
+		WHERE id = $1 AND campaign_id = $2
+	`, characterID.Value(), campaignID.Value())
+	if err != nil {
+		return false, err
+	}
+
+	return cmdTag.RowsAffected() > 0, nil
 }
 
 func (r *CharacterRepositoryPG) UpdateCampaign(campaignID campaignDomain.CampaignID, characterSlug rpgDomain.Slug, userID userDomain.UserID) (*characterDomain.Character, error) {

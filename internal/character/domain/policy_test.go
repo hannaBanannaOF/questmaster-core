@@ -4,14 +4,19 @@ import (
 	"errors"
 	"testing"
 
+	campaignDomain "questmaster-core/internal/campaign/domain"
 	userDomain "questmaster-core/internal/user/domain"
 
 	"github.com/google/uuid"
 )
 
-type fakeCampaign struct{ dm userDomain.UserID }
+type fakeCampaign struct {
+	dm       userDomain.UserID
+	archived bool
+}
 
 func (f fakeCampaign) IsDM(user userDomain.UserID) bool { return f.dm == user }
+func (f fakeCampaign) IsArchived() bool                 { return f.archived }
 
 func TestCanView(t *testing.T) {
 	player, dm, member, outsider := userDomain.NewUserID(uuid.New()), userDomain.NewUserID(uuid.New()),
@@ -70,5 +75,27 @@ func TestCanDelete(t *testing.T) {
 	}
 	if err := premade.CanDelete(dm, nil); !errors.Is(err, ErrNotPlayer) {
 		t.Fatalf("premade without campaign: expected ErrNotPlayer, got %v", err)
+	}
+}
+
+func TestCanLeaveCampaign(t *testing.T) {
+	player, dm, member := userDomain.NewUserID(uuid.New()), userDomain.NewUserID(uuid.New()), userDomain.NewUserID(uuid.New())
+	active := fakeCampaign{dm: dm}
+	owned := Character{PlayerID: &player}
+
+	for name, user := range map[string]userDomain.UserID{"player": player, "campaign DM": dm} {
+		if err := owned.CanLeaveCampaign(user, active); err != nil {
+			t.Fatalf("%s: expected allowed, got %v", name, err)
+		}
+	}
+	if err := owned.CanLeaveCampaign(member, active); !errors.Is(err, ErrNotAllowed) {
+		t.Fatalf("other member: expected ErrNotAllowed, got %v", err)
+	}
+	premade := Character{}
+	if err := premade.CanLeaveCampaign(dm, active); !errors.Is(err, ErrPremadeCannotLeave) {
+		t.Fatalf("premade: expected ErrPremadeCannotLeave, got %v", err)
+	}
+	if err := owned.CanLeaveCampaign(player, fakeCampaign{dm: dm, archived: true}); !errors.Is(err, campaignDomain.ErrCampaignArchived) {
+		t.Fatalf("archived: expected ErrCampaignArchived, got %v", err)
 	}
 }

@@ -22,6 +22,19 @@ type CreatePremadeCharacterCommand struct {
 	UserID     userDomain.UserID
 }
 
+type EditCharacterCommand struct {
+	ID     characterDomain.CharacterID
+	Name   *characterDomain.CharacterName
+	MaxHP  *int
+	UserID userDomain.UserID
+}
+
+type LeaveCampaignCommand struct {
+	CampaignID  campaignDomain.CampaignID
+	CharacterID characterDomain.CharacterID
+	UserID      userDomain.UserID
+}
+
 type DeleteCharacterCommand struct {
 	ID     characterDomain.CharacterID
 	UserID userDomain.UserID

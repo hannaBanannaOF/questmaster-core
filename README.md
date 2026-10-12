@@ -51,6 +51,7 @@ Database migrations are located in the `migrations/` directory as raw SQL script
 5. `0005_campaign_delete_cascade.up.sql`: Deleting a campaign unlinks its characters (`ON DELETE SET NULL`) and removes its invite (`ON DELETE CASCADE`).
 6. `0006_slug_fallback.up.sql`: Slug triggers fall back to `campaign` / `character` when a name has no ASCII letters or digits, and fixes existing empty slugs.
 7. `0007_recent_access.up.sql`: Creates `campaign_access` and `character_access`, the last time each user opened a campaign or one of their characters (for the `recent` list sort).
+8. `0008_character_slug_on_rename.up.sql`: Renaming a character regenerates its slug (only when the name actually changes).
 
 ### Entity-Relationship Diagram
 

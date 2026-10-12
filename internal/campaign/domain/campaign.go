@@ -24,6 +24,10 @@ func (c Campaign) IsDM(userID userDomain.UserID) bool {
 	return c.Dm.Value() == userID.Value()
 }
 
+func (c Campaign) IsArchived() bool {
+	return c.Status == StatusArchived
+}
+
 func (c *Campaign) ChangeStatus(to CampaignStatus, userID userDomain.UserID) error {
 	if err := c.CanEdit(userID); err != nil {
 		return err

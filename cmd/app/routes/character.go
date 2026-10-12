@@ -20,10 +20,12 @@ func registerCharacterRoutes(
 		character.POST("", appContext.Adapt(handler.CreateCharacter))
 		character.GET("/resolve/:slug", rpgTransport.SlugMiddleware(), appContext.Adapt(handler.ResolveSlug))
 		character.GET("/:characterID", characterTransport.CharacterIDMiddleware(), appContext.Adapt(handler.GetDetails))
+		character.PATCH("/:characterID", characterTransport.CharacterIDMiddleware(), appContext.Adapt(handler.Edit))
 		character.PATCH("/:characterID/hp", characterTransport.CharacterIDMiddleware(), appContext.Adapt(handler.UpdateHP))
 		character.DELETE("/:characterID", characterTransport.CharacterIDMiddleware(), appContext.Adapt(handler.DeleteCharacter))
 	}
 
 	// Premade characters live in the character module but are created inside a campaign
 	v1.POST("/campaign/:campaignID/character", campaignTransport.CampaignIDMiddleware(), appContext.Adapt(handler.CreatePremadeCharacter))
+	v1.DELETE("/campaign/:campaignID/character/:characterID", campaignTransport.CampaignIDMiddleware(), characterTransport.CharacterIDMiddleware(), appContext.Adapt(handler.RemoveFromCampaign))
 }

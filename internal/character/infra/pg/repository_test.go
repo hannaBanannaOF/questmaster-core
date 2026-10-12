@@ -383,3 +383,40 @@ func TestPremadeCharacterClaims(t *testing.T) {
 		}
 	})
 }
+
+func TestRenameRegeneratesSlug(t *testing.T) {
+	r := NewCharacterRepositoryPG(testdb.Pool(t))
+	player := userDomain.NewUserID(uuid.New())
+	// Unique base per run, so slugs from other runs on the same database don't interfere
+	base := "Maria " + uuid.NewString()[:8]
+
+	first := createCharacter(t, r, base, player)
+	second := createCharacter(t, r, base, player)
+	if second.Slug.Value() != first.Slug.Value()+"-2" {
+		t.Fatalf("setup: expected %q, got %q", first.Slug.Value()+"-2", second.Slug.Value())
+	}
+
+	t.Run("saving the same name keeps the slug", func(t *testing.T) {
+		// With the first one gone, recomputing would move the second back to the base slug
+		if _, err := r.DeleteByID(first.Id); err != nil {
+			t.Fatalf("delete: %v", err)
+		}
+		saved, err := r.UpdateDetails(second)
+		if err != nil || saved.Slug != second.Slug {
+			t.Fatalf("expected slug %q kept, got %q err=%v", second.Slug.Value(), saved.Slug.Value(), err)
+		}
+	})
+
+	t.Run("renaming regenerates the slug and the old one stops resolving", func(t *testing.T) {
+		renamed := second
+		renamed.Name = characterDomain.CharacterName("Jão " + uuid.NewString()[:8])
+		saved, err := r.UpdateDetails(renamed)
+		if err != nil || !regexp.MustCompile(`^jao-[0-9a-f]{8}$`).MatchString(saved.Slug.Value()) {
+			t.Fatalf("expected a jao-... slug, got %q err=%v", saved.Slug.Value(), err)
+		}
+		old, err := r.FindBySlug(second.Slug)
+		if err != nil || old != nil {
+			t.Fatalf("expected the old slug to stop resolving, got %v err=%v", old, err)
+		}
+	})
+}

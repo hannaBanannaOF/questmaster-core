@@ -150,6 +150,17 @@ definitions:
       system:
         type: string
     type: object
+  character.CharacterEditResponse:
+    properties:
+      current_hp:
+        type: integer
+      max_hp:
+        type: integer
+      name:
+        type: string
+      slug:
+        type: string
+    type: object
   character.CharacterListPageResponse:
     properties:
       items:
@@ -186,6 +197,13 @@ definitions:
         type: string
     type: object
   character.CreatePremadeCharacterRequest:
+    properties:
+      max_hp:
+        type: integer
+      name:
+        type: string
+    type: object
+  character.EditCharacterRequest:
     properties:
       max_hp:
         type: integer
@@ -503,6 +521,50 @@ paths:
       summary: Create premade character
       tags:
       - v1:character
+  /core/api/v1/campaign/{campaignID}/character/{characterID}:
+    delete:
+      description: The character player leaves the campaign, or the campaign DM removes
+        the character. The character keeps its player and HP, with no campaign
+      parameters:
+      - description: Campaign ID
+        in: path
+        name: campaignID
+        required: true
+        type: integer
+      - description: Character ID
+        in: path
+        name: characterID
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Character not in this campaign, unclaimed premade character,
+            or archived campaign
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "401":
+          description: Unauthorized - missing or invalid access_token
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "403":
+          description: Not the character player nor the campaign DM
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "404":
+          description: Campaign or character not found
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+      security:
+      - BearerAuth: []
+      summary: Remove character from campaign
+      tags:
+      - v1:character
   /core/api/v1/campaign/{campaignID}/status:
     patch:
       consumes:
@@ -789,6 +851,56 @@ paths:
       security:
       - BearerAuth: []
       summary: Get character details
+      tags:
+      - v1:character
+    patch:
+      consumes:
+      - application/json
+      description: Changes the character name and/or max HP, for its player or the
+        DM of its campaign. A new name regenerates the slug; a lower max HP lowers
+        the current HP, and a character without HP gets full HP
+      parameters:
+      - description: Character ID
+        in: path
+        name: characterID
+        required: true
+        type: integer
+      - description: Fields to change
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/character.EditCharacterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/character.CharacterEditResponse'
+        "400":
+          description: Nothing to change, invalid name or max HP
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "401":
+          description: Unauthorized - missing or invalid access_token
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "403":
+          description: Not the character player nor its campaign DM
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "404":
+          description: Character not found
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+      security:
+      - BearerAuth: []
+      summary: Edit character
       tags:
       - v1:character
   /core/api/v1/character/{characterID}/hp:

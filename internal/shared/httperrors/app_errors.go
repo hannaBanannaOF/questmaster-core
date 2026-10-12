@@ -50,12 +50,15 @@ func From(err error) HttpError {
 		errors.Is(err, campaignDomainErr.ErrInvalidCampaignRole),
 		errors.Is(err, characterDomainErr.ErrInvalidMaxHP),
 		errors.Is(err, characterDomainErr.ErrCharacterWithoutHP),
+		errors.Is(err, characterDomainErr.ErrPremadeCannotLeave),
 		errors.Is(err, characterDomainErr.ErrInvalidCharacterName),
 		errors.Is(err, ErrInvalidParam),
 		errors.Is(err, ErrInvalidQuery),
 		errors.Is(err, ErrInvalidRequestBody),
 		errors.Is(err, rpgDomain.ErrInvalidSlug),
 		errors.Is(err, characterAppErr.ErrUnavailableCharacter),
+		errors.Is(err, characterAppErr.ErrNotInCampaign),
+		errors.Is(err, characterAppErr.ErrNothingToEdit),
 		errors.Is(err, rpgDomain.ErrInvalidSystem):
 		return HttpError{
 			Status:  http.StatusBadRequest,

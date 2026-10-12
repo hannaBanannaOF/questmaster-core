@@ -436,3 +436,39 @@ func TestPremadeCharactersInCampaign(t *testing.T) {
 		}
 	})
 }
+
+func TestRemovedCharacterNoLongerGrantsMembership(t *testing.T) {
+	db := testdb.Pool(t)
+	campaigns := NewCampaignRepositoryPG(db)
+	characters := characterInfra.NewCharacterRepositoryPG(db)
+	dm, leaving, staying := newUser(), newUser(), newUser()
+	campaign := createCampaign(t, campaigns, "Leaving table", dm)
+	character := createLinkedCharacter(t, db, campaign.Id, leaving)
+	createLinkedCharacter(t, db, campaign.Id, staying)
+
+	if unlinked, err := characters.UnlinkFromCampaign(character.Id, campaign.Id); err != nil || !unlinked {
+		t.Fatalf("unlink: unlinked=%v err=%v", unlinked, err)
+	}
+
+	if list := listFor(t, campaigns, leaving, campaignDomain.CampaignListFilters{}, firstPage); list.Total != 0 {
+		t.Fatalf("expected the campaign out of the leaving player list, got %v", names(list))
+	}
+	mine, err := characters.GetByPlayerInCampaigns(leaving, []campaignDomain.CampaignID{campaign.Id})
+	if err != nil || len(mine) != 0 {
+		t.Fatalf("expected no membership left, got %v err=%v", mine, err)
+	}
+	found, err := campaigns.FindById(campaign.Id)
+	if err != nil || found.PlayerCount.Value() != 1 {
+		t.Fatalf("expected player count 1, got %v err=%v", found, err)
+	}
+	kept, err := characters.FindByID(character.Id)
+	if err != nil || kept == nil || !kept.IsPlayer(leaving) || kept.CampaignID != nil {
+		t.Fatalf("expected the character kept by its player with no campaign, got %+v err=%v", kept, err)
+	}
+
+	t.Run("unlinking again changes nothing", func(t *testing.T) {
+		if unlinked, err := characters.UnlinkFromCampaign(character.Id, campaign.Id); err != nil || unlinked {
+			t.Fatalf("expected no row changed, got unlinked=%v err=%v", unlinked, err)
+		}
+	})
+}

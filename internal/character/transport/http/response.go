@@ -30,3 +30,10 @@ type CharacterListPageResponse struct {
 	Items []CharacterListResponse `json:"items"`
 	Total int                     `json:"total"`
 }
+
+type CharacterEditResponse struct {
+	Slug      string `json:"slug"`
+	Name      string `json:"name"`
+	CurrentHP *int   `json:"current_hp"`
+	MaxHP     *int   `json:"max_hp"`
+}
