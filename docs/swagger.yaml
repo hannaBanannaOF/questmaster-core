@@ -22,6 +22,12 @@ definitions:
         type: string
       overview:
         type: string
+      premade_characters:
+        description: Unclaimed premade characters, ordered by name; empty unless the
+          requester is the DM
+        items:
+          $ref: '#/definitions/campaign.CampaignPremadeCharacterResponse'
+        type: array
       slug:
         type: string
       status:
@@ -77,6 +83,19 @@ definitions:
       status:
         type: string
       system:
+        type: string
+    type: object
+  campaign.CampaignPremadeCharacterResponse:
+    properties:
+      current_hp:
+        type: integer
+      id:
+        type: integer
+      max_hp:
+        type: integer
+      name:
+        type: string
+      slug:
         type: string
     type: object
   campaign.CampaignStatusCountsResponse:
@@ -166,6 +185,13 @@ definitions:
       system:
         type: string
     type: object
+  character.CreatePremadeCharacterRequest:
+    properties:
+      max_hp:
+        type: integer
+      name:
+        type: string
+    type: object
   character.UpdateHPRequest:
     properties:
       new_hp:
@@ -209,6 +235,23 @@ definitions:
         type: string
       is_dm:
         type: boolean
+      premade_characters:
+        description: Unclaimed premade characters the requester may choose when accepting,
+          ordered by name
+        items:
+          $ref: '#/definitions/invite.InvitePremadeCharacterResponse'
+        type: array
+    type: object
+  invite.InvitePremadeCharacterResponse:
+    properties:
+      current_hp:
+        type: integer
+      max_hp:
+        type: integer
+      name:
+        type: string
+      slug:
+        type: string
     type: object
   rpg.RpgIdResponse:
     properties:
@@ -409,6 +452,57 @@ paths:
       summary: Get campaign details
       tags:
       - v1:campaign
+  /core/api/v1/campaign/{campaignID}/character:
+    post:
+      consumes:
+      - application/json
+      description: The campaign DM prepares a character in the campaign, with no player,
+        for players to claim when accepting the invite. It gets the campaign game
+        system, and current HP starts at max HP
+      parameters:
+      - description: Campaign ID
+        in: path
+        name: campaignID
+        required: true
+        type: integer
+      - description: Premade character data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/character.CreatePremadeCharacterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/rpg.RpgSlugResponse'
+        "400":
+          description: Invalid character data, or the campaign is archived
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "401":
+          description: Unauthorized - missing or invalid access_token
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "403":
+          description: Only the campaign DM can create premade characters
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "404":
+          description: Campaign not found
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+      security:
+      - BearerAuth: []
+      summary: Create premade character
+      tags:
+      - v1:character
   /core/api/v1/campaign/{campaignID}/status:
     patch:
       consumes:
@@ -643,7 +737,8 @@ paths:
           schema:
             $ref: '#/definitions/httperrors.HttpError'
         "403":
-          description: Only the player can delete a character
+          description: Only the player can delete a character, or the campaign DM
+            an unclaimed premade one
           schema:
             $ref: '#/definitions/httperrors.HttpError'
         "404":
