@@ -35,7 +35,14 @@ definitions:
         type: integer
       id:
         type: integer
+      is_mine:
+        description: True when the requester is the character player
+        type: boolean
+      max_hp:
+        type: integer
       name:
+        type: string
+      slug:
         type: string
     type: object
   campaign.CampaignListPageResponse:
@@ -653,7 +660,8 @@ paths:
       tags:
       - v1:character
     get:
-      description: Get a more detailed view of the character
+      description: Get a more detailed view of the character. Visible to its player
+        and, when the character is in a campaign, to the campaign DM and members
       parameters:
       - description: Character ID
         in: path
@@ -669,6 +677,10 @@ paths:
             $ref: '#/definitions/character.CharacterDetailResponse'
         "401":
           description: Unauthorized - missing or invalid access_token
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "403":
+          description: Not the player nor a member of the character campaign
           schema:
             $ref: '#/definitions/httperrors.HttpError'
         "404":
