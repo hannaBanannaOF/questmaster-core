@@ -901,6 +901,80 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ]
+            },
+            "patch": {
+                "description": "Changes the character name and/or max HP, for its player or the DM of its campaign. A new name regenerates the slug; a lower max HP lowers the current HP, and a character without HP gets full HP",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v1:character"
+                ],
+                "summary": "Edit character",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Character ID",
+                        "name": "characterID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Fields to change",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/character.EditCharacterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/character.CharacterEditResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Nothing to change, invalid name or max HP",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid access_token",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "403": {
+                        "description": "Not the character player nor its campaign DM",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "404": {
+                        "description": "Character not found",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
             }
         },
         "/core/api/v1/character/{characterID}/hp": {
@@ -1452,6 +1526,23 @@ const docTemplate = `{
                 }
             }
         },
+        "character.CharacterEditResponse": {
+            "type": "object",
+            "properties": {
+                "current_hp": {
+                    "type": "integer"
+                },
+                "max_hp": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                }
+            }
+        },
         "character.CharacterListPageResponse": {
             "type": "object",
             "properties": {
@@ -1505,6 +1596,17 @@ const docTemplate = `{
             }
         },
         "character.CreatePremadeCharacterRequest": {
+            "type": "object",
+            "properties": {
+                "max_hp": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "character.EditCharacterRequest": {
             "type": "object",
             "properties": {
                 "max_hp": {
