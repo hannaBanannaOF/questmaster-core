@@ -61,7 +61,9 @@ func From(err error) HttpError {
 			Status:  http.StatusBadRequest,
 			Message: err.Error(),
 		}
-	case errors.Is(err, inviteAppErr.ErrInviteAlreadyExists):
+	case errors.Is(err, inviteAppErr.ErrInviteAlreadyExists),
+		errors.Is(err, characterAppErr.ErrAlreadyInCampaign),
+		errors.Is(err, characterAppErr.ErrPremadeAlreadyClaimed):
 		return HttpError{
 			Status:  http.StatusConflict,
 			Message: err.Error(),

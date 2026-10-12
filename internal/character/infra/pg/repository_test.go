@@ -332,3 +332,54 @@ func TestCharacterListSortsByRecentAccess(t *testing.T) {
 		}
 	})
 }
+
+func TestPremadeCharacterClaims(t *testing.T) {
+	db := testdb.Pool(t)
+	r := NewCharacterRepositoryPG(db)
+	campaigns := campaignInfra.NewCampaignRepositoryPG(db)
+	campaign, err := campaigns.Create("Premade campaign", nil, userDomain.NewUserID(uuid.New()), rpgDomain.CallOfCthulhu)
+	if err != nil {
+		t.Fatalf("create campaign: %v", err)
+	}
+	hp, _ := characterDomain.NewHP(12, 12)
+
+	premade, err := r.CreatePremade("Harvey", campaign.Id, rpgDomain.CallOfCthulhu, &hp)
+	if err != nil {
+		t.Fatalf("create premade: %v", err)
+	}
+
+	t.Run("a character without a player can be read", func(t *testing.T) {
+		got, err := r.FindByID(premade.Id)
+		if err != nil || got == nil || !got.IsPremade() || *got.CampaignID != campaign.Id || got.Hp.Current() != 12 {
+			t.Fatalf("expected the premade character back, got %+v err=%v", got, err)
+		}
+	})
+
+	first, second := userDomain.NewUserID(uuid.New()), userDomain.NewUserID(uuid.New())
+	claimed, err := r.ClaimPremade(premade.Id, campaign.Id, first)
+	if err != nil || claimed == nil || !claimed.IsPlayer(first) {
+		t.Fatalf("expected the first claim to succeed, got %+v err=%v", claimed, err)
+	}
+
+	t.Run("second claim of the same character changes nothing", func(t *testing.T) {
+		again, err := r.ClaimPremade(premade.Id, campaign.Id, second)
+		if err != nil || again != nil {
+			t.Fatalf("expected no row changed, got %+v err=%v", again, err)
+		}
+		kept, _ := r.FindByID(premade.Id)
+		if !kept.IsPlayer(first) {
+			t.Fatalf("expected the first player to keep the character")
+		}
+	})
+
+	t.Run("player who already has a character cannot claim another", func(t *testing.T) {
+		another, err := r.CreatePremade("Another", campaign.Id, rpgDomain.CallOfCthulhu, nil)
+		if err != nil {
+			t.Fatalf("create premade: %v", err)
+		}
+		got, err := r.ClaimPremade(another.Id, campaign.Id, first)
+		if err != nil || got != nil {
+			t.Fatalf("expected no row changed, got %+v err=%v", got, err)
+		}
+	})
+}

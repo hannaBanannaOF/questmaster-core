@@ -2,11 +2,27 @@ package invite
 
 import (
 	campaignDomain "questmaster-core/internal/campaign/domain"
+	characterDomain "questmaster-core/internal/character/domain"
 	inviteDomain "questmaster-core/internal/invite/domain"
 	userDomain "questmaster-core/internal/user/domain"
 )
 
-func MapDomainToInviteDetailsReadModel(inviteHash inviteDomain.InviteHash, campaign campaignDomain.Campaign, userID userDomain.UserID) InviteDetailReadModel {
+func MapDomainToInviteDetailsReadModel(inviteHash inviteDomain.InviteHash, campaign campaignDomain.Campaign, userID userDomain.UserID, premades []characterDomain.Character) InviteDetailReadModel {
+	premadeModels := make([]InvitePremadeCharacterReadModel, 0, len(premades))
+	for _, c := range premades {
+		var currentHP, maxHP *int
+		if c.Hp != nil {
+			curr, max := c.Hp.Current(), c.Hp.Max()
+			currentHP, maxHP = &curr, &max
+		}
+		premadeModels = append(premadeModels, InvitePremadeCharacterReadModel{
+			Slug:      c.Slug.Value(),
+			Name:      c.Name.Value(),
+			CurrentHP: currentHP,
+			MaxHP:     maxHP,
+		})
+	}
+
 	var overview *string
 	if campaign.Overview != nil {
 		o := campaign.Overview.Value()
@@ -21,5 +37,6 @@ func MapDomainToInviteDetailsReadModel(inviteHash inviteDomain.InviteHash, campa
 		CampaignOverview:    overview,
 		CampaignPlayerCount: campaign.PlayerCount.Value(),
 		IsDM:                campaign.IsDM(userID),
+		PremadeCharacters:   premadeModels,
 	}
 }

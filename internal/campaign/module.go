@@ -23,6 +23,7 @@ func NewCampaignModule(
 	charactersFinder campaignUsecases.CampaignCharacterFinder,
 	inviteFinder campaignUsecases.CampaignInviteFinder,
 	myCharactersFinder campaignUsecases.CampaignPlayerCharactersFinder,
+	premadeFinder campaignUsecases.CampaignPremadeCharactersFinder,
 ) *CampaignModule {
 	r := campaignInfra.NewCampaignRepositoryPG(db)
 	getCampaignFromIDUC := campaignUsecases.NewGetCampaignFromID(r)
@@ -30,7 +31,7 @@ func NewCampaignModule(
 		createcampaignUC:          campaignUsecases.NewCreateCampaign(r),
 		deleteCampaignUC:          campaignUsecases.NewDeleteCampaign(r),
 		getCurrentUserCampaignsUC: campaignUsecases.NewGetCurrentUserMyCampaigns(r, myCharactersFinder),
-		getCampaignDetailUC:       campaignUsecases.NewGetCampaignDetails(*getCampaignFromIDUC, charactersFinder, inviteFinder, r),
+		getCampaignDetailUC:       campaignUsecases.NewGetCampaignDetails(*getCampaignFromIDUC, charactersFinder, inviteFinder, premadeFinder, r),
 		getCampaignFromIDUC:       getCampaignFromIDUC,
 		resolveCampaignSlugUC:     campaignUsecases.NewResolveCampaignSlug(r),
 		updateCampaignStatusUC:    campaignUsecases.NewUpdateStatus(r),

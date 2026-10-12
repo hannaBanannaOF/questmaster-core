@@ -43,3 +43,32 @@ func TestCanView(t *testing.T) {
 		t.Fatalf("no campaign: expected ErrCannotViewCharacter, got %v", err)
 	}
 }
+
+func TestCanDelete(t *testing.T) {
+	player, dm, other := userDomain.NewUserID(uuid.New()), userDomain.NewUserID(uuid.New()), userDomain.NewUserID(uuid.New())
+	campaign := fakeCampaign{dm: dm}
+	owned := Character{PlayerID: &player}
+	premade := Character{}
+
+	if err := owned.CanDelete(player, campaign); err != nil {
+		t.Fatalf("player: expected allowed, got %v", err)
+	}
+	if err := premade.CanDelete(dm, campaign); err != nil {
+		t.Fatalf("DM on unclaimed premade: expected allowed, got %v", err)
+	}
+	for name, tc := range map[string]struct {
+		c    Character
+		user userDomain.UserID
+	}{
+		"DM on a claimed character":  {owned, dm},
+		"other user on a premade":    {premade, other},
+		"other user on an owned one": {owned, other},
+	} {
+		if err := tc.c.CanDelete(tc.user, campaign); !errors.Is(err, ErrNotPlayer) {
+			t.Fatalf("%s: expected ErrNotPlayer, got %v", name, err)
+		}
+	}
+	if err := premade.CanDelete(dm, nil); !errors.Is(err, ErrNotPlayer) {
+		t.Fatalf("premade without campaign: expected ErrNotPlayer, got %v", err)
+	}
+}

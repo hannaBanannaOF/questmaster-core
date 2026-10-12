@@ -11,6 +11,7 @@ import (
 type CharacterRepository interface {
 	GetAllByPlayerIDWithFilters(userID userDomain.UserID, filters characterDomain.CharacterListFilters, page pagination.Page) (pagination.Result[characterDomain.Character], error)
 	GetByPlayerInCampaigns(userID userDomain.UserID, campaignIDs []campaignDomain.CampaignID) ([]characterDomain.Character, error)
+	GetPremadeByCampaignID(campaignID campaignDomain.CampaignID) ([]characterDomain.Character, error)
 	GetAllByCampaignID(campaignID campaignDomain.CampaignID) ([]characterDomain.Character, error)
 	FindBySlug(slug rpgDomain.Slug) (*characterDomain.Character, error)
 	FindByID(characterID characterDomain.CharacterID) (*characterDomain.Character, error)
@@ -20,5 +21,6 @@ type CharacterRepository interface {
 	RecordAccess(userID userDomain.UserID, id characterDomain.CharacterID) error
 	DeleteByID(characterID characterDomain.CharacterID) (bool, error)
 	GetAllByUserIDAndCampaignIDNullAndSystem(userID userDomain.UserID, system rpgDomain.System) ([]characterDomain.Character, error)
+	ClaimPremade(characterID characterDomain.CharacterID, campaignID campaignDomain.CampaignID, userID userDomain.UserID) (*characterDomain.Character, error)
 	UpdateCampaign(campaignID campaignDomain.CampaignID, characterSlug rpgDomain.Slug, userID userDomain.UserID) (*characterDomain.Character, error)
 }

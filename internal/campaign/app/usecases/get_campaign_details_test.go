@@ -40,6 +40,14 @@ func (f *fakeInviteFinder) GetByCampaignID(campaignDomain.CampaignID) (*inviteDo
 	return f.invite, nil
 }
 
+type fakePremadeFinder struct {
+	premades []characterDomain.Character
+}
+
+func (f fakePremadeFinder) GetPremadeByCampaignID(campaignDomain.CampaignID) ([]characterDomain.Character, error) {
+	return f.premades, nil
+}
+
 type fakeAccessRecorder struct {
 	recorded []userDomain.UserID
 	err      error
@@ -61,6 +69,7 @@ func newDetailsUCWithRecorder(dm, player userDomain.UserID, invites *fakeInviteF
 		*NewGetCampaignFromID(fakeCampaignRepo{campaign: campaign}),
 		fakeCharacterFinder{characters: characters},
 		invites,
+		fakePremadeFinder{},
 		recorder,
 	)
 }
@@ -99,6 +108,7 @@ func TestGetCampaignDetails(t *testing.T) {
 			*NewGetCampaignFromID(fakeCampaignRepo{}),
 			fakeCharacterFinder{},
 			&fakeInviteFinder{},
+			fakePremadeFinder{},
 			&fakeAccessRecorder{},
 		)
 		_, err := uc.Execute(campaignApp.GetCampaignDetailsCommand{ID: 1, UserID: dm})
@@ -157,6 +167,7 @@ func TestGetCampaignDetails(t *testing.T) {
 			*NewGetCampaignFromID(fakeCampaignRepo{campaign: &campaignDomain.Campaign{Id: 1, Dm: dm}}),
 			fakeCharacterFinder{characters: characters},
 			&fakeInviteFinder{},
+			fakePremadeFinder{},
 			&fakeAccessRecorder{},
 		)
 
@@ -175,6 +186,27 @@ func TestGetCampaignDetails(t *testing.T) {
 		rm, err = uc.Execute(campaignApp.GetCampaignDetailsCommand{ID: 1, UserID: dm})
 		if err != nil || rm.Characters[0].IsMine || rm.Characters[1].IsMine || rm.Characters[0].Slug != "hero" {
 			t.Fatalf("expected the DM to see the party with is_mine false, got %+v err=%v", rm.Characters, err)
+		}
+	})
+
+	t.Run("only the DM gets the premade characters", func(t *testing.T) {
+		premades := fakePremadeFinder{premades: []characterDomain.Character{{Id: 20, Slug: "harvey", Name: "Harvey"}}}
+		uc := NewGetCampaignDetails(
+			*NewGetCampaignFromID(fakeCampaignRepo{campaign: &campaignDomain.Campaign{Id: 1, Dm: dm}}),
+			fakeCharacterFinder{characters: []characterDomain.Character{{Id: 10, Name: "Hero", PlayerID: &player}}},
+			&fakeInviteFinder{},
+			premades,
+			&fakeAccessRecorder{},
+		)
+
+		rm, err := uc.Execute(campaignApp.GetCampaignDetailsCommand{ID: 1, UserID: dm})
+		if err != nil || len(rm.PremadeCharacters) != 1 || rm.PremadeCharacters[0].Slug != "harvey" || len(rm.Characters) != 1 {
+			t.Fatalf("expected the DM to get the party and the premade apart, got %+v err=%v", rm, err)
+		}
+
+		rm, err = uc.Execute(campaignApp.GetCampaignDetailsCommand{ID: 1, UserID: player})
+		if err != nil || len(rm.PremadeCharacters) != 0 {
+			t.Fatalf("expected no premade characters for a player, got %+v err=%v", rm.PremadeCharacters, err)
 		}
 	})
 }

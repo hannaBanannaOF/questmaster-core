@@ -12,28 +12,34 @@ import (
 type CampaignDetailsInput struct {
 	Campaign   campaignDomain.Campaign
 	Characters []characterDomain.Character
-	Invite     *inviteDomain.Invite
-	UserID     userDomain.UserID
+	// Unclaimed premade characters; only loaded for the DM
+	PremadeCharacters []characterDomain.Character
+	Invite            *inviteDomain.Invite
+	UserID            userDomain.UserID
 }
 
-func MapDomainToDetailReadModel(input CampaignDetailsInput) CampaignDetailsReadModel {
-
-	charactersModels := make([]CampaignCharacterReadModel, 0, len(input.Characters))
-	for _, c := range input.Characters {
+func mapCampaignCharacters(characters []characterDomain.Character, userID userDomain.UserID) []CampaignCharacterReadModel {
+	models := make([]CampaignCharacterReadModel, 0, len(characters))
+	for _, c := range characters {
 		var currentHP, maxHP *int
 		if c.Hp != nil {
 			curr, max := c.Hp.Current(), c.Hp.Max()
 			currentHP, maxHP = &curr, &max
 		}
-		charactersModels = append(charactersModels, CampaignCharacterReadModel{
+		models = append(models, CampaignCharacterReadModel{
 			Id:        c.Id.Value(),
 			Slug:      c.Slug.Value(),
 			Name:      c.Name.Value(),
 			CurrentHP: currentHP,
 			MaxHP:     maxHP,
-			IsMine:    c.IsPlayer(input.UserID),
+			IsMine:    c.IsPlayer(userID),
 		})
 	}
+	return models
+}
+
+func MapDomainToDetailReadModel(input CampaignDetailsInput) CampaignDetailsReadModel {
+	charactersModels := mapCampaignCharacters(input.Characters, input.UserID)
 
 	var campaignOverview *string
 	if input.Campaign.Overview != nil {
@@ -48,15 +54,16 @@ func MapDomainToDetailReadModel(input CampaignDetailsInput) CampaignDetailsReadM
 	}
 
 	return CampaignDetailsReadModel{
-		Id:         input.Campaign.Id.Value(),
-		Name:       input.Campaign.Name.Value(),
-		Status:     input.Campaign.Status.Value(),
-		System:     input.Campaign.System.Value(),
-		Slug:       input.Campaign.Slug.Value(),
-		Overview:   campaignOverview,
-		IsDM:       input.Campaign.IsDM(input.UserID),
-		Characters: charactersModels,
-		InviteHash: inviteHash,
+		Id:                input.Campaign.Id.Value(),
+		Name:              input.Campaign.Name.Value(),
+		Status:            input.Campaign.Status.Value(),
+		System:            input.Campaign.System.Value(),
+		Slug:              input.Campaign.Slug.Value(),
+		Overview:          campaignOverview,
+		IsDM:              input.Campaign.IsDM(input.UserID),
+		Characters:        charactersModels,
+		PremadeCharacters: mapCampaignCharacters(input.PremadeCharacters, input.UserID),
+		InviteHash:        inviteHash,
 	}
 }
 

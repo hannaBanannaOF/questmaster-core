@@ -23,3 +23,10 @@ func TestMapInviteDetailsReadModelToResponseIncludesIsDM(t *testing.T) {
 		}
 	}
 }
+
+func TestMapInviteDetailsReadModelToResponsePremadeCharacters(t *testing.T) {
+	body, _ := json.Marshal(MapInviteDetailsReadModelToResponse(inviteApp.InviteDetailReadModel{}))
+	if !strings.Contains(string(body), `"premade_characters":[]`) {
+		t.Fatalf("expected an empty premade_characters array, got %s", body)
+	}
+}

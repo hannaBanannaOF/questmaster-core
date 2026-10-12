@@ -265,7 +265,7 @@ func (h *CharactersHandler) UpdateHP(ctx *context.AppContext) error {
 // @Success 204
 // @Failure 404 {object} httperrors.HttpError "Character not found"
 // @Failure 401 {object} httperrors.HttpError "Unauthorized - missing or invalid access_token"
-// @Failure 403 {object} httperrors.HttpError "Only the player can delete a character"
+// @Failure 403 {object} httperrors.HttpError "Only the player can delete a character, or the campaign DM an unclaimed premade one"
 // @Failure 500 {object} httperrors.HttpError "Internal server error"
 // @Security BearerAuth
 // @Router /core/api/v1/character/{characterID} [delete]

@@ -10,6 +10,15 @@ type InviteDetailsResponse struct {
 	CampaignSystem      string    `json:"campaign_system"`
 	CampaignPlayerCount int       `json:"campaign_player_count"`
 	IsDM                bool      `json:"is_dm"`
+	// Unclaimed premade characters the requester may choose when accepting, ordered by name
+	PremadeCharacters []InvitePremadeCharacterResponse `json:"premade_characters"`
+}
+
+type InvitePremadeCharacterResponse struct {
+	Slug      string `json:"slug"`
+	Name      string `json:"name"`
+	CurrentHP *int   `json:"current_hp"`
+	MaxHP     *int   `json:"max_hp"`
 }
 
 type InviteCreateResponse struct {

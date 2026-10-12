@@ -7,15 +7,18 @@ import (
 type GetInviteDetailUseCase struct {
 	r             inviteApp.InviteRepository
 	getCampaignUC InviteCampaignFinder
+	premadeFinder InvitePremadeCharactersFinder
 }
 
 func NewGetInviteDetail(
 	r inviteApp.InviteRepository,
 	getCampaignUC InviteCampaignFinder,
+	premadeFinder InvitePremadeCharactersFinder,
 ) *GetInviteDetailUseCase {
 	return &GetInviteDetailUseCase{
 		r:             r,
 		getCampaignUC: getCampaignUC,
+		premadeFinder: premadeFinder,
 	}
 }
 
@@ -33,5 +36,10 @@ func (uc *GetInviteDetailUseCase) Execute(cmd inviteApp.GetinviteDetailsCommand)
 		return inviteApp.InviteDetailReadModel{}, err
 	}
 
-	return inviteApp.MapDomainToInviteDetailsReadModel(cmd.Hash, campaign, cmd.UserID), nil
+	premades, err := uc.premadeFinder.GetPremadeByCampaignID(invite.CampaignId)
+	if err != nil {
+		return inviteApp.InviteDetailReadModel{}, err
+	}
+
+	return inviteApp.MapDomainToInviteDetailsReadModel(cmd.Hash, campaign, cmd.UserID, premades), nil
 }

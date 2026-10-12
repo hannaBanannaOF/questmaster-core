@@ -78,3 +78,17 @@ func TestMapDetailReadModelToResponsePartyCard(t *testing.T) {
 		t.Fatalf("expected %s in %s err=%v", want, body, err)
 	}
 }
+
+func TestMapDetailReadModelToResponsePremadeCharacters(t *testing.T) {
+	body, _ := json.Marshal(MapDetailReadModelToResponse(campaignApp.CampaignDetailsReadModel{}))
+	if !strings.Contains(string(body), `"premade_characters":[]`) {
+		t.Fatalf("expected an empty premade_characters array, got %s", body)
+	}
+
+	body, _ = json.Marshal(MapDetailReadModelToResponse(campaignApp.CampaignDetailsReadModel{
+		PremadeCharacters: []campaignApp.CampaignCharacterReadModel{{Id: 20, Slug: "harvey", Name: "Harvey"}},
+	}))
+	if !strings.Contains(string(body), `"premade_characters":[{"id":20,"slug":"harvey","name":"Harvey","current_hp":null,"max_hp":null}]`) {
+		t.Fatalf("unexpected premade_characters in %s", body)
+	}
+}

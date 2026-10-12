@@ -15,6 +15,10 @@ type CampaignPlayerCharactersFinder interface {
 	GetByPlayerInCampaigns(userID userDomain.UserID, campaignIDs []campaignDomain.CampaignID) ([]characterDomain.Character, error)
 }
 
+type CampaignPremadeCharactersFinder interface {
+	GetPremadeByCampaignID(campaignID campaignDomain.CampaignID) ([]characterDomain.Character, error)
+}
+
 type CampaignAccessRecorder interface {
 	RecordAccess(userID userDomain.UserID, id campaignDomain.CampaignID) error
 }

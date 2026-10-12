@@ -120,12 +120,23 @@ func (r *CharacterRepositoryPG) GetByPlayerInCampaigns(
 	return characters, nil
 }
 
+// GetAllByCampaignID returns the campaign characters that have a player (its party)
 func (r *CharacterRepositoryPG) GetAllByCampaignID(campaignID campaignDomain.CampaignID) ([]characterDomain.Character, error) {
+	return r.getByCampaign(campaignID, "cs.player_id IS NOT NULL")
+}
+
+// GetPremadeByCampaignID returns the campaign unclaimed premade characters, ordered by name
+func (r *CharacterRepositoryPG) GetPremadeByCampaignID(campaignID campaignDomain.CampaignID) ([]characterDomain.Character, error) {
+	return r.getByCampaign(campaignID, "cs.player_id IS NULL")
+}
+
+func (r *CharacterRepositoryPG) getByCampaign(campaignID campaignDomain.CampaignID, playerCondition string) ([]characterDomain.Character, error) {
 	rows, err := r.db.Query(context.Background(), `
-        SELECT cs.*
-        FROM character_sheet cs
-        WHERE cs.campaign_id = $1
-    `, campaignID.Value())
+		SELECT cs.*
+		FROM character_sheet cs
+		WHERE cs.campaign_id = $1 AND `+playerCondition+`
+		ORDER BY unaccent(lower(cs.name)), cs.id
+	`, campaignID.Value())
 	if err != nil {
 		return nil, err
 	}
@@ -321,6 +332,39 @@ func (r *CharacterRepositoryPG) GetAllByUserIDAndCampaignIDNullAndSystem(userID 
 	}
 
 	return domain, nil
+}
+
+// ClaimPremade makes userID the player of an unclaimed premade character of the campaign,
+// unless userID already has a character there. Returns nil when no row changed.
+func (r *CharacterRepositoryPG) ClaimPremade(characterID characterDomain.CharacterID, campaignID campaignDomain.CampaignID, userID userDomain.UserID) (*characterDomain.Character, error) {
+	rows, err := r.db.Query(context.Background(), `
+		UPDATE character_sheet cs
+		SET player_id = $3
+		WHERE cs.id = $1
+			AND cs.campaign_id = $2
+			AND cs.player_id IS NULL
+			AND NOT EXISTS (
+				SELECT 1 FROM character_sheet o WHERE o.campaign_id = $2 AND o.player_id = $3
+			)
+		RETURNING cs.*
+	`, characterID.Value(), campaignID.Value(), userID.Value())
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	record, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[CharacterRow])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	val, err := MapRowToDomain(record)
+	if err != nil {
+		return nil, err
+	}
+	return &val, nil
 }
 
 func (r *CharacterRepositoryPG) UpdateCampaign(campaignID campaignDomain.CampaignID, characterSlug rpgDomain.Slug, userID userDomain.UserID) (*characterDomain.Character, error) {
