@@ -14,3 +14,8 @@ type CreatePremadeCharacterRequest struct {
 	Name  string `json:"name"`
 	MaxHP *int   `json:"max_hp"`
 }
+
+type EditCharacterRequest struct {
+	Name  *string `json:"name"`
+	MaxHP *int    `json:"max_hp"`
+}

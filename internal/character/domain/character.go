@@ -36,3 +36,32 @@ func (c *Character) UpdateHP(newHP HP, userID userDomain.UserID, campaign Campai
 	c.Hp = &newHP
 	return nil
 }
+
+// Edit renames the character and/or sets its max HP, for whoever may update it (see CanUpdate).
+// The current HP is lowered to a smaller max, and a character without HP starts at the max.
+func (c *Character) Edit(user userDomain.UserID, campaign CampaignAccess, name *CharacterName, maxHP *int) error {
+	if err := c.CanUpdate(user, campaign); err != nil {
+		return err
+	}
+
+	var hp *HP
+	if maxHP != nil {
+		current := *maxHP
+		if c.Hp != nil {
+			current = min(c.Hp.Current(), *maxHP)
+		}
+		newHP, err := NewHP(current, *maxHP)
+		if err != nil {
+			return err
+		}
+		hp = &newHP
+	}
+
+	if name != nil {
+		c.Name = *name
+	}
+	if hp != nil {
+		c.Hp = hp
+	}
+	return nil
+}

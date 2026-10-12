@@ -17,6 +17,7 @@ type CharacterRepository interface {
 	FindByID(characterID characterDomain.CharacterID) (*characterDomain.Character, error)
 	Create(name characterDomain.CharacterName, playerID userDomain.UserID, system rpgDomain.System, hp *characterDomain.HP) (characterDomain.Character, error)
 	CreatePremade(name characterDomain.CharacterName, campaignID campaignDomain.CampaignID, system rpgDomain.System, hp *characterDomain.HP) (characterDomain.Character, error)
+	UpdateDetails(character characterDomain.Character) (characterDomain.Character, error)
 	UpdateHP(newHP characterDomain.HP, characterID characterDomain.CharacterID) (characterDomain.Character, error)
 	RecordAccess(userID userDomain.UserID, id characterDomain.CharacterID) error
 	DeleteByID(characterID characterDomain.CharacterID) (bool, error)

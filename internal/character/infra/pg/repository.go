@@ -269,6 +269,30 @@ func (r *CharacterRepositoryPG) CreatePremade(name characterDomain.CharacterName
 	return MapRowToDomain(record)
 }
 
+// UpdateDetails saves the character name and HP; a new name regenerates the slug (migration 0008)
+func (r *CharacterRepositoryPG) UpdateDetails(character characterDomain.Character) (characterDomain.Character, error) {
+	var currHP, maxHP any
+	if character.Hp != nil {
+		currHP, maxHP = character.Hp.Current(), character.Hp.Max()
+	}
+
+	rows, err := r.db.Query(context.Background(), `
+		UPDATE character_sheet SET name = $1, current_hp = $2, max_hp = $3
+		WHERE id = $4
+		RETURNING *
+	`, character.Name.Value(), currHP, maxHP, character.Id.Value())
+	if err != nil {
+		return characterDomain.Character{}, err
+	}
+	defer rows.Close()
+	record, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[CharacterRow])
+	if err != nil {
+		return characterDomain.Character{}, err
+	}
+
+	return MapRowToDomain(record)
+}
+
 func (r *CharacterRepositoryPG) UpdateHP(newHP characterDomain.HP, characterID characterDomain.CharacterID) (characterDomain.Character, error) {
 	rows, err := r.db.Query(context.Background(), `
 		UPDATE character_sheet SET current_hp = $1, max_hp = $2

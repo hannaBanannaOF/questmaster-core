@@ -58,6 +58,7 @@ func From(err error) HttpError {
 		errors.Is(err, rpgDomain.ErrInvalidSlug),
 		errors.Is(err, characterAppErr.ErrUnavailableCharacter),
 		errors.Is(err, characterAppErr.ErrNotInCampaign),
+		errors.Is(err, characterAppErr.ErrNothingToEdit),
 		errors.Is(err, rpgDomain.ErrInvalidSystem):
 		return HttpError{
 			Status:  http.StatusBadRequest,
