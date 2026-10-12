@@ -36,6 +36,12 @@ func MapRowToDomain(row CharacterRow) (characterDomain.Character, error) {
 		return characterDomain.Character{}, fmt.Errorf("character %d has only one of current_hp/max_hp set", row.Id)
 	}
 
+	var playerID *userDomain.UserID
+	if row.PlayerID.Valid {
+		id := userDomain.NewUserID(row.PlayerID.UUID)
+		playerID = &id
+	}
+
 	system, err := rpgDomain.NewSystem(row.System)
 	if err != nil {
 		return characterDomain.Character{}, err
@@ -44,7 +50,7 @@ func MapRowToDomain(row CharacterRow) (characterDomain.Character, error) {
 	return characterDomain.Character{
 		Id:         characterDomain.NewCharacterID(row.Id),
 		Name:       characterName,
-		PlayerID:   userDomain.NewUserID(row.PlayerID),
+		PlayerID:   playerID,
 		System:     system,
 		CampaignID: campaignID,
 		Slug:       characterSlug,

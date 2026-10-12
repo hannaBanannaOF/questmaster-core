@@ -19,6 +19,7 @@ type CharactersHandler struct {
 	getDetailsUC               *characterUsecases.GetCharacterDetailUseCase
 	updateHPUC                 *characterUsecases.UpdateHPUseCase
 	deleteCharacterUC          *characterUsecases.DeleteCharacterUseCase
+	createPremadeUC            *characterUsecases.CreatePremadeCharacterUseCase
 }
 
 func NewCharactersHandler(
@@ -28,6 +29,7 @@ func NewCharactersHandler(
 	getDetailsUC *characterUsecases.GetCharacterDetailUseCase,
 	updateHPUC *characterUsecases.UpdateHPUseCase,
 	deleteCharacterUC *characterUsecases.DeleteCharacterUseCase,
+	createPremadeUC *characterUsecases.CreatePremadeCharacterUseCase,
 ) *CharactersHandler {
 	return &CharactersHandler{
 		getCurrentUserCharactersUC: getCurrentUserCharactersUC,
@@ -36,7 +38,57 @@ func NewCharactersHandler(
 		getDetailsUC:               getDetailsUC,
 		updateHPUC:                 updateHPUC,
 		deleteCharacterUC:          deleteCharacterUC,
+		createPremadeUC:            createPremadeUC,
 	}
+}
+
+// @Summary Create premade character
+// @Description The campaign DM prepares a character in the campaign, with no player, for players to claim when accepting the invite. It gets the campaign game system, and current HP starts at max HP
+// @Tags v1:character
+// @Param campaignID path integer true "Campaign ID"
+// @Accept json
+// @Param request body CreatePremadeCharacterRequest true "Premade character data"
+// @Produce json
+// @Success 201 {object} rpg.RpgSlugResponse
+// @Failure 400 {object} httperrors.HttpError "Invalid character data, or the campaign is archived"
+// @Failure 401 {object} httperrors.HttpError "Unauthorized - missing or invalid access_token"
+// @Failure 403 {object} httperrors.HttpError "Only the campaign DM can create premade characters"
+// @Failure 404 {object} httperrors.HttpError "Campaign not found"
+// @Failure 500 {object} httperrors.HttpError "Internal server error"
+// @Security BearerAuth
+// @Router /core/api/v1/campaign/{campaignID}/character [post]
+func (h *CharactersHandler) CreatePremadeCharacter(ctx *context.AppContext) error {
+	var body CreatePremadeCharacterRequest
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		return httperrors.ErrInvalidRequestBody
+	}
+
+	name, err := characterDomain.NewCharacterName(body.Name)
+	if err != nil {
+		return err
+	}
+
+	var hp *characterDomain.HP
+	if body.MaxHP != nil {
+		h, err := characterDomain.NewHP(*body.MaxHP, *body.MaxHP)
+		if err != nil {
+			return err
+		}
+		hp = &h
+	}
+
+	character, err := h.createPremadeUC.Execute(characterApp.CreatePremadeCharacterCommand{
+		CampaignID: ctx.CampaignID(),
+		Name:       name,
+		Hp:         hp,
+		UserID:     ctx.UserID(),
+	})
+	if err != nil {
+		return err
+	}
+
+	ctx.JSON(http.StatusCreated, MapCreateCharacterReadModelToResponse(character))
+	return nil
 }
 
 // @Summary Get current user characters
@@ -213,7 +265,7 @@ func (h *CharactersHandler) UpdateHP(ctx *context.AppContext) error {
 // @Success 204
 // @Failure 404 {object} httperrors.HttpError "Character not found"
 // @Failure 401 {object} httperrors.HttpError "Unauthorized - missing or invalid access_token"
-// @Failure 403 {object} httperrors.HttpError "Only the player can delete a character"
+// @Failure 403 {object} httperrors.HttpError "Only the player can delete a character, or the campaign DM an unclaimed premade one"
 // @Failure 500 {object} httperrors.HttpError "Internal server error"
 // @Security BearerAuth
 // @Router /core/api/v1/character/{characterID} [delete]

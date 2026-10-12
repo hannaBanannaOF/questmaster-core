@@ -7,15 +7,16 @@ import (
 )
 
 type CampaignDetailsReadModel struct {
-	Id         int
-	Name       string
-	Status     string
-	System     string
-	Slug       string
-	Overview   *string
-	IsDM       bool
-	Characters []CampaignCharacterReadModel
-	InviteHash *uuid.UUID
+	Id                int
+	Name              string
+	Status            string
+	System            string
+	Slug              string
+	Overview          *string
+	IsDM              bool
+	Characters        []CampaignCharacterReadModel
+	PremadeCharacters []CampaignCharacterReadModel
+	InviteHash        *uuid.UUID
 }
 
 type CampaignCharacterReadModel struct {

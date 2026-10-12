@@ -4,6 +4,7 @@ import (
 	"log"
 
 	campaignApp "questmaster-core/internal/campaign/app"
+	characterDomain "questmaster-core/internal/character/domain"
 	inviteDomain "questmaster-core/internal/invite/domain"
 )
 
@@ -11,6 +12,7 @@ type GetCampaignDetailsUseCase struct {
 	getCampaignUc           GetCampaignFromIDUseCase
 	getCampaignCharactersUc CampaignCharacterFinder
 	getCampaignInviteUC     CampaignInviteFinder
+	premadeFinder           CampaignPremadeCharactersFinder
 	accessRecorder          CampaignAccessRecorder
 }
 
@@ -18,12 +20,14 @@ func NewGetCampaignDetails(
 	getCampaignUc GetCampaignFromIDUseCase,
 	getCampaignCharactersUc CampaignCharacterFinder,
 	getCampaignInviteUC CampaignInviteFinder,
+	premadeFinder CampaignPremadeCharactersFinder,
 	accessRecorder CampaignAccessRecorder,
 ) *GetCampaignDetailsUseCase {
 	return &GetCampaignDetailsUseCase{
 		getCampaignUc:           getCampaignUc,
 		getCampaignCharactersUc: getCampaignCharactersUc,
 		getCampaignInviteUC:     getCampaignInviteUC,
+		premadeFinder:           premadeFinder,
 		accessRecorder:          accessRecorder,
 	}
 }
@@ -56,20 +60,27 @@ func (uc *GetCampaignDetailsUseCase) Execute(cmd campaignApp.GetCampaignDetailsC
 		log.Printf("recording access to campaign %d: %v", cmd.ID.Value(), err)
 	}
 
-	// The invite hash grants access to the campaign, so only the DM gets it
+	// The invite hash grants access to the campaign and premade characters are the DM preparation,
+	// so only the DM gets them
 	var invite *inviteDomain.Invite
+	var premades []characterDomain.Character
 	if campaign.IsDM(cmd.UserID) {
 		invite, err = uc.getCampaignInviteUC.GetByCampaignID(cmd.ID)
+		if err != nil {
+			return campaignApp.CampaignDetailsReadModel{}, err
+		}
+		premades, err = uc.premadeFinder.GetPremadeByCampaignID(cmd.ID)
 		if err != nil {
 			return campaignApp.CampaignDetailsReadModel{}, err
 		}
 	}
 
 	input := campaignApp.CampaignDetailsInput{
-		Campaign:   campaign,
-		Characters: characters,
-		Invite:     invite,
-		UserID:     cmd.UserID,
+		Campaign:          campaign,
+		Characters:        characters,
+		PremadeCharacters: premades,
+		Invite:            invite,
+		UserID:            cmd.UserID,
 	}
 
 	return campaignApp.MapDomainToDetailReadModel(input), nil

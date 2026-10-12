@@ -372,3 +372,67 @@ func TestListForUserSortsByRecentAccess(t *testing.T) {
 		}
 	})
 }
+
+func TestPremadeCharactersInCampaign(t *testing.T) {
+	db := testdb.Pool(t)
+	campaigns := NewCampaignRepositoryPG(db)
+	characters := characterInfra.NewCharacterRepositoryPG(db)
+	dm, player, claimer := newUser(), newUser(), newUser()
+	campaign := createCampaign(t, campaigns, "Premade table", dm)
+
+	createLinkedCharacter(t, db, campaign.Id, player)
+	claimed, err := characters.CreatePremade("Claimed", campaign.Id, rpgDomain.DungeonsAndDragons, nil)
+	if err != nil {
+		t.Fatalf("create premade: %v", err)
+	}
+	if c, err := characters.ClaimPremade(claimed.Id, campaign.Id, claimer); err != nil || c == nil {
+		t.Fatalf("claim premade: %v", err)
+	}
+	unclaimed, err := characters.CreatePremade("Unclaimed", campaign.Id, rpgDomain.DungeonsAndDragons, nil)
+	if err != nil {
+		t.Fatalf("create premade: %v", err)
+	}
+
+	t.Run("party has players only, premades list has unclaimed only", func(t *testing.T) {
+		party, err := characters.GetAllByCampaignID(campaign.Id)
+		if err != nil || len(party) != 2 {
+			t.Fatalf("expected the player and the claimer in the party, got %v err=%v", party, err)
+		}
+		premades, err := characters.GetPremadeByCampaignID(campaign.Id)
+		if err != nil || len(premades) != 1 || premades[0].Id != unclaimed.Id {
+			t.Fatalf("expected only the unclaimed premade, got %v err=%v", premades, err)
+		}
+	})
+
+	t.Run("unclaimed premades do not count as players", func(t *testing.T) {
+		found, err := campaigns.FindById(campaign.Id)
+		if err != nil || found.PlayerCount.Value() != 2 {
+			t.Fatalf("expected player count 2, got %v err=%v", found, err)
+		}
+	})
+
+	t.Run("premades are not in the DM character list nor my_characters", func(t *testing.T) {
+		list, err := characters.GetAllByPlayerIDWithFilters(dm, characterDomain.CharacterListFilters{}, firstPage)
+		if err != nil || list.Total != 0 {
+			t.Fatalf("expected no characters for the DM, got %v err=%v", list.Items, err)
+		}
+		mine, err := characters.GetByPlayerInCampaigns(dm, []campaignDomain.CampaignID{campaign.Id})
+		if err != nil || len(mine) != 0 {
+			t.Fatalf("expected no my_characters for the DM, got %v err=%v", mine, err)
+		}
+	})
+
+	t.Run("deleting the campaign deletes only the unclaimed premade", func(t *testing.T) {
+		if deleted, err := campaigns.DeleteById(campaign.Id); err != nil || !deleted {
+			t.Fatalf("delete campaign: deleted=%v err=%v", deleted, err)
+		}
+		gone, err := characters.FindByID(unclaimed.Id)
+		if err != nil || gone != nil {
+			t.Fatalf("expected the unclaimed premade deleted, got %v err=%v", gone, err)
+		}
+		kept, err := characters.FindByID(claimed.Id)
+		if err != nil || kept == nil || !kept.IsPlayer(claimer) || kept.CampaignID != nil {
+			t.Fatalf("expected the claimed character kept and unlinked, got %+v err=%v", kept, err)
+		}
+	})
+}

@@ -37,7 +37,17 @@ type CampaignDetailResponse struct {
 	Overview   *string                               `json:"overview"`
 	IsDM       bool                                  `json:"is_dm"`
 	Characters []CampaignDetailResponseCharacterItem `json:"characters"`
-	InviteHash *uuid.UUID                            `json:"invite_hash"`
+	// Unclaimed premade characters, ordered by name; empty unless the requester is the DM
+	PremadeCharacters []CampaignPremadeCharacterResponse `json:"premade_characters"`
+	InviteHash        *uuid.UUID                         `json:"invite_hash"`
+}
+
+type CampaignPremadeCharacterResponse struct {
+	Id        int    `json:"id"`
+	Slug      string `json:"slug"`
+	Name      string `json:"name"`
+	CurrentHP *int   `json:"current_hp"`
+	MaxHP     *int   `json:"max_hp"`
 }
 
 type CampaignDetailResponseCharacterItem struct {

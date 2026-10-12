@@ -36,10 +36,16 @@ func (c *Character) CanView(user userDomain.UserID, campaign CampaignAccess, isC
 	return ErrCannotViewCharacter
 }
 
-func (c *Character) CanDelete(user userDomain.UserID) error {
-	if !c.IsPlayer(user) {
-		return ErrNotPlayer
+// CanDelete allows the player, and the campaign DM while the character is an unclaimed premade one.
+// campaign is nil when the character has no campaign.
+func (c *Character) CanDelete(user userDomain.UserID, campaign CampaignAccess) error {
+	if c.IsPlayer(user) {
+		return nil
 	}
 
-	return nil
+	if c.IsPremade() && campaign != nil && campaign.IsDM(user) {
+		return nil
+	}
+
+	return ErrNotPlayer
 }

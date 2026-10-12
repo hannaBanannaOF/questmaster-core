@@ -8,7 +8,13 @@ import (
 )
 
 func MapInviteDetailsReadModelToResponse(rm inviteApp.InviteDetailReadModel) InviteDetailsResponse {
+	premades := make([]InvitePremadeCharacterResponse, 0, len(rm.PremadeCharacters))
+	for _, c := range rm.PremadeCharacters {
+		premades = append(premades, InvitePremadeCharacterResponse{Slug: c.Slug, Name: c.Name, CurrentHP: c.CurrentHP, MaxHP: c.MaxHP})
+	}
+
 	return InviteDetailsResponse{
+		PremadeCharacters:   premades,
 		InviteHash:          rm.InviteHash,
 		CampaignSlug:        rm.CampaignSlug,
 		CampaignName:        rm.CampaignName,

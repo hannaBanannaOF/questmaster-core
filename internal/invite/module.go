@@ -18,12 +18,13 @@ func NewInviteModule(
 	db *pgxpool.Pool,
 	inviteCampaignFinder inviteUsecases.InviteCampaignFinder,
 	inviteCharacterCampaignLinker inviteUsecases.InviteCharacterCampaignLinker,
+	invitePremadeFinder inviteUsecases.InvitePremadeCharactersFinder,
 ) *InviteModule {
 	r := inviteInfra.NewInviteRepositoryPG(db)
 	return &InviteModule{
 		createInviteUC:          inviteUsecases.NewCreateInvite(r, inviteCampaignFinder),
 		getInviteByCampaignIDUC: inviteUsecases.NewGetInviteByCampaignID(r),
-		getInviteDetailsUC:      inviteUsecases.NewGetInviteDetail(r, inviteCampaignFinder),
+		getInviteDetailsUC:      inviteUsecases.NewGetInviteDetail(r, inviteCampaignFinder, invitePremadeFinder),
 		acceptInviteUC:          inviteUsecases.NewAcceptInvite(r, inviteCampaignFinder, inviteCharacterCampaignLinker),
 	}
 }

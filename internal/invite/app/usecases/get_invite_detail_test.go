@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	campaignDomain "questmaster-core/internal/campaign/domain"
+	characterDomain "questmaster-core/internal/character/domain"
 	inviteApp "questmaster-core/internal/invite/app"
 	inviteUsecases "questmaster-core/internal/invite/app/usecases"
 	inviteDomain "questmaster-core/internal/invite/domain"
@@ -13,6 +14,14 @@ import (
 	"github.com/google/uuid"
 )
 
+type fakePremadeFinder struct {
+	premades []characterDomain.Character
+}
+
+func (f fakePremadeFinder) GetPremadeByCampaignID(campaignDomain.CampaignID) ([]characterDomain.Character, error) {
+	return f.premades, nil
+}
+
 func TestGetInviteDetail(t *testing.T) {
 	dm := userDomain.NewUserID(uuid.New())
 	hash := inviteDomain.NewHash(uuid.New())
@@ -20,7 +29,7 @@ func TestGetInviteDetail(t *testing.T) {
 	finder := fakeCampaignFinder{campaign: campaignDomain.Campaign{Id: 1, Name: "Lost Mine", Dm: dm}}
 
 	details := func(r inviteApp.InviteRepository, user userDomain.UserID) (inviteApp.InviteDetailReadModel, error) {
-		return inviteUsecases.NewGetInviteDetail(r, finder).Execute(inviteApp.GetinviteDetailsCommand{UserID: user, Hash: hash})
+		return inviteUsecases.NewGetInviteDetail(r, finder, fakePremadeFinder{}).Execute(inviteApp.GetinviteDetailsCommand{UserID: user, Hash: hash})
 	}
 
 	t.Run("player reads the invite", func(t *testing.T) {
@@ -41,6 +50,19 @@ func TestGetInviteDetail(t *testing.T) {
 		_, err := details(fakeHashRepo{}, dm)
 		if !errors.Is(err, inviteUsecases.ErrInviteNotFound) {
 			t.Fatalf("expected ErrInviteNotFound, got %v", err)
+		}
+	})
+
+	t.Run("lists the unclaimed premade characters", func(t *testing.T) {
+		hp, _ := characterDomain.NewHP(12, 12)
+		premades := fakePremadeFinder{premades: []characterDomain.Character{{Slug: "harvey", Name: "Harvey", Hp: &hp}}}
+		rm, err := inviteUsecases.NewGetInviteDetail(repo, finder, premades).
+			Execute(inviteApp.GetinviteDetailsCommand{UserID: dm, Hash: hash})
+		if err != nil || len(rm.PremadeCharacters) != 1 {
+			t.Fatalf("expected one premade character, got %+v err=%v", rm.PremadeCharacters, err)
+		}
+		if c := rm.PremadeCharacters[0]; c.Slug != "harvey" || c.Name != "Harvey" || *c.CurrentHP != 12 || *c.MaxHP != 12 {
+			t.Fatalf("unexpected premade character %+v", c)
 		}
 	})
 }

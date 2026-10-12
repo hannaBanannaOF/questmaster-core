@@ -226,12 +226,32 @@ func (r *CampaignRepositoryPG) UpdateStatus(newStatus campaignDomain.CampaignSta
 	return val, nil
 }
 
+// DeleteById deletes the campaign and its unclaimed premade characters in one transaction.
+// The foreign keys (migration 0005) unlink the other characters and remove the invite.
 func (r *CampaignRepositoryPG) DeleteById(id campaignDomain.CampaignID) (bool, error) {
-	cmdTag, err := r.db.Exec(context.Background(), `
+	ctx := context.Background()
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return false, err
+	}
+	defer tx.Rollback(ctx) // no-op after Commit
+
+	if _, err := tx.Exec(ctx, `
+		DELETE FROM character_sheet
+		WHERE campaign_id = $1 AND player_id IS NULL
+	`, id.Value()); err != nil {
+		return false, err
+	}
+
+	cmdTag, err := tx.Exec(ctx, `
 		DELETE FROM campaign
 		WHERE id = $1
 	`, id.Value())
 	if err != nil {
+		return false, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
 		return false, err
 	}
 

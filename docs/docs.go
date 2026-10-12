@@ -386,6 +386,82 @@ const docTemplate = `{
                 ]
             }
         },
+        "/core/api/v1/campaign/{campaignID}/character": {
+            "post": {
+                "description": "The campaign DM prepares a character in the campaign, with no player, for players to claim when accepting the invite. It gets the campaign game system, and current HP starts at max HP",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v1:character"
+                ],
+                "summary": "Create premade character",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Campaign ID",
+                        "name": "campaignID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Premade character data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/character.CreatePremadeCharacterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/rpg.RpgSlugResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid character data, or the campaign is archived",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid access_token",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "403": {
+                        "description": "Only the campaign DM can create premade characters",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "404": {
+                        "description": "Campaign not found",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
         "/core/api/v1/campaign/{campaignID}/status": {
             "patch": {
                 "description": "Updates campaign status to the following rules:\n- **DRAFT** -\u003e ACTIVE\n- **ACTIVE** -\u003e PAUSED / ARCHIVED\n- **PAUSED** -\u003e ACTIVE / ARCHIVED",
@@ -737,7 +813,7 @@ const docTemplate = `{
                         }
                     },
                     "403": {
-                        "description": "Only the player can delete a character",
+                        "description": "Only the player can delete a character, or the campaign DM an unclaimed premade one",
                         "schema": {
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
@@ -1120,6 +1196,13 @@ const docTemplate = `{
                 "overview": {
                     "type": "string"
                 },
+                "premade_characters": {
+                    "description": "Unclaimed premade characters, ordered by name; empty unless the requester is the DM",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/campaign.CampaignPremadeCharacterResponse"
+                    }
+                },
                 "slug": {
                     "type": "string"
                 },
@@ -1199,6 +1282,26 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "system": {
+                    "type": "string"
+                }
+            }
+        },
+        "campaign.CampaignPremadeCharacterResponse": {
+            "type": "object",
+            "properties": {
+                "current_hp": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "max_hp": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
                     "type": "string"
                 }
             }
@@ -1336,6 +1439,17 @@ const docTemplate = `{
                 }
             }
         },
+        "character.CreatePremadeCharacterRequest": {
+            "type": "object",
+            "properties": {
+                "max_hp": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "character.UpdateHPRequest": {
             "type": "object",
             "properties": {
@@ -1402,6 +1516,30 @@ const docTemplate = `{
                 },
                 "is_dm": {
                     "type": "boolean"
+                },
+                "premade_characters": {
+                    "description": "Unclaimed premade characters the requester may choose when accepting, ordered by name",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/invite.InvitePremadeCharacterResponse"
+                    }
+                }
+            }
+        },
+        "invite.InvitePremadeCharacterResponse": {
+            "type": "object",
+            "properties": {
+                "current_hp": {
+                    "type": "integer"
+                },
+                "max_hp": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
                 }
             }
         },

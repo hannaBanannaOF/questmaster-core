@@ -54,7 +54,7 @@ The system SHALL reject the campaign DM accepting their own campaign's invite wi
 - **AND** the character is not linked to the campaign
 
 ### Requirement: Accepting an invite links an eligible character
-Accepting an invite SHALL link the given character to the invite's campaign only if the character belongs to the requester, is not linked to any campaign, and has the campaign's game system. Otherwise the system MUST return 400 and change nothing. An unknown invite MUST return 404.
+Accepting an invite SHALL link the given character to the invite's campaign only if the character belongs to the requester, is not linked to any campaign, and has the campaign's game system. Otherwise the system MUST return 400 and change nothing, unless the character is a premade one (see "Accepting an invite can claim a premade character"). An unknown invite MUST return 404.
 
 #### Scenario: Eligible character
 - **WHEN** a player accepts an invite with their own unlinked character of the campaign's game system
@@ -76,8 +76,29 @@ Accepting an invite SHALL link the given character to the invite's campaign only
 - **WHEN** a player accepts an invite hash that does not exist
 - **THEN** the system returns 404
 
+### Requirement: Accepting an invite can claim a premade character
+Accepting with an unclaimed premade character of the invite's campaign SHALL make the requester its player. A premade character of another campaign MUST return 400. A premade character claimed by someone else in the meantime, or a requester who already has a character in the campaign, MUST return 409. Every rejection changes nothing.
+
+#### Scenario: Claiming a premade character
+- **WHEN** a player accepts an invite with an unclaimed premade character of the invite's campaign
+- **THEN** the system returns 204
+- **AND** the requester is the character's player and the character stays in the campaign
+
+#### Scenario: Premade character already claimed
+- **WHEN** two players accept the invite with the same premade character
+- **THEN** the first receives 204 and becomes its player
+- **AND** the second receives 409 and the character keeps the first player
+
+#### Scenario: Player who already has a character in the campaign
+- **WHEN** a player with a character in the campaign accepts the invite with an unclaimed premade character
+- **THEN** the system returns 409 and the premade character stays unclaimed
+
+#### Scenario: Premade character of another campaign
+- **WHEN** a player accepts an invite with an unclaimed premade character of a different campaign
+- **THEN** the system returns 400 and nothing changes
+
 ### Requirement: Invite details tell the requester's role
-Any authenticated user holding an invite hash SHALL be able to read the invite details: the campaign slug, name, overview, game system and player count. The response SHALL include `is_dm`, true only when the requester is the DM of the invite's campaign. An unknown invite MUST return 404.
+Any authenticated user holding an invite hash SHALL be able to read the invite details: the campaign slug, name, overview, game system and player count. The response SHALL include `is_dm`, true only when the requester is the DM of the invite's campaign, and `premade_characters`, the campaign's unclaimed premade characters ordered by name, each with `slug`, `name`, `current_hp` and `max_hp`. An unknown invite MUST return 404.
 
 #### Scenario: Player reads the invite
 - **WHEN** a user who is not the campaign DM reads the invite details
@@ -92,3 +113,7 @@ Any authenticated user holding an invite hash SHALL be able to read the invite d
 #### Scenario: Unknown invite
 - **WHEN** a user reads the details of an invite hash that does not exist
 - **THEN** the system returns 404
+
+#### Scenario: Invite lists unclaimed premade characters
+- **WHEN** a user reads the invite of a campaign with one unclaimed and one claimed premade character
+- **THEN** `premade_characters` contains only the unclaimed one, with its slug, name and HP

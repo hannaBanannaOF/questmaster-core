@@ -26,7 +26,7 @@ func (f *fakeDetailRepo) FindByID(characterDomain.CharacterID) (*characterDomain
 
 func (f *fakeDetailRepo) GetByPlayerInCampaigns(user userDomain.UserID, _ []campaignDomain.CampaignID) ([]characterDomain.Character, error) {
 	if f.members[user] {
-		return []characterDomain.Character{{Id: 99, PlayerID: user}}, nil
+		return []characterDomain.Character{{Id: 99, PlayerID: &user}}, nil
 	}
 	return nil, nil
 }
@@ -44,7 +44,7 @@ func TestGetCharacterDetail(t *testing.T) {
 
 	inCampaign := func() *fakeDetailRepo {
 		return &fakeDetailRepo{
-			character: &characterDomain.Character{Id: 1, Name: "Hero", PlayerID: player, CampaignID: &campaignID},
+			character: &characterDomain.Character{Id: 1, Name: "Hero", PlayerID: &player, CampaignID: &campaignID},
 			members:   map[userDomain.UserID]bool{member: true},
 		}
 	}
@@ -77,7 +77,7 @@ func TestGetCharacterDetail(t *testing.T) {
 	})
 
 	t.Run("character without a campaign is only for its player", func(t *testing.T) {
-		repo := &fakeDetailRepo{character: &characterDomain.Character{Id: 1, PlayerID: player}}
+		repo := &fakeDetailRepo{character: &characterDomain.Character{Id: 1, PlayerID: &player}}
 		if err := read(repo, outsider); !errors.Is(err, characterDomain.ErrCannotViewCharacter) {
 			t.Fatalf("expected ErrCannotViewCharacter, got %v", err)
 		}

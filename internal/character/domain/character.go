@@ -9,9 +9,10 @@ import (
 )
 
 type Character struct {
-	Id         CharacterID
-	Name       CharacterName
-	PlayerID   userDomain.UserID
+	Id   CharacterID
+	Name CharacterName
+	// Nil for a premade character the campaign DM prepared and no player claimed yet
+	PlayerID   *userDomain.UserID
 	System     rpgDomain.System
 	CampaignID *campaignDomain.CampaignID
 	Slug       rpgDomain.Slug
@@ -21,7 +22,11 @@ type Character struct {
 }
 
 func (c Character) IsPlayer(userID userDomain.UserID) bool {
-	return c.PlayerID.Value() == userID.Value()
+	return c.PlayerID != nil && *c.PlayerID == userID
+}
+
+func (c Character) IsPremade() bool {
+	return c.PlayerID == nil
 }
 
 func (c *Character) UpdateHP(newHP HP, userID userDomain.UserID, campaign CampaignAccess) error {

@@ -1,6 +1,7 @@
 package routes
 
 import (
+	campaignTransport "questmaster-core/internal/campaign/transport/http"
 	characterTransport "questmaster-core/internal/character/transport/http"
 	rpgTransport "questmaster-core/internal/rpg/transport/http"
 	appContext "questmaster-core/internal/shared/context"
@@ -22,4 +23,7 @@ func registerCharacterRoutes(
 		character.PATCH("/:characterID/hp", characterTransport.CharacterIDMiddleware(), appContext.Adapt(handler.UpdateHP))
 		character.DELETE("/:characterID", characterTransport.CharacterIDMiddleware(), appContext.Adapt(handler.DeleteCharacter))
 	}
+
+	// Premade characters live in the character module but are created inside a campaign
+	v1.POST("/campaign/:campaignID/character", campaignTransport.CampaignIDMiddleware(), appContext.Adapt(handler.CreatePremadeCharacter))
 }

@@ -10,4 +10,12 @@ type InviteDetailReadModel struct {
 	CampaignOverview    *string
 	CampaignPlayerCount int
 	IsDM                bool
+	PremadeCharacters   []InvitePremadeCharacterReadModel
+}
+
+type InvitePremadeCharacterReadModel struct {
+	Slug      string
+	Name      string
+	CurrentHP *int
+	MaxHP     *int
 }

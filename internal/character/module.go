@@ -18,13 +18,15 @@ type CharacterModule struct {
 	getMyCharactersWithoutCampaignUC *characterUsecases.GetMyCharactersWithoutCampaignUseCase
 	linkCharacterToCampaingUC        *characterUsecases.LinkCharacterToCampaignUseCase
 	getPlayerCharactersInCampaignsUC *characterUsecases.GetPlayerCharactersInCampaignsUseCase
+	createPremadeCharacterUC         *characterUsecases.CreatePremadeCharacterUseCase
+	getPremadeCharactersUC           *characterUsecases.GetPremadeCharactersUseCase
 }
 
 func NewCharacterModule(db *pgxpool.Pool, campaignFinder characterUsecases.CharacterCampaingFinder) *CharacterModule {
 	r := characterInfra.NewCharacterRepositoryPG(db)
 	return &CharacterModule{
 		createCharacterUC:                characterUsecases.NewCreateCharacter(r),
-		deleteCharacterUC:                characterUsecases.NewDeleteCharacter(r),
+		deleteCharacterUC:                characterUsecases.NewDeleteCharacter(r, campaignFinder),
 		getCurrentUserCharactersUC:       characterUsecases.NewGetCurrrentUserCharacters(r),
 		getCampaignCharactersUC:          characterUsecases.NewGetCampaignCharacters(r),
 		getCharacterDetailUC:             characterUsecases.NewGetCharacterDetail(r, campaignFinder),
@@ -33,6 +35,8 @@ func NewCharacterModule(db *pgxpool.Pool, campaignFinder characterUsecases.Chara
 		getMyCharactersWithoutCampaignUC: characterUsecases.NewMyGetCharactersWithoutCampaign(r),
 		linkCharacterToCampaingUC:        characterUsecases.NewLinkCharacterToCampaign(r),
 		getPlayerCharactersInCampaignsUC: characterUsecases.NewGetPlayerCharactersInCampaigns(r),
+		createPremadeCharacterUC:         characterUsecases.NewCreatePremadeCharacter(r, campaignFinder),
+		getPremadeCharactersUC:           characterUsecases.NewGetPremadeCharacters(r),
 	}
 }
 
@@ -74,4 +78,12 @@ func (m *CharacterModule) LinkCharacterToCampaignUC() *characterUsecases.LinkCha
 
 func (m *CharacterModule) GetPlayerCharactersInCampaignsUC() *characterUsecases.GetPlayerCharactersInCampaignsUseCase {
 	return m.getPlayerCharactersInCampaignsUC
+}
+
+func (m *CharacterModule) CreatePremadeCharacterUC() *characterUsecases.CreatePremadeCharacterUseCase {
+	return m.createPremadeCharacterUC
+}
+
+func (m *CharacterModule) GetPremadeCharactersUC() *characterUsecases.GetPremadeCharactersUseCase {
+	return m.getPremadeCharactersUC
 }
