@@ -20,8 +20,11 @@ type CampaignDetailsReadModel struct {
 
 type CampaignCharacterReadModel struct {
 	Id        int
+	Slug      string
 	Name      string
 	CurrentHP *int
+	MaxHP     *int
+	IsMine    bool
 }
 
 // CampaignListItemReadModel is a campaign of the requester list, with the requester characters in it

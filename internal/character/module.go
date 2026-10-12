@@ -27,7 +27,7 @@ func NewCharacterModule(db *pgxpool.Pool, campaignFinder characterUsecases.Chara
 		deleteCharacterUC:                characterUsecases.NewDeleteCharacter(r),
 		getCurrentUserCharactersUC:       characterUsecases.NewGetCurrrentUserCharacters(r),
 		getCampaignCharactersUC:          characterUsecases.NewGetCampaignCharacters(r),
-		getCharacterDetailUC:             characterUsecases.NewGetCharacterDetail(r),
+		getCharacterDetailUC:             characterUsecases.NewGetCharacterDetail(r, campaignFinder),
 		resolveCharacterSlugUC:           characterUsecases.NewResolveCharacterSlug(r),
 		updateHPUC:                       characterUsecases.NewUpdateHP(r, campaignFinder),
 		getMyCharactersWithoutCampaignUC: characterUsecases.NewMyGetCharactersWithoutCampaign(r),
