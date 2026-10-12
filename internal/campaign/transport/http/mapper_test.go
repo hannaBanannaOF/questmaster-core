@@ -65,3 +65,16 @@ func TestMapListReadModelToResponseLastAccessedAt(t *testing.T) {
 		t.Fatalf("expected the access time, got %s", got)
 	}
 }
+
+func TestMapDetailReadModelToResponsePartyCard(t *testing.T) {
+	current, max := 3, 10
+	body, err := json.Marshal(MapDetailReadModelToResponse(campaignApp.CampaignDetailsReadModel{
+		Characters: []campaignApp.CampaignCharacterReadModel{
+			{Id: 10, Slug: "hero", Name: "Hero", CurrentHP: &current, MaxHP: &max, IsMine: true},
+		},
+	}))
+	want := `{"id":10,"slug":"hero","name":"Hero","current_hp":3,"max_hp":10,"is_mine":true}`
+	if err != nil || !strings.Contains(string(body), want) {
+		t.Fatalf("expected %s in %s err=%v", want, body, err)
+	}
+}

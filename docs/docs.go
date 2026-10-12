@@ -653,7 +653,7 @@ const docTemplate = `{
         },
         "/core/api/v1/character/{characterID}": {
             "get": {
-                "description": "Get a more detailed view of the character",
+                "description": "Get a more detailed view of the character. Visible to its player and, when the character is in a campaign, to the campaign DM and members",
                 "produces": [
                     "application/json"
                 ],
@@ -679,6 +679,12 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized - missing or invalid access_token",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "403": {
+                        "description": "Not the player nor a member of the character campaign",
                         "schema": {
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
@@ -1134,7 +1140,17 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "is_mine": {
+                    "description": "True when the requester is the character player",
+                    "type": "boolean"
+                },
+                "max_hp": {
+                    "type": "integer"
+                },
                 "name": {
+                    "type": "string"
+                },
+                "slug": {
                     "type": "string"
                 }
             }

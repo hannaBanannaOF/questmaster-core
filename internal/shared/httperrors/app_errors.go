@@ -37,7 +37,8 @@ func From(err error) HttpError {
 		errors.Is(err, campaignDomainErr.ErrNotDeletableStatus),
 		errors.Is(err, campaignDomainErr.ErrInvalidStatusTransition),
 		errors.Is(err, characterDomainErr.ErrNotPlayer),
-		errors.Is(err, characterDomainErr.ErrNotAllowed):
+		errors.Is(err, characterDomainErr.ErrNotAllowed),
+		errors.Is(err, characterDomainErr.ErrCannotViewCharacter):
 		return HttpError{
 			Status:  http.StatusForbidden,
 			Message: err.Error(),

@@ -145,4 +145,36 @@ func TestGetCampaignDetails(t *testing.T) {
 			t.Fatalf("expected the details despite the recorder error, got %+v err=%v", rm, err)
 		}
 	})
+
+	t.Run("party cards", func(t *testing.T) {
+		other := userDomain.NewUserID(uuid.New())
+		hp, _ := characterDomain.NewHP(3, 10)
+		characters := []characterDomain.Character{
+			{Id: 10, Slug: "hero", Name: "Hero", PlayerID: player, Hp: &hp},
+			{Id: 11, Slug: "sidekick", Name: "Sidekick", PlayerID: other},
+		}
+		uc := NewGetCampaignDetails(
+			*NewGetCampaignFromID(fakeCampaignRepo{campaign: &campaignDomain.Campaign{Id: 1, Dm: dm}}),
+			fakeCharacterFinder{characters: characters},
+			&fakeInviteFinder{},
+			&fakeAccessRecorder{},
+		)
+
+		rm, err := uc.Execute(campaignApp.GetCampaignDetailsCommand{ID: 1, UserID: player})
+		if err != nil || len(rm.Characters) != 2 {
+			t.Fatalf("unexpected details %+v err=%v", rm, err)
+		}
+		mine, others := rm.Characters[0], rm.Characters[1]
+		if !mine.IsMine || mine.Slug != "hero" || *mine.CurrentHP != 3 || *mine.MaxHP != 10 {
+			t.Fatalf("expected own character marked with slug and HP, got %+v", mine)
+		}
+		if others.IsMine || others.Slug != "sidekick" || others.CurrentHP != nil || others.MaxHP != nil {
+			t.Fatalf("expected other character not mine and without HP, got %+v", others)
+		}
+
+		rm, err = uc.Execute(campaignApp.GetCampaignDetailsCommand{ID: 1, UserID: dm})
+		if err != nil || rm.Characters[0].IsMine || rm.Characters[1].IsMine || rm.Characters[0].Slug != "hero" {
+			t.Fatalf("expected the DM to see the party with is_mine false, got %+v err=%v", rm.Characters, err)
+		}
+	})
 }

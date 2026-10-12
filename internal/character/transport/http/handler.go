@@ -147,12 +147,13 @@ func (h *CharactersHandler) ResolveSlug(ctx *context.AppContext) error {
 }
 
 // @Summary Get character details
-// @Description Get a more detailed view of the character
+// @Description Get a more detailed view of the character. Visible to its player and, when the character is in a campaign, to the campaign DM and members
 // @Tags v1:character
 // @Param characterID path integer true "Character ID"
 // @Produce json
 // @Success 200 {object} CharacterDetailResponse
 // @Failure 401 {object} httperrors.HttpError "Unauthorized - missing or invalid access_token"
+// @Failure 403 {object} httperrors.HttpError "Not the player nor a member of the character campaign"
 // @Failure 404 {object} httperrors.HttpError "Character not found"
 // @Failure 500 {object} httperrors.HttpError "Internal server error"
 // @Security BearerAuth
