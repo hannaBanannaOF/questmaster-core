@@ -16,7 +16,7 @@ func (f fakeCampaign) IsDM(user userDomain.UserID) bool { return f.dm == user }
 func TestCanView(t *testing.T) {
 	player, dm, member, outsider := userDomain.NewUserID(uuid.New()), userDomain.NewUserID(uuid.New()),
 		userDomain.NewUserID(uuid.New()), userDomain.NewUserID(uuid.New())
-	c := Character{PlayerID: player}
+	c := Character{PlayerID: &player}
 	campaign := fakeCampaign{dm: dm}
 
 	allowed := []struct {

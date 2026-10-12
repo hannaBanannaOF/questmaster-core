@@ -33,6 +33,12 @@ func (c *Campaign) CanInvite(userID userDomain.UserID) error {
 	return nil
 }
 
+// CanCreatePremade allows the DM to prepare characters while the campaign is not archived,
+// the same rule as inviting players.
+func (c *Campaign) CanCreatePremade(userID userDomain.UserID) error {
+	return c.CanInvite(userID)
+}
+
 // CanJoin allows anyone but the DM to join through an invite while the campaign is not archived.
 func (c *Campaign) CanJoin(userID userDomain.UserID) error {
 	if c.Status == StatusArchived {

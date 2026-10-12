@@ -18,6 +18,7 @@ type CharacterModule struct {
 	getMyCharactersWithoutCampaignUC *characterUsecases.GetMyCharactersWithoutCampaignUseCase
 	linkCharacterToCampaingUC        *characterUsecases.LinkCharacterToCampaignUseCase
 	getPlayerCharactersInCampaignsUC *characterUsecases.GetPlayerCharactersInCampaignsUseCase
+	createPremadeCharacterUC         *characterUsecases.CreatePremadeCharacterUseCase
 }
 
 func NewCharacterModule(db *pgxpool.Pool, campaignFinder characterUsecases.CharacterCampaingFinder) *CharacterModule {
@@ -33,6 +34,7 @@ func NewCharacterModule(db *pgxpool.Pool, campaignFinder characterUsecases.Chara
 		getMyCharactersWithoutCampaignUC: characterUsecases.NewMyGetCharactersWithoutCampaign(r),
 		linkCharacterToCampaingUC:        characterUsecases.NewLinkCharacterToCampaign(r),
 		getPlayerCharactersInCampaignsUC: characterUsecases.NewGetPlayerCharactersInCampaigns(r),
+		createPremadeCharacterUC:         characterUsecases.NewCreatePremadeCharacter(r, campaignFinder),
 	}
 }
 
@@ -74,4 +76,8 @@ func (m *CharacterModule) LinkCharacterToCampaignUC() *characterUsecases.LinkCha
 
 func (m *CharacterModule) GetPlayerCharactersInCampaignsUC() *characterUsecases.GetPlayerCharactersInCampaignsUseCase {
 	return m.getPlayerCharactersInCampaignsUC
+}
+
+func (m *CharacterModule) CreatePremadeCharacterUC() *characterUsecases.CreatePremadeCharacterUseCase {
+	return m.createPremadeCharacterUC
 }

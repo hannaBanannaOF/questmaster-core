@@ -22,5 +22,6 @@ func BuildCharacterHandler(db *pgxpool.Pool) *characterTransport.CharactersHandl
 		module.GetCharacterDetailUC(),
 		module.UpdateHPUC(),
 		module.DeleteCharacterUC(),
+		module.CreatePremadeCharacterUC(),
 	)
 }

@@ -234,6 +234,30 @@ func (r *CharacterRepositoryPG) Create(name characterDomain.CharacterName, playe
 	return val, nil
 }
 
+// CreatePremade inserts a character in the campaign with no player
+func (r *CharacterRepositoryPG) CreatePremade(name characterDomain.CharacterName, campaignID campaignDomain.CampaignID, system rpgDomain.System, hp *characterDomain.HP) (characterDomain.Character, error) {
+	var currHP, maxHP any
+	if hp != nil {
+		currHP, maxHP = hp.Current(), hp.Max()
+	}
+
+	rows, err := r.db.Query(context.Background(), `
+		INSERT INTO character_sheet(name, campaign_id, game_system, max_hp, current_hp)
+		VALUES($1, $2, $3, $4, $5)
+		RETURNING *
+	`, name.Value(), campaignID.Value(), system.Value(), maxHP, currHP)
+	if err != nil {
+		return characterDomain.Character{}, err
+	}
+	defer rows.Close()
+	record, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[CharacterRow])
+	if err != nil {
+		return characterDomain.Character{}, err
+	}
+
+	return MapRowToDomain(record)
+}
+
 func (r *CharacterRepositoryPG) UpdateHP(newHP characterDomain.HP, characterID characterDomain.CharacterID) (characterDomain.Character, error) {
 	rows, err := r.db.Query(context.Background(), `
 		UPDATE character_sheet SET current_hp = $1, max_hp = $2

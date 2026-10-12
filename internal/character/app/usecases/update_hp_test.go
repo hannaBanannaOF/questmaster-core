@@ -44,7 +44,7 @@ func TestUpdateHP(t *testing.T) {
 	newCharacterRepo := func() fakeCharacterRepo {
 		hp, _ := characterDomain.NewHP(10, 10)
 		return fakeCharacterRepo{character: &characterDomain.Character{
-			Id: 1, PlayerID: player, CampaignID: &campaignID, Hp: &hp,
+			Id: 1, PlayerID: &player, CampaignID: &campaignID, Hp: &hp,
 		}}
 	}
 
@@ -76,7 +76,7 @@ func TestUpdateHP(t *testing.T) {
 	}
 
 	t.Run("character without hp is rejected", func(t *testing.T) {
-		repo := fakeCharacterRepo{character: &characterDomain.Character{Id: 1, PlayerID: player}}
+		repo := fakeCharacterRepo{character: &characterDomain.Character{Id: 1, PlayerID: &player}}
 		_, err := NewUpdateHP(repo, nil).Execute(characterApp.UpdateHPCommand{ID: 1, NewHP: 5, UserID: player})
 		if !errors.Is(err, characterDomain.ErrCharacterWithoutHP) {
 			t.Fatalf("expected ErrCharacterWithoutHP, got %v", err)

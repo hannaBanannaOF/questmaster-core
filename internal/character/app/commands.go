@@ -1,6 +1,7 @@
 package character
 
 import (
+	campaignDomain "questmaster-core/internal/campaign/domain"
 	characterDomain "questmaster-core/internal/character/domain"
 	rpgDomain "questmaster-core/internal/rpg/domain"
 	"questmaster-core/internal/shared/pagination"
@@ -12,6 +13,13 @@ type CreateCharacterCommand struct {
 	Hp     *characterDomain.HP
 	System rpgDomain.System
 	Player userDomain.UserID
+}
+
+type CreatePremadeCharacterCommand struct {
+	CampaignID campaignDomain.CampaignID
+	Name       characterDomain.CharacterName
+	Hp         *characterDomain.HP
+	UserID     userDomain.UserID
 }
 
 type DeleteCharacterCommand struct {

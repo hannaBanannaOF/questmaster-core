@@ -56,7 +56,7 @@ func newDetailsUC(dm, player userDomain.UserID, invites *fakeInviteFinder) *GetC
 
 func newDetailsUCWithRecorder(dm, player userDomain.UserID, invites *fakeInviteFinder, recorder *fakeAccessRecorder) *GetCampaignDetailsUseCase {
 	campaign := &campaignDomain.Campaign{Id: 1, Dm: dm, Status: campaignDomain.StatusActive}
-	characters := []characterDomain.Character{{Id: 10, Name: "Hero", PlayerID: player}}
+	characters := []characterDomain.Character{{Id: 10, Name: "Hero", PlayerID: &player}}
 	return NewGetCampaignDetails(
 		*NewGetCampaignFromID(fakeCampaignRepo{campaign: campaign}),
 		fakeCharacterFinder{characters: characters},
@@ -150,8 +150,8 @@ func TestGetCampaignDetails(t *testing.T) {
 		other := userDomain.NewUserID(uuid.New())
 		hp, _ := characterDomain.NewHP(3, 10)
 		characters := []characterDomain.Character{
-			{Id: 10, Slug: "hero", Name: "Hero", PlayerID: player, Hp: &hp},
-			{Id: 11, Slug: "sidekick", Name: "Sidekick", PlayerID: other},
+			{Id: 10, Slug: "hero", Name: "Hero", PlayerID: &player, Hp: &hp},
+			{Id: 11, Slug: "sidekick", Name: "Sidekick", PlayerID: &other},
 		}
 		uc := NewGetCampaignDetails(
 			*NewGetCampaignFromID(fakeCampaignRepo{campaign: &campaignDomain.Campaign{Id: 1, Dm: dm}}),
