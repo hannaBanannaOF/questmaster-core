@@ -503,6 +503,50 @@ paths:
       summary: Create premade character
       tags:
       - v1:character
+  /core/api/v1/campaign/{campaignID}/character/{characterID}:
+    delete:
+      description: The character player leaves the campaign, or the campaign DM removes
+        the character. The character keeps its player and HP, with no campaign
+      parameters:
+      - description: Campaign ID
+        in: path
+        name: campaignID
+        required: true
+        type: integer
+      - description: Character ID
+        in: path
+        name: characterID
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Character not in this campaign, unclaimed premade character,
+            or archived campaign
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "401":
+          description: Unauthorized - missing or invalid access_token
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "403":
+          description: Not the character player nor the campaign DM
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "404":
+          description: Campaign or character not found
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+      security:
+      - BearerAuth: []
+      summary: Remove character from campaign
+      tags:
+      - v1:character
   /core/api/v1/campaign/{campaignID}/status:
     patch:
       consumes:
