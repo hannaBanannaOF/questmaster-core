@@ -26,4 +26,5 @@ func registerCharacterRoutes(
 
 	// Premade characters live in the character module but are created inside a campaign
 	v1.POST("/campaign/:campaignID/character", campaignTransport.CampaignIDMiddleware(), appContext.Adapt(handler.CreatePremadeCharacter))
+	v1.DELETE("/campaign/:campaignID/character/:characterID", campaignTransport.CampaignIDMiddleware(), characterTransport.CharacterIDMiddleware(), appContext.Adapt(handler.RemoveFromCampaign))
 }

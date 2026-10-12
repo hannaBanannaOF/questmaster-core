@@ -20,6 +20,7 @@ type CharactersHandler struct {
 	updateHPUC                 *characterUsecases.UpdateHPUseCase
 	deleteCharacterUC          *characterUsecases.DeleteCharacterUseCase
 	createPremadeUC            *characterUsecases.CreatePremadeCharacterUseCase
+	leaveCampaignUC            *characterUsecases.LeaveCampaignUseCase
 }
 
 func NewCharactersHandler(
@@ -30,6 +31,7 @@ func NewCharactersHandler(
 	updateHPUC *characterUsecases.UpdateHPUseCase,
 	deleteCharacterUC *characterUsecases.DeleteCharacterUseCase,
 	createPremadeUC *characterUsecases.CreatePremadeCharacterUseCase,
+	leaveCampaignUC *characterUsecases.LeaveCampaignUseCase,
 ) *CharactersHandler {
 	return &CharactersHandler{
 		getCurrentUserCharactersUC: getCurrentUserCharactersUC,
@@ -39,7 +41,35 @@ func NewCharactersHandler(
 		updateHPUC:                 updateHPUC,
 		deleteCharacterUC:          deleteCharacterUC,
 		createPremadeUC:            createPremadeUC,
+		leaveCampaignUC:            leaveCampaignUC,
 	}
+}
+
+// @Summary Remove character from campaign
+// @Description The character player leaves the campaign, or the campaign DM removes the character. The character keeps its player and HP, with no campaign
+// @Tags v1:character
+// @Param campaignID path integer true "Campaign ID"
+// @Param characterID path integer true "Character ID"
+// @Success 204
+// @Failure 400 {object} httperrors.HttpError "Character not in this campaign, unclaimed premade character, or archived campaign"
+// @Failure 401 {object} httperrors.HttpError "Unauthorized - missing or invalid access_token"
+// @Failure 403 {object} httperrors.HttpError "Not the character player nor the campaign DM"
+// @Failure 404 {object} httperrors.HttpError "Campaign or character not found"
+// @Failure 500 {object} httperrors.HttpError "Internal server error"
+// @Security BearerAuth
+// @Router /core/api/v1/campaign/{campaignID}/character/{characterID} [delete]
+func (h *CharactersHandler) RemoveFromCampaign(ctx *context.AppContext) error {
+	err := h.leaveCampaignUC.Execute(characterApp.LeaveCampaignCommand{
+		CampaignID:  ctx.CampaignID(),
+		CharacterID: ctx.CharacterID(),
+		UserID:      ctx.UserID(),
+	})
+	if err != nil {
+		return err
+	}
+
+	ctx.Status(http.StatusNoContent)
+	return nil
 }
 
 // @Summary Create premade character

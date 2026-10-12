@@ -367,6 +367,19 @@ func (r *CharacterRepositoryPG) ClaimPremade(characterID characterDomain.Charact
 	return &val, nil
 }
 
+// UnlinkFromCampaign removes the character from the campaign; false when it was not in it
+func (r *CharacterRepositoryPG) UnlinkFromCampaign(characterID characterDomain.CharacterID, campaignID campaignDomain.CampaignID) (bool, error) {
+	cmdTag, err := r.db.Exec(context.Background(), `
+		UPDATE character_sheet SET campaign_id = NULL
+		WHERE id = $1 AND campaign_id = $2
+	`, characterID.Value(), campaignID.Value())
+	if err != nil {
+		return false, err
+	}
+
+	return cmdTag.RowsAffected() > 0, nil
+}
+
 func (r *CharacterRepositoryPG) UpdateCampaign(campaignID campaignDomain.CampaignID, characterSlug rpgDomain.Slug, userID userDomain.UserID) (*characterDomain.Character, error) {
 	rows, err := r.db.Query(context.Background(), `
 		UPDATE character_sheet cs

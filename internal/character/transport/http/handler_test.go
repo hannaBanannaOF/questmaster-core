@@ -38,7 +38,7 @@ func TestCreatePremadeCharacterRoute(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	dm := userDomain.NewUserID(uuid.New())
 	handler := NewCharactersHandler(nil, nil, nil, nil, nil, nil,
-		characterUsecases.NewCreatePremadeCharacter(fakePremadeRepo{}, fakeCampaignFinder{dm: dm}))
+		characterUsecases.NewCreatePremadeCharacter(fakePremadeRepo{}, fakeCampaignFinder{dm: dm}), nil)
 
 	serve := func(user userDomain.UserID, body string) int {
 		router := gin.New()
@@ -61,5 +61,45 @@ func TestCreatePremadeCharacterRoute(t *testing.T) {
 		if code := serve(dm, body); code != http.StatusBadRequest {
 			t.Fatalf("body %s: expected 400, got %d", body, code)
 		}
+	}
+}
+
+type fakeLeaveRepo struct {
+	characterApp.CharacterRepository
+	player userDomain.UserID
+}
+
+func (f fakeLeaveRepo) FindByID(characterDomain.CharacterID) (*characterDomain.Character, error) {
+	campaignID := campaignDomain.NewCampaignID(1)
+	return &characterDomain.Character{Id: 5, PlayerID: &f.player, CampaignID: &campaignID}, nil
+}
+
+func (fakeLeaveRepo) UnlinkFromCampaign(characterDomain.CharacterID, campaignDomain.CampaignID) (bool, error) {
+	return true, nil
+}
+
+func TestRemoveFromCampaignRoute(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	dm, player := userDomain.NewUserID(uuid.New()), userDomain.NewUserID(uuid.New())
+	handler := NewCharactersHandler(nil, nil, nil, nil, nil, nil, nil,
+		characterUsecases.NewLeaveCampaign(fakeLeaveRepo{player: player}, fakeCampaignFinder{dm: dm}))
+
+	serve := func(user userDomain.UserID) int {
+		router := gin.New()
+		router.Use(middleware.ErrorHandlerMiddleware(), func(c *gin.Context) {
+			(&context.AppContext{Context: c}).SetUser(userDomain.User{Id: user})
+		})
+		router.DELETE("/campaign/:campaignID/character/:characterID",
+			campaignTransport.CampaignIDMiddleware(), CharacterIDMiddleware(), context.Adapt(handler.RemoveFromCampaign))
+		rec := httptest.NewRecorder()
+		router.ServeHTTP(rec, httptest.NewRequest(http.MethodDelete, "/campaign/1/character/5", nil))
+		return rec.Code
+	}
+
+	if code := serve(player); code != http.StatusNoContent {
+		t.Fatalf("player: expected 204, got %d", code)
+	}
+	if code := serve(userDomain.NewUserID(uuid.New())); code != http.StatusForbidden {
+		t.Fatalf("other user: expected 403, got %d", code)
 	}
 }

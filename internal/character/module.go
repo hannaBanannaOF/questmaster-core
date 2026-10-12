@@ -20,6 +20,7 @@ type CharacterModule struct {
 	getPlayerCharactersInCampaignsUC *characterUsecases.GetPlayerCharactersInCampaignsUseCase
 	createPremadeCharacterUC         *characterUsecases.CreatePremadeCharacterUseCase
 	getPremadeCharactersUC           *characterUsecases.GetPremadeCharactersUseCase
+	leaveCampaignUC                  *characterUsecases.LeaveCampaignUseCase
 }
 
 func NewCharacterModule(db *pgxpool.Pool, campaignFinder characterUsecases.CharacterCampaingFinder) *CharacterModule {
@@ -37,6 +38,7 @@ func NewCharacterModule(db *pgxpool.Pool, campaignFinder characterUsecases.Chara
 		getPlayerCharactersInCampaignsUC: characterUsecases.NewGetPlayerCharactersInCampaigns(r),
 		createPremadeCharacterUC:         characterUsecases.NewCreatePremadeCharacter(r, campaignFinder),
 		getPremadeCharactersUC:           characterUsecases.NewGetPremadeCharacters(r),
+		leaveCampaignUC:                  characterUsecases.NewLeaveCampaign(r, campaignFinder),
 	}
 }
 
@@ -86,4 +88,8 @@ func (m *CharacterModule) CreatePremadeCharacterUC() *characterUsecases.CreatePr
 
 func (m *CharacterModule) GetPremadeCharactersUC() *characterUsecases.GetPremadeCharactersUseCase {
 	return m.getPremadeCharactersUC
+}
+
+func (m *CharacterModule) LeaveCampaignUC() *characterUsecases.LeaveCampaignUseCase {
+	return m.leaveCampaignUC
 }

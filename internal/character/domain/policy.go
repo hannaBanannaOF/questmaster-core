@@ -1,9 +1,13 @@
 package character
 
-import userDomain "questmaster-core/internal/user/domain"
+import (
+	campaignDomain "questmaster-core/internal/campaign/domain"
+	userDomain "questmaster-core/internal/user/domain"
+)
 
 type CampaignAccess interface {
 	IsDM(userID userDomain.UserID) bool
+	IsArchived() bool
 }
 
 func (c *Character) CanUpdate(
@@ -34,6 +38,24 @@ func (c *Character) CanView(user userDomain.UserID, campaign CampaignAccess, isC
 	}
 
 	return ErrCannotViewCharacter
+}
+
+// CanLeaveCampaign allows the player or the campaign DM to remove the character from its campaign,
+// except an unclaimed premade character or a character of an archived campaign.
+func (c *Character) CanLeaveCampaign(user userDomain.UserID, campaign CampaignAccess) error {
+	if !c.IsPlayer(user) && !campaign.IsDM(user) {
+		return ErrNotAllowed
+	}
+
+	if c.IsPremade() {
+		return ErrPremadeCannotLeave
+	}
+
+	if campaign.IsArchived() {
+		return campaignDomain.ErrCampaignArchived
+	}
+
+	return nil
 }
 
 // CanDelete allows the player, and the campaign DM while the character is an unclaimed premade one.

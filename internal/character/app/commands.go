@@ -22,6 +22,12 @@ type CreatePremadeCharacterCommand struct {
 	UserID     userDomain.UserID
 }
 
+type LeaveCampaignCommand struct {
+	CampaignID  campaignDomain.CampaignID
+	CharacterID characterDomain.CharacterID
+	UserID      userDomain.UserID
+}
+
 type DeleteCharacterCommand struct {
 	ID     characterDomain.CharacterID
 	UserID userDomain.UserID
