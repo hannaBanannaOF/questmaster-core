@@ -7,7 +7,7 @@ A player who receives an invite can only join with a character they already crea
 ## What Changes
 
 - **Premade characters**: the campaign DM creates characters inside the campaign, with no player, through `POST /core/api/v1/campaign/{campaignID}/character` (name and optional max HP; the game system is the campaign's). Only the DM, and not in an ARCHIVED campaign.
-- **Choosing one when accepting an invite**: the invite details list the campaign's unclaimed premade characters, and accepting an invite with one of them makes the requester its player. Two players claiming the same character: the second receives 409. Players may still join with their own character.
+- **Choosing one when accepting an invite**: the invite details list the campaign's unclaimed premade characters, and accepting an invite with one of them makes the requester its player, only if the requester has no character in the campaign yet (409 otherwise). Two players claiming the same character: the second receives 409. Players may still join with their own character.
 - **DM sees and removes them**: the campaign details return the unclaimed premade characters to the DM only, apart from the party. The DM may delete an unclaimed premade character through the existing delete endpoint; once claimed, it belongs to the player like any other character.
 - **Deleting a campaign deletes its unclaimed premade characters**, since they would be left with no player and no campaign. Claimed ones are kept, as today.
 - The domain and repository accept a character without a player.

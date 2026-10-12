@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Accepting an invite links an eligible character
-Accepting an invite SHALL link the given character to the invite's campaign only if the character belongs to the requester, is not linked to any campaign, and has the campaign's game system. Accepting with an unclaimed premade character of the invite's campaign SHALL instead make the requester its player. Otherwise the system MUST return 400 and change nothing. A premade character claimed by someone else in the meantime MUST return 409 and change nothing. An unknown invite MUST return 404.
+Accepting an invite SHALL link the given character to the invite's campaign only if the character belongs to the requester, is not linked to any campaign, and has the campaign's game system. Accepting with an unclaimed premade character of the invite's campaign SHALL instead make the requester its player. Otherwise the system MUST return 400 and change nothing. A premade character claimed by someone else in the meantime MUST return 409 and change nothing. Claiming a premade character MUST return 409 and change nothing when the requester already has a character in the campaign. An unknown invite MUST return 404.
 
 #### Scenario: Eligible character
 - **WHEN** a player accepts an invite with their own unlinked character of the campaign's game system
@@ -32,6 +32,10 @@ Accepting an invite SHALL link the given character to the invite's campaign only
 - **WHEN** two players accept the invite with the same premade character
 - **THEN** the first receives 204 and becomes its player
 - **AND** the second receives 409 and the character keeps the first player
+
+#### Scenario: Player who already has a character in the campaign
+- **WHEN** a player with a character in the campaign accepts the invite with an unclaimed premade character
+- **THEN** the system returns 409 and the premade character stays unclaimed
 
 #### Scenario: Premade character of another campaign
 - **WHEN** a player accepts an invite with an unclaimed premade character of a different campaign

@@ -11,14 +11,14 @@
 
 ## 3. Claiming through the invite
 
-- [ ] 3.1 Extend `LinkToCampaign` to claim an unclaimed premade character of the invite's campaign with a conditional update, returning `ErrPremadeAlreadyClaimed` (409) when no row changes and 400 for a premade character of another campaign; verify with use case tests and a repository test for two claims of the same character
+- [ ] 3.1 Extend `LinkToCampaign` to load the character by slug and claim an unclaimed premade character of the invite's campaign with a conditional update, returning `ErrAlreadyInCampaign` (409) when the requester already has a character in the campaign, `ErrPremadeAlreadyClaimed` (409) when no row changes and 400 for a premade character of another campaign; verify with use case tests (including a player who already has a character) and a repository test for two claims of the same character
 - [ ] 3.2 Add `premade_characters` (slug, name, current and max HP, by name) to the invite details; verify with a use case test that claimed characters are left out
 
 ## 4. Campaign details, deletion and character list
 
 - [ ] 4.1 Limit the campaign details `characters` to characters with a player and add `premade_characters` for the DM only (empty for players); verify with use case tests for the DM and a player, and a repository test that premade characters do not change the player count
 - [ ] 4.2 Let the campaign DM delete an unclaimed premade character (`CanDelete`) and keep 403 for a claimed one and for other users; verify with domain and use case tests
-- [ ] 4.3 Delete unclaimed premade characters in the campaign deletion transaction; verify with a repository test for one claimed and one unclaimed character
+- [ ] 4.3 Run `CampaignRepositoryPG.DeleteById` in a transaction that deletes unclaimed premade characters before the campaign; verify with a repository test for one claimed and one unclaimed character
 - [ ] 4.4 Verify with a repository test that a premade character is not in the DM's character list nor in `my_characters`
 
 ## Workflow follow-up
