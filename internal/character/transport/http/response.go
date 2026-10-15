@@ -31,7 +31,6 @@ type CharacterListPageResponse struct {
 }
 
 type CharacterEditResponse struct {
-	Slug       string  `json:"slug"`
-	Name       string  `json:"name"`
-	PlayerName *string `json:"player_name"`
+	Slug string `json:"slug"`
+	Name string `json:"name"`
 }

@@ -19,7 +19,7 @@ type CampaignHandler struct {
 	getDetailsUC              *campaignUsecases.GetCampaignDetailsUseCase
 	deleteCampaignUc          *campaignUsecases.DeleteCampaignUseCase
 	getStatusCountsUC         *campaignUsecases.GetCampaignStatusCountsUseCase
-	updateDmNameUC            *campaignUsecases.UpdateCampaignDmNameUseCase
+	updateTableNameUC         *campaignUsecases.UpdateTableNameUseCase
 }
 
 func NewCampaignHandler(
@@ -30,7 +30,7 @@ func NewCampaignHandler(
 	getDetailsUC *campaignUsecases.GetCampaignDetailsUseCase,
 	deleteCampaignUc *campaignUsecases.DeleteCampaignUseCase,
 	getStatusCountsUC *campaignUsecases.GetCampaignStatusCountsUseCase,
-	updateDmNameUC *campaignUsecases.UpdateCampaignDmNameUseCase,
+	updateTableNameUC *campaignUsecases.UpdateTableNameUseCase,
 ) *CampaignHandler {
 	return &CampaignHandler{
 		getCurrentUserCampaignsUC: getCurrentUserCampaignsUC,
@@ -40,7 +40,7 @@ func NewCampaignHandler(
 		getDetailsUC:              getDetailsUC,
 		deleteCampaignUc:          deleteCampaignUc,
 		getStatusCountsUC:         getStatusCountsUC,
-		updateDmNameUC:            updateDmNameUC,
+		updateTableNameUC:         updateTableNameUC,
 	}
 }
 
@@ -277,41 +277,41 @@ func (h *CampaignHandler) DeleteCampaign(ctx *context.AppContext) error {
 	return nil
 }
 
-// @Summary Update DM table name
-// @Description Changes how the DM is called in this campaign. Only the campaign DM can change it
+// @Summary Update my table name
+// @Description Changes how the requester is called in this campaign: the DM name for the DM, otherwise the player name of their character in it
 // @Tags v1:campaign
 // @Param campaignID path integer true "Campaign ID"
 // @Accept json
-// @Param request body UpdateCampaignDmNameRequest true "New DM table name"
+// @Param request body UpdateTableNameRequest true "New table name"
 // @Produce json
-// @Success 200 {object} CampaignDmNameResponse
-// @Failure 400 {object} httperrors.HttpError "dm_name missing or longer than 50 characters"
+// @Success 200 {object} TableNameResponse
+// @Failure 400 {object} httperrors.HttpError "name missing or longer than 50 characters"
 // @Failure 401 {object} httperrors.HttpError "Unauthorized - missing or invalid access_token"
-// @Failure 403 {object} httperrors.HttpError "Only the DM can change the DM table name"
+// @Failure 403 {object} httperrors.HttpError "Not the DM nor a player in this campaign"
 // @Failure 404 {object} httperrors.HttpError "Campaign not found"
 // @Failure 500 {object} httperrors.HttpError "Internal server error"
 // @Security BearerAuth
-// @Router /core/api/v1/campaign/{campaignID} [patch]
-func (h *CampaignHandler) UpdateDmName(ctx *context.AppContext) error {
-	var body UpdateCampaignDmNameRequest
+// @Router /core/api/v1/campaign/{campaignID}/table-name [patch]
+func (h *CampaignHandler) UpdateTableName(ctx *context.AppContext) error {
+	var body UpdateTableNameRequest
 	if err := ctx.ShouldBindJSON(&body); err != nil {
 		return httperrors.ErrInvalidRequestBody
 	}
 
-	dmName, err := rpgDomain.NewTableName(body.DmName)
+	name, err := rpgDomain.NewTableName(body.Name)
 	if err != nil {
 		return err
 	}
 
-	saved, err := h.updateDmNameUC.Execute(campaignApp.UpdateCampaignDmNameCommand{
+	saved, err := h.updateTableNameUC.Execute(campaignApp.UpdateTableNameCommand{
 		CampaignID: ctx.CampaignID(),
 		UserID:     ctx.UserID(),
-		DmName:     dmName,
+		Name:       name,
 	})
 	if err != nil {
 		return err
 	}
 
-	ctx.JSON(http.StatusOK, CampaignDmNameResponse{DmName: saved.Value()})
+	ctx.JSON(http.StatusOK, TableNameResponse{Name: saved.Value()})
 	return nil
 }

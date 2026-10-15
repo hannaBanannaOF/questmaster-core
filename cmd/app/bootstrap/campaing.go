@@ -25,6 +25,7 @@ func BuildCampaignHandler(db *pgxpool.Pool) *campaignTransport.CampaignHandler {
 		inviteModule.GetInviteByCampaignIDUC(),
 		characterModule.GetPlayerCharactersInCampaignsUC(),
 		characterModule.GetPremadeCharactersUC(),
+		characterModule.UpdatePlayerNameUC(),
 	)
 
 	return campaignTransport.NewCampaignHandler(
@@ -35,6 +36,6 @@ func BuildCampaignHandler(db *pgxpool.Pool) *campaignTransport.CampaignHandler {
 		campaignModule.GetCampaignDetailsUC(),
 		campaignModule.DeleteCampaignUC(),
 		campaignModule.GetCampaignStatusCountsUC(),
-		campaignModule.UpdateCampaignDmNameUC(),
+		campaignModule.UpdateTableNameUC(),
 	)
 }

@@ -8,8 +8,8 @@ type CreateCampaignRequest struct {
 	DmName string `json:"dm_name"`
 }
 
-type UpdateCampaignDmNameRequest struct {
-	DmName string `json:"dm_name"`
+type UpdateTableNameRequest struct {
+	Name string `json:"name"`
 }
 
 type UpdateCampaignStatusRequest struct {

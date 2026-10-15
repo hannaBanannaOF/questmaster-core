@@ -537,3 +537,31 @@ func TestListForUserSearchAndWithoutPlayers(t *testing.T) {
 		}
 	})
 }
+
+func TestUpdatePlayerNameChangesOnlyTheRequesterCharacter(t *testing.T) {
+	db := testdb.Pool(t)
+	campaigns := NewCampaignRepositoryPG(db)
+	characters := characterInfra.NewCharacterRepositoryPG(db)
+	campaign := createCampaign(t, campaigns, "Renaming table", newUser())
+	other := createCampaign(t, campaigns, "Other table", newUser())
+	player, teammate := newUser(), newUser()
+	mine := createLinkedCharacter(t, db, campaign.Id, player)
+	theirs := createLinkedCharacter(t, db, campaign.Id, teammate)
+	elsewhere := createLinkedCharacter(t, db, other.Id, player)
+
+	if updated, err := characters.UpdatePlayerName(player, campaign.Id, "Mari"); err != nil || !updated {
+		t.Fatalf("expected the update, got updated=%v err=%v", updated, err)
+	}
+	for c, want := range map[characterDomain.CharacterID]string{mine.Id: "Mari", theirs.Id: "Jogador", elsewhere.Id: "Jogador"} {
+		got, err := characters.FindByID(c)
+		if err != nil || got.PlayerName == nil || got.PlayerName.Value() != want {
+			t.Fatalf("character %v: expected %q, got %v err=%v", c, want, got.PlayerName, err)
+		}
+	}
+
+	t.Run("user without a character in the campaign", func(t *testing.T) {
+		if updated, err := characters.UpdatePlayerName(newUser(), campaign.Id, "Intruso"); err != nil || updated {
+			t.Fatalf("expected no row changed, got updated=%v err=%v", updated, err)
+		}
+	})
+}

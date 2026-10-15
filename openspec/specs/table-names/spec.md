@@ -38,25 +38,32 @@ A player's table name SHALL be cleared when their character leaves or is removed
 - **WHEN** the DM deletes a campaign
 - **THEN** the characters that were in it no longer carry a table name
 
-### Requirement: Members change only their own table name
-The campaign DM SHALL be able to change `dm_name`, and a character's player SHALL be able to change their `player_name` while the character is in a campaign, with the same length rule. Nobody can change another member's table name. Changing `player_name` on a character with no campaign MUST return 400.
+### Requirement: Members change their own table name in the campaign
+`PATCH /campaign/{id}/table-name` SHALL change the requester's own table name in that campaign: the DM's `dm_name`, or the `player_name` of the requester's character in the campaign. `name` is trimmed and MUST have 1 to 50 characters; otherwise the system returns 400 and nothing changes. A user who is neither the DM nor a player in the campaign MUST get 403, and an unknown campaign 404. It works in every campaign status.
 
 #### Scenario: DM renames themselves
-- **WHEN** the campaign DM changes `dm_name` to "Ana"
-- **THEN** the system returns 200 and the DM is shown as "Ana"
+- **WHEN** the campaign DM sends `name` "Ana"
+- **THEN** the system returns 200 with the name and the DM is shown as "Ana"
 
 #### Scenario: Player renames themselves
-- **WHEN** a player changes their character's `player_name` to "Mari"
-- **THEN** the system returns 200 and they are shown as "Mari"
+- **WHEN** a player with a character in the campaign sends `name` "Mari"
+- **THEN** the system returns 200 with the name and they are shown as "Mari", while the other members' names are unchanged
 
-#### Scenario: DM changes a player's name
-- **WHEN** the campaign DM sends `player_name` for a player's character
-- **THEN** the system returns 403 and the name is unchanged
+#### Scenario: Outsider
+- **WHEN** a user with no character in the campaign, who is not its DM, sends a name
+- **THEN** the system returns 403 and no name changes
 
-#### Scenario: Player changes the DM name
-- **WHEN** a player sends `dm_name` for the campaign
-- **THEN** the system returns 403
+#### Scenario: Invalid name
+- **WHEN** a member sends an empty name, only spaces, or more than 50 characters
+- **THEN** the system returns 400 and the name is unchanged
 
-#### Scenario: Character without a campaign
-- **WHEN** a player sends `player_name` for a character that is in no campaign
-- **THEN** the system returns 400
+#### Scenario: Unknown campaign
+- **WHEN** a user sends a name for a campaign that does not exist
+- **THEN** the system returns 404
+
+### Requirement: The campaign has no generic edit route
+`PATCH /campaign/{id}` SHALL NOT exist; status changes keep their own route and table names use the table-name route.
+
+#### Scenario: Generic campaign patch
+- **WHEN** a client sends `PATCH /campaign/{id}`
+- **THEN** the system returns 404

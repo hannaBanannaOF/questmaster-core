@@ -46,17 +46,3 @@ func (c *Character) Rename(user userDomain.UserID, campaign CampaignAccess, name
 	c.Name = name
 	return nil
 }
-
-// SetPlayerName changes how the player is called in the character's campaign; only the player
-// may, and only while the character is in a campaign
-func (c *Character) SetPlayerName(user userDomain.UserID, name rpgDomain.TableName) error {
-	if !c.IsPlayer(user) {
-		return ErrNotPlayer
-	}
-	if c.CampaignID == nil {
-		return ErrNotInAnyCampaign
-	}
-
-	c.PlayerName = &name
-	return nil
-}
