@@ -41,7 +41,7 @@ func (uc *AcceptInviteUseCase) Execute(cmd inviteApp.AcceptInviteCommand) error 
 		return err
 	}
 
-	_, err = uc.linkCharacterToCampaignUC.LinkToCampaign(invite.CampaignId, cmd.CharacterSlug, cmd.UserID)
+	_, err = uc.linkCharacterToCampaignUC.LinkToCampaign(invite.CampaignId, cmd.CharacterSlug, cmd.UserID, cmd.PlayerName)
 	if err != nil {
 		return err
 	}

@@ -35,5 +35,6 @@ func BuildCampaignHandler(db *pgxpool.Pool) *campaignTransport.CampaignHandler {
 		campaignModule.GetCampaignDetailsUC(),
 		campaignModule.DeleteCampaignUC(),
 		campaignModule.GetCampaignStatusCountsUC(),
+		campaignModule.UpdateCampaignDmNameUC(),
 	)
 }

@@ -262,13 +262,18 @@ func (r *CharacterRepositoryPG) CreatePremade(name characterDomain.CharacterName
 	return MapRowToDomain(record)
 }
 
-// UpdateDetails saves the character name; a new name regenerates the slug (migration 0008)
+// UpdateDetails saves the character name and its player's table name; a new name regenerates the slug
 func (r *CharacterRepositoryPG) UpdateDetails(character characterDomain.Character) (characterDomain.Character, error) {
+	var playerName any
+	if character.PlayerName != nil {
+		playerName = character.PlayerName.Value()
+	}
+
 	rows, err := r.db.Query(context.Background(), `
-		UPDATE character_sheet SET name = $1
-		WHERE id = $2
+		UPDATE character_sheet SET name = $1, player_name = $2
+		WHERE id = $3
 		RETURNING *
-	`, character.Name.Value(), character.Id.Value())
+	`, character.Name.Value(), playerName, character.Id.Value())
 	if err != nil {
 		return characterDomain.Character{}, err
 	}
@@ -325,10 +330,10 @@ func (r *CharacterRepositoryPG) GetAllByUserIDAndCampaignIDNullAndSystem(userID 
 
 // ClaimPremade makes userID the player of an unclaimed premade character of the campaign,
 // unless userID already has a character there. Returns nil when no row changed.
-func (r *CharacterRepositoryPG) ClaimPremade(characterID characterDomain.CharacterID, campaignID campaignDomain.CampaignID, userID userDomain.UserID) (*characterDomain.Character, error) {
+func (r *CharacterRepositoryPG) ClaimPremade(characterID characterDomain.CharacterID, campaignID campaignDomain.CampaignID, userID userDomain.UserID, playerName rpgDomain.TableName) (*characterDomain.Character, error) {
 	rows, err := r.db.Query(context.Background(), `
 		UPDATE character_sheet cs
-		SET player_id = $3
+		SET player_id = $3, player_name = $4
 		WHERE cs.id = $1
 			AND cs.campaign_id = $2
 			AND cs.player_id IS NULL
@@ -336,7 +341,7 @@ func (r *CharacterRepositoryPG) ClaimPremade(characterID characterDomain.Charact
 				SELECT 1 FROM character_sheet o WHERE o.campaign_id = $2 AND o.player_id = $3
 			)
 		RETURNING cs.*
-	`, characterID.Value(), campaignID.Value(), userID.Value())
+	`, characterID.Value(), campaignID.Value(), userID.Value(), playerName.Value())
 	if err != nil {
 		return nil, err
 	}
@@ -356,10 +361,11 @@ func (r *CharacterRepositoryPG) ClaimPremade(characterID characterDomain.Charact
 	return &val, nil
 }
 
-// UnlinkFromCampaign removes the character from the campaign; false when it was not in it
+// UnlinkFromCampaign removes the character from the campaign, with its player's table name;
+// false when it was not in it
 func (r *CharacterRepositoryPG) UnlinkFromCampaign(characterID characterDomain.CharacterID, campaignID campaignDomain.CampaignID) (bool, error) {
 	cmdTag, err := r.db.Exec(context.Background(), `
-		UPDATE character_sheet SET campaign_id = NULL
+		UPDATE character_sheet SET campaign_id = NULL, player_name = NULL
 		WHERE id = $1 AND campaign_id = $2
 	`, characterID.Value(), campaignID.Value())
 	if err != nil {
@@ -369,19 +375,19 @@ func (r *CharacterRepositoryPG) UnlinkFromCampaign(characterID characterDomain.C
 	return cmdTag.RowsAffected() > 0, nil
 }
 
-func (r *CharacterRepositoryPG) UpdateCampaign(campaignID campaignDomain.CampaignID, characterSlug rpgDomain.Slug, userID userDomain.UserID) (*characterDomain.Character, error) {
+func (r *CharacterRepositoryPG) UpdateCampaign(campaignID campaignDomain.CampaignID, characterSlug rpgDomain.Slug, userID userDomain.UserID, playerName rpgDomain.TableName) (*characterDomain.Character, error) {
 	rows, err := r.db.Query(context.Background(), `
 		UPDATE character_sheet cs
-		SET campaign_id = c.id
+		SET campaign_id = c.id, player_name = $4
 		FROM campaign c
-		WHERE 
+		WHERE
 			cs.slug = $2
 			AND cs.campaign_id IS NULL
 			AND c.id = $1
 			AND cs.player_id = $3
 			AND cs.game_system = c.game_system
 		RETURNING cs.*
-	`, campaignID.Value(), characterSlug.Value(), userID.Value())
+	`, campaignID.Value(), characterSlug.Value(), userID.Value(), playerName.Value())
 	if err != nil {
 		return nil, err
 	}

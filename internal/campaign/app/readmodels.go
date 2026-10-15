@@ -13,6 +13,7 @@ type CampaignDetailsReadModel struct {
 	System            string
 	Slug              string
 	Overview          *string
+	DmName            string
 	IsDM              bool
 	Characters        []CampaignCharacterReadModel
 	PremadeCharacters []CampaignCharacterReadModel
@@ -20,10 +21,11 @@ type CampaignDetailsReadModel struct {
 }
 
 type CampaignCharacterReadModel struct {
-	Id     int
-	Slug   string
-	Name   string
-	IsMine bool
+	Id         int
+	Slug       string
+	Name       string
+	IsMine     bool
+	PlayerName *string
 }
 
 // CampaignListItemReadModel is a campaign of the requester list, with the requester characters in it

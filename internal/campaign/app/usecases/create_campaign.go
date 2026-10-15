@@ -13,7 +13,7 @@ func NewCreateCampaign(r campaignApp.CampaignRepository) *CreateCampaignUseCase 
 }
 
 func (uc *CreateCampaignUseCase) Execute(cmd campaignApp.CreateCampaignCommand) (campaignApp.CreateCampaignReadModel, error) {
-	campaign, err := uc.r.Create(cmd.Name, cmd.Overview, cmd.DmID, cmd.System)
+	campaign, err := uc.r.Create(cmd.Name, cmd.Overview, cmd.DmID, cmd.System, cmd.DmName)
 	if err != nil {
 		return campaignApp.CreateCampaignReadModel{}, err
 	}

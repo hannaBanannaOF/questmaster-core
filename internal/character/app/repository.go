@@ -21,7 +21,7 @@ type CharacterRepository interface {
 	RecordAccess(userID userDomain.UserID, id characterDomain.CharacterID) error
 	DeleteByID(characterID characterDomain.CharacterID) (bool, error)
 	GetAllByUserIDAndCampaignIDNullAndSystem(userID userDomain.UserID, system rpgDomain.System) ([]characterDomain.Character, error)
-	ClaimPremade(characterID characterDomain.CharacterID, campaignID campaignDomain.CampaignID, userID userDomain.UserID) (*characterDomain.Character, error)
+	ClaimPremade(characterID characterDomain.CharacterID, campaignID campaignDomain.CampaignID, userID userDomain.UserID, playerName rpgDomain.TableName) (*characterDomain.Character, error)
 	UnlinkFromCampaign(characterID characterDomain.CharacterID, campaignID campaignDomain.CampaignID) (bool, error)
-	UpdateCampaign(campaignID campaignDomain.CampaignID, characterSlug rpgDomain.Slug, userID userDomain.UserID) (*characterDomain.Character, error)
+	UpdateCampaign(campaignID campaignDomain.CampaignID, characterSlug rpgDomain.Slug, userID userDomain.UserID, playerName rpgDomain.TableName) (*characterDomain.Character, error)
 }

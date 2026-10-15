@@ -5,5 +5,6 @@ import "errors"
 var ErrNotPlayer = errors.New("You're not the player of this character sheet")
 var ErrCannotViewCharacter = errors.New("You can only see your characters and the characters of your campaigns")
 var ErrPremadeCannotLeave = errors.New("An unclaimed premade character can only be deleted by the campaign DM")
+var ErrNotInAnyCampaign = errors.New("Character is not in a campaign")
 var ErrNotAllowed = errors.New("You're not allowed to make this action! You're not this character player or this character's campaign DM")
 var ErrInvalidCharacterName = errors.New("Invalid character name")

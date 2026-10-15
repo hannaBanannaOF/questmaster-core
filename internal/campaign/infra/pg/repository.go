@@ -9,8 +9,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	campaignDomain "questmaster-core/internal/campaign/domain"
-	"questmaster-core/internal/shared/pagination"
 	rpgDomain "questmaster-core/internal/rpg/domain"
+	"questmaster-core/internal/shared/pagination"
 	userDomain "questmaster-core/internal/user/domain"
 )
 
@@ -181,7 +181,7 @@ func (r *CampaignRepositoryPG) FindById(id campaignDomain.CampaignID) (*campaign
 	return &val, nil
 }
 
-func (r *CampaignRepositoryPG) Create(Name campaignDomain.CampaignName, Overview *campaignDomain.CampaignOverview, DmID userDomain.UserID, System rpgDomain.System) (campaignDomain.Campaign, error) {
+func (r *CampaignRepositoryPG) Create(Name campaignDomain.CampaignName, Overview *campaignDomain.CampaignOverview, DmID userDomain.UserID, System rpgDomain.System, DmName rpgDomain.TableName) (campaignDomain.Campaign, error) {
 	var overview any
 	if Overview != nil {
 		overview = Overview.Value()
@@ -189,9 +189,9 @@ func (r *CampaignRepositoryPG) Create(Name campaignDomain.CampaignName, Overview
 		overview = nil
 	}
 	rows, err := r.db.Query(context.Background(), `
-		INSERT INTO campaign(name, dm_id, game_system, overview) 
-		VALUES($1, $2, $3, $4) RETURNING *, 0 as player_count
-	`, Name.Value(), DmID.Value(), System.Value(), overview)
+		INSERT INTO campaign(name, dm_id, game_system, overview, dm_name)
+		VALUES($1, $2, $3, $4, $5) RETURNING *, 0 as player_count
+	`, Name.Value(), DmID.Value(), System.Value(), overview, DmName.Value())
 	if err != nil {
 		return campaignDomain.Campaign{}, err
 	}
@@ -211,7 +211,7 @@ func (r *CampaignRepositoryPG) Create(Name campaignDomain.CampaignName, Overview
 
 func (r *CampaignRepositoryPG) UpdateStatus(newStatus campaignDomain.CampaignStatus, id campaignDomain.CampaignID) (campaignDomain.Campaign, error) {
 	rows, err := r.db.Query(context.Background(), `
-		UPDATE campaign SET status = $1 
+		UPDATE campaign SET status = $1
 		WHERE id = $2
 		RETURNING *,
 			(SELECT COUNT(DISTINCT cs.player_id) FROM character_sheet cs WHERE cs.campaign_id = campaign.id) AS player_count
@@ -233,7 +233,8 @@ func (r *CampaignRepositoryPG) UpdateStatus(newStatus campaignDomain.CampaignSta
 	return val, nil
 }
 
-// DeleteById deletes the campaign and its unclaimed premade characters in one transaction.
+// DeleteById deletes the campaign and its unclaimed premade characters, and clears the
+// players' table names, in one transaction.
 // The foreign keys (migration 0005) unlink the other characters and remove the invite.
 func (r *CampaignRepositoryPG) DeleteById(id campaignDomain.CampaignID) (bool, error) {
 	ctx := context.Background()
@@ -246,6 +247,14 @@ func (r *CampaignRepositoryPG) DeleteById(id campaignDomain.CampaignID) (bool, e
 	if _, err := tx.Exec(ctx, `
 		DELETE FROM character_sheet
 		WHERE campaign_id = $1 AND player_id IS NULL
+	`, id.Value()); err != nil {
+		return false, err
+	}
+
+	// The table names belong to this campaign; the foreign key then unlinks the characters
+	if _, err := tx.Exec(ctx, `
+		UPDATE character_sheet SET player_name = NULL
+		WHERE campaign_id = $1
 	`, id.Value()); err != nil {
 		return false, err
 	}
@@ -271,5 +280,12 @@ func (r *CampaignRepositoryPG) RecordAccess(userID userDomain.UserID, id campaig
 		INSERT INTO campaign_access (user_id, campaign_id, accessed_at) VALUES ($1, $2, now())
 		ON CONFLICT (user_id, campaign_id) DO UPDATE SET accessed_at = now()
 	`, userID.Value(), id.Value())
+	return err
+}
+
+func (r *CampaignRepositoryPG) UpdateDmName(id campaignDomain.CampaignID, dmName rpgDomain.TableName) error {
+	_, err := r.db.Exec(context.Background(), `
+		UPDATE campaign SET dm_name = $1 WHERE id = $2
+	`, dmName.Value(), id.Value())
 	return err
 }

@@ -29,12 +29,14 @@ type CampaignStatusResponse struct {
 }
 
 type CampaignDetailResponse struct {
-	Id         int                                   `json:"id"`
-	Name       string                                `json:"name"`
-	Status     string                                `json:"status"`
-	System     string                                `json:"system"`
-	Slug       string                                `json:"slug"`
-	Overview   *string                               `json:"overview"`
+	Id       int     `json:"id"`
+	Name     string  `json:"name"`
+	Status   string  `json:"status"`
+	System   string  `json:"system"`
+	Slug     string  `json:"slug"`
+	Overview *string `json:"overview"`
+	// How the DM is called in this campaign
+	DmName     string                                `json:"dm_name"`
 	IsDM       bool                                  `json:"is_dm"`
 	Characters []CampaignDetailResponseCharacterItem `json:"characters"`
 	// Unclaimed premade characters, ordered by name; empty unless the requester is the DM
@@ -54,6 +56,8 @@ type CampaignDetailResponseCharacterItem struct {
 	Name string `json:"name"`
 	// True when the requester is the character player
 	IsMine bool `json:"is_mine"`
+	// How the character's player is called in this campaign
+	PlayerName *string `json:"player_name"`
 }
 
 type CampaignListPageResponse struct {
@@ -66,4 +70,8 @@ type CampaignStatusCountsResponse struct {
 	Active   int `json:"ACTIVE"`
 	Paused   int `json:"PAUSED"`
 	Archived int `json:"ARCHIVED"`
+}
+
+type CampaignDmNameResponse struct {
+	DmName string `json:"dm_name"`
 }

@@ -12,8 +12,9 @@ type CampaignRepository interface {
 	CountByStatusForUser(userID userDomain.UserID, filters campaignDomain.CampaignListFilters) (map[campaignDomain.CampaignStatus]int, error)
 	FindBySlug(slug rpgDomain.Slug) (*campaignDomain.Campaign, error)
 	FindById(id campaignDomain.CampaignID) (*campaignDomain.Campaign, error)
-	Create(Name campaignDomain.CampaignName, Overview *campaignDomain.CampaignOverview, DmID userDomain.UserID, System rpgDomain.System) (campaignDomain.Campaign, error)
+	Create(Name campaignDomain.CampaignName, Overview *campaignDomain.CampaignOverview, DmID userDomain.UserID, System rpgDomain.System, DmName rpgDomain.TableName) (campaignDomain.Campaign, error)
 	UpdateStatus(newStatus campaignDomain.CampaignStatus, id campaignDomain.CampaignID) (campaignDomain.Campaign, error)
 	RecordAccess(userID userDomain.UserID, id campaignDomain.CampaignID) error
+	UpdateDmName(id campaignDomain.CampaignID, dmName rpgDomain.TableName) error
 	DeleteById(id campaignDomain.CampaignID) (bool, error)
 }

@@ -10,6 +10,7 @@ type CampaignRow struct {
 	ID          int       `db:"id"`
 	Name        string    `db:"name"`
 	DmID        uuid.UUID `db:"dm_id"`
+	DmName      string    `db:"dm_name"`
 	Status      string    `db:"status"`
 	System      string    `db:"game_system"`
 	Slug        string    `db:"slug"`

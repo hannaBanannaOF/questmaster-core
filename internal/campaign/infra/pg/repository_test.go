@@ -45,7 +45,7 @@ func createCampaign(t *testing.T, r *CampaignRepositoryPG, name string, dm userD
 	if err != nil {
 		t.Fatalf("campaign name: %v", err)
 	}
-	c, err := r.Create(campaignName, nil, dm, rpgDomain.DungeonsAndDragons)
+	c, err := r.Create(campaignName, nil, dm, rpgDomain.DungeonsAndDragons, "Mestre")
 	if err != nil {
 		t.Fatalf("create campaign: %v", err)
 	}
@@ -60,7 +60,7 @@ func createLinkedCharacter(t *testing.T, db *pgxpool.Pool, campaignID campaignDo
 	if err != nil {
 		t.Fatalf("create character: %v", err)
 	}
-	linked, err := r.UpdateCampaign(campaignID, c.Slug, player)
+	linked, err := r.UpdateCampaign(campaignID, c.Slug, player, "Jogador")
 	if err != nil || linked == nil {
 		t.Fatalf("link character: %v", err)
 	}
@@ -101,6 +101,9 @@ func TestDeleteCampaignKeepsCharactersAndRemovesInvite(t *testing.T) {
 	campaign := createCampaign(t, campaigns, "Doomed campaign", newUser())
 	player := newUser()
 	character := createLinkedCharacter(t, db, campaign.Id, player)
+	if character.PlayerName == nil || *character.PlayerName != "Jogador" {
+		t.Fatalf("expected the link to store the table name, got %v", character.PlayerName)
+	}
 	if _, err := invites.Create(campaign.Id); err != nil {
 		t.Fatalf("create invite: %v", err)
 	}
@@ -120,10 +123,30 @@ func TestDeleteCampaignKeepsCharactersAndRemovesInvite(t *testing.T) {
 	if !kept.IsPlayer(player) {
 		t.Fatalf("expected character to keep its player")
 	}
+	if kept.PlayerName != nil {
+		t.Fatalf("expected the table name cleared, got %v", *kept.PlayerName)
+	}
 
 	invite, err := invites.FindByCampaignID(campaign.Id)
 	if err != nil || invite != nil {
 		t.Fatalf("expected invite to be removed, got %v err=%v", invite, err)
+	}
+}
+
+func TestCampaignDmName(t *testing.T) {
+	db := testdb.Pool(t)
+	campaigns := NewCampaignRepositoryPG(db)
+	campaign := createCampaign(t, campaigns, "Named table", newUser())
+	if campaign.DmName != "Mestre" {
+		t.Fatalf("expected the DM name stored on create, got %q", campaign.DmName)
+	}
+
+	if err := campaigns.UpdateDmName(campaign.Id, "Mestra Bia"); err != nil {
+		t.Fatalf("update DM name: %v", err)
+	}
+	found, err := campaigns.FindById(campaign.Id)
+	if err != nil || found.DmName != "Mestra Bia" {
+		t.Fatalf("expected the new DM name, got %+v err=%v", found, err)
 	}
 }
 
@@ -385,7 +408,7 @@ func TestPremadeCharactersInCampaign(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create premade: %v", err)
 	}
-	if c, err := characters.ClaimPremade(claimed.Id, campaign.Id, claimer); err != nil || c == nil {
+	if c, err := characters.ClaimPremade(claimed.Id, campaign.Id, claimer, "Jogador"); err != nil || c == nil {
 		t.Fatalf("claim premade: %v", err)
 	}
 	unclaimed, err := characters.CreatePremade("Unclaimed", campaign.Id, rpgDomain.DungeonsAndDragons)
@@ -462,7 +485,7 @@ func TestRemovedCharacterNoLongerGrantsMembership(t *testing.T) {
 		t.Fatalf("expected player count 1, got %v err=%v", found, err)
 	}
 	kept, err := characters.FindByID(character.Id)
-	if err != nil || kept == nil || !kept.IsPlayer(leaving) || kept.CampaignID != nil {
+	if err != nil || kept == nil || !kept.IsPlayer(leaving) || kept.CampaignID != nil || kept.PlayerName != nil {
 		t.Fatalf("expected the character kept by its player with no campaign, got %+v err=%v", kept, err)
 	}
 

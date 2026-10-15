@@ -21,6 +21,7 @@ func registerCampaignRoutes(
 		campaign.GET("/resolve/:slug", rpgTransport.SlugMiddleware(), appContext.Adapt(handler.ResolveSlug))
 		campaign.DELETE("/:campaignID", campaignTransport.CampaignIDMiddleware(), appContext.Adapt(handler.DeleteCampaign))
 		campaign.GET("/:campaignID", campaignTransport.CampaignIDMiddleware(), appContext.Adapt(handler.GetCampaignDetails))
+		campaign.PATCH("/:campaignID", campaignTransport.CampaignIDMiddleware(), appContext.Adapt(handler.UpdateDmName))
 		campaign.PATCH("/:campaignID/status", campaignTransport.CampaignIDMiddleware(), appContext.Adapt(handler.UpdateStatus))
 	}
 }

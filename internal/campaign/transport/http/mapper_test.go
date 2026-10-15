@@ -67,14 +67,22 @@ func TestMapListReadModelToResponseLastAccessedAt(t *testing.T) {
 }
 
 func TestMapDetailReadModelToResponsePartyCard(t *testing.T) {
+	ana := "Ana"
 	body, err := json.Marshal(MapDetailReadModelToResponse(campaignApp.CampaignDetailsReadModel{
+		DmName: "Mestre",
 		Characters: []campaignApp.CampaignCharacterReadModel{
-			{Id: 10, Slug: "hero", Name: "Hero", IsMine: true},
+			{Id: 10, Slug: "hero", Name: "Hero", IsMine: true, PlayerName: &ana},
+			{Id: 11, Slug: "lost", Name: "Lost"},
 		},
 	}))
-	want := `{"id":10,"slug":"hero","name":"Hero","is_mine":true}`
-	if err != nil || !strings.Contains(string(body), want) {
-		t.Fatalf("expected %s in %s err=%v", want, body, err)
+	for _, want := range []string{
+		`"dm_name":"Mestre"`,
+		`{"id":10,"slug":"hero","name":"Hero","is_mine":true,"player_name":"Ana"}`,
+		`{"id":11,"slug":"lost","name":"Lost","is_mine":false,"player_name":null}`,
+	} {
+		if err != nil || !strings.Contains(string(body), want) {
+			t.Fatalf("expected %s in %s err=%v", want, body, err)
+		}
 	}
 }
 

@@ -32,10 +32,11 @@ func MapDetailReadModelToResponse(rm campaignApp.CampaignDetailsReadModel) Campa
 
 	for _, c := range rm.Characters {
 		characters = append(characters, CampaignDetailResponseCharacterItem{
-			Id:     c.Id,
-			Slug:   c.Slug,
-			Name:   c.Name,
-			IsMine: c.IsMine,
+			Id:         c.Id,
+			Slug:       c.Slug,
+			Name:       c.Name,
+			IsMine:     c.IsMine,
+			PlayerName: c.PlayerName,
 		})
 	}
 
@@ -51,6 +52,7 @@ func MapDetailReadModelToResponse(rm campaignApp.CampaignDetailsReadModel) Campa
 		System:            rm.System,
 		Slug:              rm.Slug,
 		Overview:          rm.Overview,
+		DmName:            rm.DmName,
 		IsDM:              rm.IsDM,
 		Characters:        characters,
 		PremadeCharacters: premades,

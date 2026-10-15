@@ -63,7 +63,7 @@ func TestUpdateCampaignLinksOnlyEligibleCharacters(t *testing.T) {
 	campaigns := campaignInfra.NewCampaignRepositoryPG(db)
 
 	newCampaign := func() campaignDomain.Campaign {
-		c, err := campaigns.Create("Linking campaign", nil, userDomain.NewUserID(uuid.New()), rpgDomain.DungeonsAndDragons)
+		c, err := campaigns.Create("Linking campaign", nil, userDomain.NewUserID(uuid.New()), rpgDomain.DungeonsAndDragons, "Mestre")
 		if err != nil {
 			t.Fatalf("create campaign: %v", err)
 		}
@@ -75,7 +75,7 @@ func TestUpdateCampaignLinksOnlyEligibleCharacters(t *testing.T) {
 		player := userDomain.NewUserID(uuid.New())
 		c := createCharacter(t, r, "Eligible", player)
 
-		linked, err := r.UpdateCampaign(campaign.Id, c.Slug, player)
+		linked, err := r.UpdateCampaign(campaign.Id, c.Slug, player, "Jogador")
 		if err != nil || linked == nil || linked.CampaignID == nil || *linked.CampaignID != campaign.Id {
 			t.Fatalf("expected character linked to campaign %d, got %v err=%v", campaign.Id, linked, err)
 		}
@@ -85,7 +85,7 @@ func TestUpdateCampaignLinksOnlyEligibleCharacters(t *testing.T) {
 		campaign := newCampaign()
 		c := createCharacter(t, r, "Not mine", userDomain.NewUserID(uuid.New()))
 
-		linked, err := r.UpdateCampaign(campaign.Id, c.Slug, userDomain.NewUserID(uuid.New()))
+		linked, err := r.UpdateCampaign(campaign.Id, c.Slug, userDomain.NewUserID(uuid.New()), "Jogador")
 		if err != nil || linked != nil {
 			t.Fatalf("expected no link, got %v err=%v", linked, err)
 		}
@@ -95,11 +95,11 @@ func TestUpdateCampaignLinksOnlyEligibleCharacters(t *testing.T) {
 		first, second := newCampaign(), newCampaign()
 		player := userDomain.NewUserID(uuid.New())
 		c := createCharacter(t, r, "Taken", player)
-		if linked, err := r.UpdateCampaign(first.Id, c.Slug, player); err != nil || linked == nil {
+		if linked, err := r.UpdateCampaign(first.Id, c.Slug, player, "Jogador"); err != nil || linked == nil {
 			t.Fatalf("link to first campaign: %v", err)
 		}
 
-		linked, err := r.UpdateCampaign(second.Id, c.Slug, player)
+		linked, err := r.UpdateCampaign(second.Id, c.Slug, player, "Jogador")
 		if err != nil || linked != nil {
 			t.Fatalf("expected no link, got %v err=%v", linked, err)
 		}
@@ -117,7 +117,7 @@ func TestUpdateCampaignLinksOnlyEligibleCharacters(t *testing.T) {
 			t.Fatalf("create character: %v", err)
 		}
 
-		linked, err := r.UpdateCampaign(campaign.Id, c.Slug, player)
+		linked, err := r.UpdateCampaign(campaign.Id, c.Slug, player, "Jogador")
 		if err != nil || linked != nil {
 			t.Fatalf("expected no link, got %v err=%v", linked, err)
 		}
@@ -202,12 +202,12 @@ func TestCharacterListFilters(t *testing.T) {
 	campaigns := campaignInfra.NewCampaignRepositoryPG(db)
 	player := userDomain.NewUserID(uuid.New())
 
-	campaign, err := campaigns.Create("Filter campaign", nil, userDomain.NewUserID(uuid.New()), rpgDomain.DungeonsAndDragons)
+	campaign, err := campaigns.Create("Filter campaign", nil, userDomain.NewUserID(uuid.New()), rpgDomain.DungeonsAndDragons, "Mestre")
 	if err != nil {
 		t.Fatalf("create campaign: %v", err)
 	}
 	linked := createCharacter(t, r, "Linked", player)
-	if l, err := r.UpdateCampaign(campaign.Id, linked.Slug, player); err != nil || l == nil {
+	if l, err := r.UpdateCampaign(campaign.Id, linked.Slug, player, "Jogador"); err != nil || l == nil {
 		t.Fatalf("link character: %v", err)
 	}
 	createCharacter(t, r, "Unlinked", player)
@@ -237,7 +237,7 @@ func TestGetByPlayerInCampaigns(t *testing.T) {
 
 	dm := userDomain.NewUserID(uuid.New())
 	newCampaign := func(name string) campaignDomain.Campaign {
-		c, err := campaigns.Create(campaignDomain.CampaignName(name), nil, dm, rpgDomain.DungeonsAndDragons)
+		c, err := campaigns.Create(campaignDomain.CampaignName(name), nil, dm, rpgDomain.DungeonsAndDragons, "Mestre")
 		if err != nil {
 			t.Fatalf("create campaign: %v", err)
 		}
@@ -245,7 +245,7 @@ func TestGetByPlayerInCampaigns(t *testing.T) {
 	}
 	link := func(campaign campaignDomain.Campaign, name string, player userDomain.UserID) {
 		c := createCharacter(t, r, name, player)
-		if l, err := r.UpdateCampaign(campaign.Id, c.Slug, player); err != nil || l == nil {
+		if l, err := r.UpdateCampaign(campaign.Id, c.Slug, player, "Jogador"); err != nil || l == nil {
 			t.Fatalf("link %s: %v", name, err)
 		}
 	}
@@ -337,7 +337,7 @@ func TestPremadeCharacterClaims(t *testing.T) {
 	db := testdb.Pool(t)
 	r := NewCharacterRepositoryPG(db)
 	campaigns := campaignInfra.NewCampaignRepositoryPG(db)
-	campaign, err := campaigns.Create("Premade campaign", nil, userDomain.NewUserID(uuid.New()), rpgDomain.CallOfCthulhu)
+	campaign, err := campaigns.Create("Premade campaign", nil, userDomain.NewUserID(uuid.New()), rpgDomain.CallOfCthulhu, "Mestre")
 	if err != nil {
 		t.Fatalf("create campaign: %v", err)
 	}
@@ -355,13 +355,13 @@ func TestPremadeCharacterClaims(t *testing.T) {
 	})
 
 	first, second := userDomain.NewUserID(uuid.New()), userDomain.NewUserID(uuid.New())
-	claimed, err := r.ClaimPremade(premade.Id, campaign.Id, first)
-	if err != nil || claimed == nil || !claimed.IsPlayer(first) {
+	claimed, err := r.ClaimPremade(premade.Id, campaign.Id, first, "Jogador")
+	if err != nil || claimed == nil || !claimed.IsPlayer(first) || claimed.PlayerName == nil || *claimed.PlayerName != "Jogador" {
 		t.Fatalf("expected the first claim to succeed, got %+v err=%v", claimed, err)
 	}
 
 	t.Run("second claim of the same character changes nothing", func(t *testing.T) {
-		again, err := r.ClaimPremade(premade.Id, campaign.Id, second)
+		again, err := r.ClaimPremade(premade.Id, campaign.Id, second, "Jogador")
 		if err != nil || again != nil {
 			t.Fatalf("expected no row changed, got %+v err=%v", again, err)
 		}
@@ -376,7 +376,7 @@ func TestPremadeCharacterClaims(t *testing.T) {
 		if err != nil {
 			t.Fatalf("create premade: %v", err)
 		}
-		got, err := r.ClaimPremade(another.Id, campaign.Id, first)
+		got, err := r.ClaimPremade(another.Id, campaign.Id, first, "Jogador")
 		if err != nil || got != nil {
 			t.Fatalf("expected no row changed, got %+v err=%v", got, err)
 		}
@@ -427,12 +427,12 @@ func TestCharacterListSearchAndCampaign(t *testing.T) {
 	player := userDomain.NewUserID(uuid.New())
 	tag := uuid.NewString()[:8]
 
-	campaign, err := campaigns.Create(campaignDomain.CampaignName("Innsmouth "+tag), nil, userDomain.NewUserID(uuid.New()), rpgDomain.DungeonsAndDragons)
+	campaign, err := campaigns.Create(campaignDomain.CampaignName("Innsmouth "+tag), nil, userDomain.NewUserID(uuid.New()), rpgDomain.DungeonsAndDragons, "Mestre")
 	if err != nil {
 		t.Fatalf("create campaign: %v", err)
 	}
 	tomas := createCharacter(t, r, "Tomás Ribeiro "+tag, player)
-	if l, err := r.UpdateCampaign(campaign.Id, tomas.Slug, player); err != nil || l == nil {
+	if l, err := r.UpdateCampaign(campaign.Id, tomas.Slug, player, "Jogador"); err != nil || l == nil {
 		t.Fatalf("link: %v", err)
 	}
 	createCharacter(t, r, "Jack Brady "+tag, player)
