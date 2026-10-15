@@ -15,10 +15,8 @@ type InviteDetailsResponse struct {
 }
 
 type InvitePremadeCharacterResponse struct {
-	Slug      string `json:"slug"`
-	Name      string `json:"name"`
-	CurrentHP *int   `json:"current_hp"`
-	MaxHP     *int   `json:"max_hp"`
+	Slug string `json:"slug"`
+	Name string `json:"name"`
 }
 
 type InviteCreateResponse struct {

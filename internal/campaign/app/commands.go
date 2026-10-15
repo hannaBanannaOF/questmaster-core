@@ -2,8 +2,8 @@ package campaign
 
 import (
 	campaignDomain "questmaster-core/internal/campaign/domain"
-	"questmaster-core/internal/shared/pagination"
 	rpgDomain "questmaster-core/internal/rpg/domain"
+	"questmaster-core/internal/shared/pagination"
 	userDomain "questmaster-core/internal/user/domain"
 )
 

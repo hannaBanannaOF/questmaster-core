@@ -1,8 +1,6 @@
 package character
 
 import (
-	"fmt"
-
 	campaignDomain "questmaster-core/internal/campaign/domain"
 	characterDomain "questmaster-core/internal/character/domain"
 	rpgDomain "questmaster-core/internal/rpg/domain"
@@ -25,16 +23,6 @@ func MapRowToDomain(row CharacterRow) (characterDomain.Character, error) {
 	if err != nil {
 		return characterDomain.Character{}, err
 	}
-	var characterHp *characterDomain.HP
-	if row.CurrentHp != nil && row.MaxHp != nil {
-		hp, err := characterDomain.NewHP(*row.CurrentHp, *row.MaxHp)
-		if err != nil {
-			return characterDomain.Character{}, err
-		}
-		characterHp = &hp
-	} else if row.CurrentHp != nil || row.MaxHp != nil {
-		return characterDomain.Character{}, fmt.Errorf("character %d has only one of current_hp/max_hp set", row.Id)
-	}
 
 	var playerID *userDomain.UserID
 	if row.PlayerID.Valid {
@@ -54,6 +42,5 @@ func MapRowToDomain(row CharacterRow) (characterDomain.Character, error) {
 		System:     system,
 		CampaignID: campaignID,
 		Slug:       characterSlug,
-		Hp:         characterHp,
 	}, nil
 }

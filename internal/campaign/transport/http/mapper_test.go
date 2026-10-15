@@ -67,13 +67,12 @@ func TestMapListReadModelToResponseLastAccessedAt(t *testing.T) {
 }
 
 func TestMapDetailReadModelToResponsePartyCard(t *testing.T) {
-	current, max := 3, 10
 	body, err := json.Marshal(MapDetailReadModelToResponse(campaignApp.CampaignDetailsReadModel{
 		Characters: []campaignApp.CampaignCharacterReadModel{
-			{Id: 10, Slug: "hero", Name: "Hero", CurrentHP: &current, MaxHP: &max, IsMine: true},
+			{Id: 10, Slug: "hero", Name: "Hero", IsMine: true},
 		},
 	}))
-	want := `{"id":10,"slug":"hero","name":"Hero","current_hp":3,"max_hp":10,"is_mine":true}`
+	want := `{"id":10,"slug":"hero","name":"Hero","is_mine":true}`
 	if err != nil || !strings.Contains(string(body), want) {
 		t.Fatalf("expected %s in %s err=%v", want, body, err)
 	}
@@ -88,7 +87,7 @@ func TestMapDetailReadModelToResponsePremadeCharacters(t *testing.T) {
 	body, _ = json.Marshal(MapDetailReadModelToResponse(campaignApp.CampaignDetailsReadModel{
 		PremadeCharacters: []campaignApp.CampaignCharacterReadModel{{Id: 20, Slug: "harvey", Name: "Harvey"}},
 	}))
-	if !strings.Contains(string(body), `"premade_characters":[{"id":20,"slug":"harvey","name":"Harvey","current_hp":null,"max_hp":null}]`) {
+	if !strings.Contains(string(body), `"premade_characters":[{"id":20,"slug":"harvey","name":"Harvey"}]`) {
 		t.Fatalf("unexpected premade_characters in %s", body)
 	}
 }

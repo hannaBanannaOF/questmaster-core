@@ -13,7 +13,7 @@ func NewCreateCharacter(r characterApp.CharacterRepository) *CreateCharacterUseC
 }
 
 func (uc *CreateCharacterUseCase) Execute(cmd characterApp.CreateCharacterCommand) (characterApp.CreateCharacterReadModel, error) {
-	character, err := uc.r.Create(cmd.Name, cmd.Player, cmd.System, cmd.Hp)
+	character, err := uc.r.Create(cmd.Name, cmd.Player, cmd.System)
 	if err != nil {
 		return characterApp.CreateCharacterReadModel{}, err
 	}

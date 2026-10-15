@@ -56,7 +56,7 @@ func createCampaign(t *testing.T, r *CampaignRepositoryPG, name string, dm userD
 func createLinkedCharacter(t *testing.T, db *pgxpool.Pool, campaignID campaignDomain.CampaignID, player userDomain.UserID) characterDomain.Character {
 	t.Helper()
 	r := characterInfra.NewCharacterRepositoryPG(db)
-	c, err := r.Create("Hero", player, rpgDomain.DungeonsAndDragons, nil)
+	c, err := r.Create("Hero", player, rpgDomain.DungeonsAndDragons)
 	if err != nil {
 		t.Fatalf("create character: %v", err)
 	}
@@ -381,14 +381,14 @@ func TestPremadeCharactersInCampaign(t *testing.T) {
 	campaign := createCampaign(t, campaigns, "Premade table", dm)
 
 	createLinkedCharacter(t, db, campaign.Id, player)
-	claimed, err := characters.CreatePremade("Claimed", campaign.Id, rpgDomain.DungeonsAndDragons, nil)
+	claimed, err := characters.CreatePremade("Claimed", campaign.Id, rpgDomain.DungeonsAndDragons)
 	if err != nil {
 		t.Fatalf("create premade: %v", err)
 	}
 	if c, err := characters.ClaimPremade(claimed.Id, campaign.Id, claimer); err != nil || c == nil {
 		t.Fatalf("claim premade: %v", err)
 	}
-	unclaimed, err := characters.CreatePremade("Unclaimed", campaign.Id, rpgDomain.DungeonsAndDragons, nil)
+	unclaimed, err := characters.CreatePremade("Unclaimed", campaign.Id, rpgDomain.DungeonsAndDragons)
 	if err != nil {
 		t.Fatalf("create premade: %v", err)
 	}

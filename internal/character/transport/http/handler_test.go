@@ -24,8 +24,8 @@ type fakePremadeRepo struct {
 	characterApp.CharacterRepository
 }
 
-func (fakePremadeRepo) CreatePremade(name characterDomain.CharacterName, _ campaignDomain.CampaignID, system rpgDomain.System, hp *characterDomain.HP) (characterDomain.Character, error) {
-	return characterDomain.Character{Name: name, Slug: "harvey", System: system, Hp: hp}, nil
+func (fakePremadeRepo) CreatePremade(name characterDomain.CharacterName, _ campaignDomain.CampaignID, system rpgDomain.System) (characterDomain.Character, error) {
+	return characterDomain.Character{Name: name, Slug: "harvey", System: system}, nil
 }
 
 type fakeCampaignFinder struct{ dm userDomain.UserID }
@@ -37,7 +37,7 @@ func (f fakeCampaignFinder) FindByID(id campaignDomain.CampaignID) (campaignDoma
 func TestCreatePremadeCharacterRoute(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	dm := userDomain.NewUserID(uuid.New())
-	handler := NewCharactersHandler(nil, nil, nil, nil, nil, nil,
+	handler := NewCharactersHandler(nil, nil, nil, nil, nil,
 		characterUsecases.NewCreatePremadeCharacter(fakePremadeRepo{}, fakeCampaignFinder{dm: dm}), nil, nil)
 
 	serve := func(user userDomain.UserID, body string) int {
@@ -51,13 +51,13 @@ func TestCreatePremadeCharacterRoute(t *testing.T) {
 		return rec.Code
 	}
 
-	if code := serve(dm, `{"name":"Harvey","max_hp":12}`); code != http.StatusCreated {
+	if code := serve(dm, `{"name":"Harvey"}`); code != http.StatusCreated {
 		t.Fatalf("DM: expected 201, got %d", code)
 	}
 	if code := serve(userDomain.NewUserID(uuid.New()), `{"name":"Harvey"}`); code != http.StatusForbidden {
 		t.Fatalf("non-DM: expected 403, got %d", code)
 	}
-	for _, body := range []string{`{"name":"  "}`, `{"name":"Harvey","max_hp":0}`, `not json`} {
+	for _, body := range []string{`{"name":"  "}`, `not json`} {
 		if code := serve(dm, body); code != http.StatusBadRequest {
 			t.Fatalf("body %s: expected 400, got %d", body, code)
 		}
@@ -81,7 +81,7 @@ func (fakeLeaveRepo) UnlinkFromCampaign(characterDomain.CharacterID, campaignDom
 func TestRemoveFromCampaignRoute(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	dm, player := userDomain.NewUserID(uuid.New()), userDomain.NewUserID(uuid.New())
-	handler := NewCharactersHandler(nil, nil, nil, nil, nil, nil, nil,
+	handler := NewCharactersHandler(nil, nil, nil, nil, nil, nil,
 		characterUsecases.NewLeaveCampaign(fakeLeaveRepo{player: player}, fakeCampaignFinder{dm: dm}), nil)
 
 	serve := func(user userDomain.UserID) int {
@@ -121,7 +121,7 @@ func (fakeEditRepo) UpdateDetails(c characterDomain.Character) (characterDomain.
 func TestEditRoute(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	player := userDomain.NewUserID(uuid.New())
-	handler := NewCharactersHandler(nil, nil, nil, nil, nil, nil, nil, nil,
+	handler := NewCharactersHandler(nil, nil, nil, nil, nil, nil, nil,
 		characterUsecases.NewEditCharacter(fakeEditRepo{player: player}, fakeCampaignFinder{}))
 
 	serve := func(user userDomain.UserID, body string) (int, string) {
@@ -135,11 +135,11 @@ func TestEditRoute(t *testing.T) {
 		return rec.Code, rec.Body.String()
 	}
 
-	code, body := serve(player, `{"name":"Harvey Walters","max_hp":12}`)
-	if code != http.StatusOK || !strings.Contains(body, `"slug":"harvey-walters"`) || !strings.Contains(body, `"max_hp":12`) {
+	code, body := serve(player, `{"name":"Harvey Walters"}`)
+	if code != http.StatusOK || !strings.Contains(body, `"slug":"harvey-walters"`) {
 		t.Fatalf("player: expected 200 with the edited character, got %d %s", code, body)
 	}
-	for _, bad := range []string{`{}`, `{"name":"  "}`, `{"max_hp":0}`} {
+	for _, bad := range []string{`{}`, `{"name":"  "}`} {
 		if code, _ := serve(player, bad); code != http.StatusBadRequest {
 			t.Fatalf("body %s: expected 400, got %d", bad, code)
 		}

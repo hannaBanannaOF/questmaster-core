@@ -21,18 +21,11 @@ type CampaignDetailsInput struct {
 func mapCampaignCharacters(characters []characterDomain.Character, userID userDomain.UserID) []CampaignCharacterReadModel {
 	models := make([]CampaignCharacterReadModel, 0, len(characters))
 	for _, c := range characters {
-		var currentHP, maxHP *int
-		if c.Hp != nil {
-			curr, max := c.Hp.Current(), c.Hp.Max()
-			currentHP, maxHP = &curr, &max
-		}
 		models = append(models, CampaignCharacterReadModel{
-			Id:        c.Id.Value(),
-			Slug:      c.Slug.Value(),
-			Name:      c.Name.Value(),
-			CurrentHP: currentHP,
-			MaxHP:     maxHP,
-			IsMine:    c.IsPlayer(userID),
+			Id:     c.Id.Value(),
+			Slug:   c.Slug.Value(),
+			Name:   c.Name.Value(),
+			IsMine: c.IsPlayer(userID),
 		})
 	}
 	return models

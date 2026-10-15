@@ -13,8 +13,6 @@ type CharacterRow struct {
 	System     string        `db:"game_system"`
 	CampaingID *int          `db:"campaign_id"`
 	Slug       string        `db:"slug"`
-	MaxHp      *int          `db:"max_hp"`
-	CurrentHp  *int          `db:"current_hp"`
 }
 
 // CharacterListRow is a character of the requester list, with their last access to it

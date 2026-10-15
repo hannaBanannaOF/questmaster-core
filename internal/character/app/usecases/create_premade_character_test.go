@@ -18,12 +18,11 @@ type fakePremadeRepo struct {
 	characterApp.CharacterRepository
 	created   bool
 	gotSystem rpgDomain.System
-	gotHP     *characterDomain.HP
 }
 
-func (f *fakePremadeRepo) CreatePremade(name characterDomain.CharacterName, campaignID campaignDomain.CampaignID, system rpgDomain.System, hp *characterDomain.HP) (characterDomain.Character, error) {
-	f.created, f.gotSystem, f.gotHP = true, system, hp
-	return characterDomain.Character{Name: name, Slug: "harvey", CampaignID: &campaignID, System: system, Hp: hp}, nil
+func (f *fakePremadeRepo) CreatePremade(name characterDomain.CharacterName, campaignID campaignDomain.CampaignID, system rpgDomain.System) (characterDomain.Character, error) {
+	f.created, f.gotSystem = true, system
+	return characterDomain.Character{Name: name, Slug: "harvey", CampaignID: &campaignID, System: system}, nil
 }
 
 type fakeFailingCampaignFinder struct{ err error }
@@ -34,19 +33,18 @@ func (f fakeFailingCampaignFinder) FindByID(campaignDomain.CampaignID) (campaign
 
 func TestCreatePremadeCharacter(t *testing.T) {
 	dm := userDomain.NewUserID(uuid.New())
-	hp, _ := characterDomain.NewHP(12, 12)
 	campaignIn := func(status campaignDomain.CampaignStatus) fakeCampaignFinder {
 		return fakeCampaignFinder{campaign: campaignDomain.Campaign{Id: 1, Dm: dm, Status: status, System: rpgDomain.CallOfCthulhu}}
 	}
 	cmd := func(user userDomain.UserID) characterApp.CreatePremadeCharacterCommand {
-		return characterApp.CreatePremadeCharacterCommand{CampaignID: 1, Name: "Harvey", Hp: &hp, UserID: user}
+		return characterApp.CreatePremadeCharacterCommand{CampaignID: 1, Name: "Harvey", UserID: user}
 	}
 
 	t.Run("DM creates it with the campaign game system", func(t *testing.T) {
 		repo := &fakePremadeRepo{}
 		rm, err := NewCreatePremadeCharacter(repo, campaignIn(campaignDomain.StatusDraft)).Execute(cmd(dm))
-		if err != nil || rm.Slug != "harvey" || repo.gotSystem != rpgDomain.CallOfCthulhu || repo.gotHP.Current() != 12 {
-			t.Fatalf("expected a Call of Cthulhu premade with 12 HP, got %+v system=%v err=%v", rm, repo.gotSystem, err)
+		if err != nil || rm.Slug != "harvey" || repo.gotSystem != rpgDomain.CallOfCthulhu {
+			t.Fatalf("expected a Call of Cthulhu premade, got %+v system=%v err=%v", rm, repo.gotSystem, err)
 		}
 	})
 

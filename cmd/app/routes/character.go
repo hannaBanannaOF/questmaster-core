@@ -21,7 +21,6 @@ func registerCharacterRoutes(
 		character.GET("/resolve/:slug", rpgTransport.SlugMiddleware(), appContext.Adapt(handler.ResolveSlug))
 		character.GET("/:characterID", characterTransport.CharacterIDMiddleware(), appContext.Adapt(handler.GetDetails))
 		character.PATCH("/:characterID", characterTransport.CharacterIDMiddleware(), appContext.Adapt(handler.Edit))
-		character.PATCH("/:characterID/hp", characterTransport.CharacterIDMiddleware(), appContext.Adapt(handler.UpdateHP))
 		character.DELETE("/:characterID", characterTransport.CharacterIDMiddleware(), appContext.Adapt(handler.DeleteCharacter))
 	}
 

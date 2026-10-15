@@ -9,7 +9,7 @@
 ## Features & Capabilities
 
 - **Campaign Management**: Create, list, inspect details, update lifecycle statuses (`DRAFT -> ACTIVE -> PAUSED/ARCHIVED`), and delete campaigns. Automatic slug generation ensures SEO/friendly URL access.
-- **Character Sheets**: Create, inspect, list user characters, update current HP, attach/detach from campaigns, and delete character sheets. Automatic slug generation ensures SEO/friendly URL access.
+- **Character Sheets**: Create, inspect, list, rename and delete character sheets, and attach/detach them from campaigns. System-specific attributes such as hit points live in each game system's service, not in the core. Automatic slug generation ensures SEO/friendly URL access.
 - **Campaign Invites**: Generate unique UUID invite links for campaigns and allow players to accept invites by binding their character sheets.
 - **User Profile**: Exposes user information extracted from validated JWT bearer tokens.
 - **Security & Authentication**: Middleware verifies Bearer JWT tokens dynamically using the JWKS endpoint of your OIDC identity provider (e.g., Keycloak).
@@ -52,6 +52,7 @@ Database migrations are located in the `migrations/` directory as raw SQL script
 6. `0006_slug_fallback.up.sql`: Slug triggers fall back to `campaign` / `character` when a name has no ASCII letters or digits, and fixes existing empty slugs.
 7. `0007_recent_access.up.sql`: Creates `campaign_access` and `character_access`, the last time each user opened a campaign or one of their characters (for the `recent` list sort).
 8. `0008_character_slug_on_rename.up.sql`: Renaming a character regenerates its slug (only when the name actually changes).
+9. `0009_drop_character_hp.up.sql`: Drops `max_hp` and `current_hp`; hit points belong to each game system's service. **The stored values are deleted**: back them up before applying.
 
 ### Entity-Relationship Diagram
 
@@ -74,8 +75,6 @@ erDiagram
         bigint? campaign_id FK "nullable, since a character can exist without a campaign"
         character_varying_45 game_system "NOT NULL"
         character_varying_255 slug UK
-        integer? max_hp "nullable, since not all game systems have hit points"
-        integer? current_hp "nullable, since not all game systems have hit points"
     }
 
     campaign_invite {
@@ -121,7 +120,6 @@ Every endpoint under `/core/api/v1` requires an `Authorization: Bearer <JWT_TOKE
 | `POST` | `/core/api/v1/character` | Create a new character sheet |
 | `GET` | `/core/api/v1/character/resolve/:slug` | Resolve character slug to details |
 | `GET` | `/core/api/v1/character/:characterID` | Get details of a character sheet |
-| `PATCH` | `/core/api/v1/character/:characterID/hp` | Update current/max hit points (HP) of a character sheet |
 | `DELETE` | `/core/api/v1/character/:characterID` | Delete a character sheet |
 
 ### Campaign Invite Endpoints
