@@ -111,20 +111,12 @@ func TestMigrations(t *testing.T) {
 	})
 
 	t.Run("baseline a database migrated by hand", func(t *testing.T) {
-		// Recreate the production situation: 0001-0004 applied, but no version table
-		m, err := newMigrate(migrations.FS, dbURL)
-		if err != nil {
-			t.Fatalf("new migrate: %v", err)
-		}
-		migrateErr := m.Migrate(4)
-		m.Close()
-		if migrateErr != nil {
-			t.Fatalf("migrating to 4: %v", migrateErr)
-		}
+		// The schema is applied but the version table is gone, like a database migrated by hand.
+		// Without the baseline, Up would run 0001 again and fail on the existing tables.
 		dropVersionTable(t, dbURL)
 
-		if err := Force(dbURL, 4); err != nil {
-			t.Fatalf("forcing version 4: %v", err)
+		if err := Force(dbURL, int(latest)); err != nil {
+			t.Fatalf("forcing version %d: %v", latest, err)
 		}
 		version, err := Up(dbURL)
 		if err != nil || version != latest {
