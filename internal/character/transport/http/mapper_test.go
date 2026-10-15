@@ -42,3 +42,16 @@ func TestMapListReadModelToResponseLastAccessedAt(t *testing.T) {
 		t.Fatalf("expected the access time, got %s", got)
 	}
 }
+
+func TestMapListReadModelToResponseCampaign(t *testing.T) {
+	none, _ := json.Marshal(MapListReadModelToResponse(characterDomain.Character{}))
+	if !strings.Contains(string(none), `"campaign":null`) {
+		t.Fatalf("expected campaign null, got %s", none)
+	}
+	linked, _ := json.Marshal(MapListReadModelToResponse(characterDomain.Character{
+		Campaign: &characterDomain.CampaignSummary{Slug: "innsmouth", Name: "Innsmouth"},
+	}))
+	if !strings.Contains(string(linked), `"campaign":{"slug":"innsmouth","name":"Innsmouth"}`) {
+		t.Fatalf("expected the campaign, got %s", linked)
+	}
+}

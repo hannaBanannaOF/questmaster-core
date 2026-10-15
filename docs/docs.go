@@ -49,6 +49,18 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "Only campaigns whose name contains it, ignoring case and accents (at most 100 characters)",
+                        "name": "q",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "true: only campaigns nobody joined yet",
+                        "name": "without_players",
+                        "in": "query"
+                    },
+                    {
                         "enum": [
                             "name",
                             "recent"
@@ -82,7 +94,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid role, status, sort, limit or offset",
+                        "description": "Invalid role, status, q, without_players, sort, limit or offset",
                         "schema": {
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
@@ -388,7 +400,7 @@ const docTemplate = `{
         },
         "/core/api/v1/campaign/{campaignID}/character": {
             "post": {
-                "description": "The campaign DM prepares a character in the campaign, with no player, for players to claim when accepting the invite. It gets the campaign game system, and current HP starts at max HP",
+                "description": "The campaign DM prepares a character in the campaign, with no player, for players to claim when accepting the invite. It gets the campaign game system",
                 "consumes": [
                     "application/json"
                 ],
@@ -464,7 +476,7 @@ const docTemplate = `{
         },
         "/core/api/v1/campaign/{campaignID}/character/{characterID}": {
             "delete": {
-                "description": "The character player leaves the campaign, or the campaign DM removes the character. The character keeps its player and HP, with no campaign",
+                "description": "The character player leaves the campaign, or the campaign DM removes the character. The character keeps its player, with no campaign",
                 "tags": [
                     "v1:character"
                 ],
@@ -621,6 +633,12 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "Only characters whose name contains it, ignoring case and accents (at most 100 characters)",
+                        "name": "q",
+                        "in": "query"
+                    },
+                    {
                         "enum": [
                             "name",
                             "recent"
@@ -654,7 +672,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid game_system, sort, limit or offset",
+                        "description": "Invalid game_system, q, sort, limit or offset",
                         "schema": {
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
@@ -903,7 +921,7 @@ const docTemplate = `{
                 ]
             },
             "patch": {
-                "description": "Changes the character name and/or max HP, for its player or the DM of its campaign. A new name regenerates the slug; a lower max HP lowers the current HP, and a character without HP gets full HP",
+                "description": "Renames the character, for its player or the DM of its campaign. A new name regenerates the slug",
                 "consumes": [
                     "application/json"
                 ],
@@ -940,7 +958,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Nothing to change, invalid name or max HP",
+                        "description": "Missing or invalid name",
                         "schema": {
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
@@ -953,76 +971,6 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "Not the character player nor its campaign DM",
-                        "schema": {
-                            "$ref": "#/definitions/httperrors.HttpError"
-                        }
-                    },
-                    "404": {
-                        "description": "Character not found",
-                        "schema": {
-                            "$ref": "#/definitions/httperrors.HttpError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/httperrors.HttpError"
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/core/api/v1/character/{characterID}/hp": {
-            "patch": {
-                "description": "Updates character HP",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "v1:character"
-                ],
-                "summary": "Update HP",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Character ID",
-                        "name": "characterID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "New character HP",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/character.UpdateHPRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/character.CharacterCurrentHpResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized - missing or invalid access_token",
-                        "schema": {
-                            "$ref": "#/definitions/httperrors.HttpError"
-                        }
-                    },
-                    "403": {
-                        "description": "Only the character's player can update it",
                         "schema": {
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
@@ -1356,18 +1304,12 @@ const docTemplate = `{
         "campaign.CampaignDetailResponseCharacterItem": {
             "type": "object",
             "properties": {
-                "current_hp": {
-                    "type": "integer"
-                },
                 "id": {
                     "type": "integer"
                 },
                 "is_mine": {
                     "description": "True when the requester is the character player",
                     "type": "boolean"
-                },
-                "max_hp": {
-                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
@@ -1428,13 +1370,7 @@ const docTemplate = `{
         "campaign.CampaignPremadeCharacterResponse": {
             "type": "object",
             "properties": {
-                "current_hp": {
-                    "type": "integer"
-                },
                 "id": {
-                    "type": "integer"
-                },
-                "max_hp": {
                     "type": "integer"
                 },
                 "name": {
@@ -1492,28 +1428,25 @@ const docTemplate = `{
                 }
             }
         },
-        "character.CharacterCurrentHpResponse": {
+        "character.CharacterCampaignResponse": {
             "type": "object",
             "properties": {
-                "current_hp": {
-                    "type": "integer"
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
                 }
             }
         },
         "character.CharacterDetailResponse": {
             "type": "object",
             "properties": {
-                "current_hp": {
-                    "type": "integer"
-                },
                 "id": {
                     "type": "integer"
                 },
                 "is_player": {
                     "type": "boolean"
-                },
-                "max_hp": {
-                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
@@ -1529,12 +1462,6 @@ const docTemplate = `{
         "character.CharacterEditResponse": {
             "type": "object",
             "properties": {
-                "current_hp": {
-                    "type": "integer"
-                },
-                "max_hp": {
-                    "type": "integer"
-                },
                 "name": {
                     "type": "string"
                 },
@@ -1560,15 +1487,17 @@ const docTemplate = `{
         "character.CharacterListResponse": {
             "type": "object",
             "properties": {
-                "current_hp": {
-                    "type": "integer"
+                "campaign": {
+                    "description": "The campaign the character plays in, null when none",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/character.CharacterCampaignResponse"
+                        }
+                    ]
                 },
                 "last_accessed_at": {
                     "description": "The requester last open of the character details, null if never opened",
                     "type": "string"
-                },
-                "max_hp": {
-                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
@@ -1584,9 +1513,6 @@ const docTemplate = `{
         "character.CreateCharacterRequest": {
             "type": "object",
             "properties": {
-                "hp": {
-                    "type": "integer"
-                },
                 "name": {
                     "type": "string"
                 },
@@ -1598,9 +1524,6 @@ const docTemplate = `{
         "character.CreatePremadeCharacterRequest": {
             "type": "object",
             "properties": {
-                "max_hp": {
-                    "type": "integer"
-                },
                 "name": {
                     "type": "string"
                 }
@@ -1609,19 +1532,8 @@ const docTemplate = `{
         "character.EditCharacterRequest": {
             "type": "object",
             "properties": {
-                "max_hp": {
-                    "type": "integer"
-                },
                 "name": {
                     "type": "string"
-                }
-            }
-        },
-        "character.UpdateHPRequest": {
-            "type": "object",
-            "properties": {
-                "new_hp": {
-                    "type": "integer"
                 }
             }
         },
@@ -1696,12 +1608,6 @@ const docTemplate = `{
         "invite.InvitePremadeCharacterResponse": {
             "type": "object",
             "properties": {
-                "current_hp": {
-                    "type": "integer"
-                },
-                "max_hp": {
-                    "type": "integer"
-                },
                 "name": {
                     "type": "string"
                 },

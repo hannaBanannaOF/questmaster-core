@@ -23,7 +23,7 @@ func (uc *CreatePremadeCharacterUseCase) Execute(cmd characterApp.CreatePremadeC
 		return characterApp.CreateCharacterReadModel{}, err
 	}
 
-	character, err := uc.r.CreatePremade(cmd.Name, campaign.Id, campaign.System, cmd.Hp)
+	character, err := uc.r.CreatePremade(cmd.Name, campaign.Id, campaign.System)
 	if err != nil {
 		return characterApp.CreateCharacterReadModel{}, err
 	}

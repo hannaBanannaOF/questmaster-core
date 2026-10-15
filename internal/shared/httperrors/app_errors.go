@@ -43,13 +43,10 @@ func From(err error) HttpError {
 			Status:  http.StatusForbidden,
 			Message: err.Error(),
 		}
-	case errors.Is(err, characterDomainErr.ErrInvalidCurrentHP),
-		errors.Is(err, campaignDomainErr.ErrEmptyCampaignName),
+	case errors.Is(err, campaignDomainErr.ErrEmptyCampaignName),
 		errors.Is(err, campaignDomainErr.ErrInvalidCampaignStatus),
 		errors.Is(err, campaignDomainErr.ErrCampaignArchived),
 		errors.Is(err, campaignDomainErr.ErrInvalidCampaignRole),
-		errors.Is(err, characterDomainErr.ErrInvalidMaxHP),
-		errors.Is(err, characterDomainErr.ErrCharacterWithoutHP),
 		errors.Is(err, characterDomainErr.ErrPremadeCannotLeave),
 		errors.Is(err, characterDomainErr.ErrInvalidCharacterName),
 		errors.Is(err, ErrInvalidParam),
@@ -58,7 +55,6 @@ func From(err error) HttpError {
 		errors.Is(err, rpgDomain.ErrInvalidSlug),
 		errors.Is(err, characterAppErr.ErrUnavailableCharacter),
 		errors.Is(err, characterAppErr.ErrNotInCampaign),
-		errors.Is(err, characterAppErr.ErrNothingToEdit),
 		errors.Is(err, rpgDomain.ErrInvalidSystem):
 		return HttpError{
 			Status:  http.StatusBadRequest,

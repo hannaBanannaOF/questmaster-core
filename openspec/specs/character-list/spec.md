@@ -57,3 +57,42 @@ The character list SHALL accept `sort` with `name` (default) or `recent`. With `
 #### Scenario: Unknown sort
 - **WHEN** a user requests their character list with `sort=popular`
 - **THEN** the system returns 400
+
+### Requirement: Each character list item includes its campaign
+Each item of the character list SHALL include `campaign`: the `slug` and `name` of the campaign the character is linked to, or `null` when it is linked to none. The list keeps returning only the requester's own characters, so any authenticated user sees the campaign of their own characters only.
+
+#### Scenario: Character in a campaign
+- **WHEN** a user whose character "Eleanor" plays in "Innsmouth" requests their character list
+- **THEN** the item of "Eleanor" has `campaign` with the slug and name of "Innsmouth"
+
+#### Scenario: Character without a campaign
+- **WHEN** a user whose character "Jack" is in no campaign requests their character list
+- **THEN** the item of "Jack" has `campaign: null`
+
+#### Scenario: Another player's character is not listed
+- **WHEN** a campaign DM requests their own character list
+- **THEN** the characters of the campaign's players do not appear, with or without their campaign
+
+### Requirement: The character list can be searched by name
+
+The character list SHALL accept `q` and keep only the requester's characters whose name contains it, ignoring case and accents. Leading and trailing spaces SHALL be trimmed, and an empty `q` SHALL apply no filter. `q` combines with every other filter, sort and page, and `total` reflects it. A `q` longer than 100 characters MUST return 400. Searching never returns characters of other players.
+
+#### Scenario: Search ignores case and accents
+
+- **WHEN** a user with characters "Tomás Ribeiro" and "Jack Brady" requests their character list with `q=TOMAS`
+- **THEN** `items` contains only "Tomás Ribeiro" and `total` is 1
+
+#### Scenario: Search combines with filters
+
+- **WHEN** a user requests their character list with `without_campaign=true&q=jack`
+- **THEN** `items` contains only their unlinked characters whose name contains "jack"
+
+#### Scenario: Other players' characters are not found
+
+- **WHEN** a campaign DM searches for the name of a player's character
+- **THEN** `items` is empty and `total` is 0
+
+#### Scenario: Search too long
+
+- **WHEN** a user requests their character list with a `q` of 101 characters
+- **THEN** the system returns 400

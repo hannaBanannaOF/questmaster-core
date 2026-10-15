@@ -30,4 +30,8 @@ func (r CampaignRole) Value() string {
 type CampaignListFilters struct {
 	Role   *CampaignRole
 	Status *CampaignStatus
+	// Search keeps campaigns whose name contains it
+	Search *string
+	// WithoutPlayers keeps campaigns with no player; false applies no filter
+	WithoutPlayers bool
 }

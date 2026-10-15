@@ -54,14 +54,13 @@ func TestGetInviteDetail(t *testing.T) {
 	})
 
 	t.Run("lists the unclaimed premade characters", func(t *testing.T) {
-		hp, _ := characterDomain.NewHP(12, 12)
-		premades := fakePremadeFinder{premades: []characterDomain.Character{{Slug: "harvey", Name: "Harvey", Hp: &hp}}}
+		premades := fakePremadeFinder{premades: []characterDomain.Character{{Slug: "harvey", Name: "Harvey"}}}
 		rm, err := inviteUsecases.NewGetInviteDetail(repo, finder, premades).
 			Execute(inviteApp.GetinviteDetailsCommand{UserID: dm, Hash: hash})
 		if err != nil || len(rm.PremadeCharacters) != 1 {
 			t.Fatalf("expected one premade character, got %+v err=%v", rm.PremadeCharacters, err)
 		}
-		if c := rm.PremadeCharacters[0]; c.Slug != "harvey" || c.Name != "Harvey" || *c.CurrentHP != 12 || *c.MaxHP != 12 {
+		if c := rm.PremadeCharacters[0]; c.Slug != "harvey" || c.Name != "Harvey" {
 			t.Fatalf("unexpected premade character %+v", c)
 		}
 	})

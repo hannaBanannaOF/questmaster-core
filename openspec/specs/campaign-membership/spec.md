@@ -6,7 +6,7 @@ Defines who can remove a character from a campaign (the player leaving or the ca
 ## Requirements
 
 ### Requirement: The player or the campaign DM removes a character from a campaign
-The system SHALL unlink a character from its campaign when the requester is the character's player or the campaign DM. The character keeps its player, HP and slug, and no longer belongs to any campaign. Any other authenticated user MUST receive 403 and nothing changes. An unknown campaign or character MUST return 404.
+The system SHALL unlink a character from its campaign when the requester is the character's player or the campaign DM. The character keeps its player and slug, and no longer belongs to any campaign. Any other authenticated user MUST receive 403 and nothing changes. An unknown campaign or character MUST return 404.
 
 #### Scenario: Player leaves the campaign
 - **WHEN** a player removes their own character from its ACTIVE campaign

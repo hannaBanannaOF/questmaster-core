@@ -10,16 +10,9 @@ import (
 func MapDomainToInviteDetailsReadModel(inviteHash inviteDomain.InviteHash, campaign campaignDomain.Campaign, userID userDomain.UserID, premades []characterDomain.Character) InviteDetailReadModel {
 	premadeModels := make([]InvitePremadeCharacterReadModel, 0, len(premades))
 	for _, c := range premades {
-		var currentHP, maxHP *int
-		if c.Hp != nil {
-			curr, max := c.Hp.Current(), c.Hp.Max()
-			currentHP, maxHP = &curr, &max
-		}
 		premadeModels = append(premadeModels, InvitePremadeCharacterReadModel{
-			Slug:      c.Slug.Value(),
-			Name:      c.Name.Value(),
-			CurrentHP: currentHP,
-			MaxHP:     maxHP,
+			Slug: c.Slug.Value(),
+			Name: c.Name.Value(),
 		})
 	}
 

@@ -22,7 +22,7 @@ func createCharacter(t *testing.T, r *CharacterRepositoryPG, name string, player
 	if err != nil {
 		t.Fatalf("character name: %v", err)
 	}
-	c, err := r.Create(characterName, player, rpgDomain.DungeonsAndDragons, nil)
+	c, err := r.Create(characterName, player, rpgDomain.DungeonsAndDragons)
 	if err != nil {
 		t.Fatalf("create character: %v", err)
 	}
@@ -112,7 +112,7 @@ func TestUpdateCampaignLinksOnlyEligibleCharacters(t *testing.T) {
 	t.Run("character of another game system is not linked", func(t *testing.T) {
 		campaign := newCampaign()
 		player := userDomain.NewUserID(uuid.New())
-		c, err := r.Create("Investigator", player, rpgDomain.CallOfCthulhu, nil)
+		c, err := r.Create("Investigator", player, rpgDomain.CallOfCthulhu)
 		if err != nil {
 			t.Fatalf("create character: %v", err)
 		}
@@ -211,7 +211,7 @@ func TestCharacterListFilters(t *testing.T) {
 		t.Fatalf("link character: %v", err)
 	}
 	createCharacter(t, r, "Unlinked", player)
-	if _, err := r.Create("Investigator", player, rpgDomain.CallOfCthulhu, nil); err != nil {
+	if _, err := r.Create("Investigator", player, rpgDomain.CallOfCthulhu); err != nil {
 		t.Fatalf("create character: %v", err)
 	}
 
@@ -341,16 +341,15 @@ func TestPremadeCharacterClaims(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create campaign: %v", err)
 	}
-	hp, _ := characterDomain.NewHP(12, 12)
 
-	premade, err := r.CreatePremade("Harvey", campaign.Id, rpgDomain.CallOfCthulhu, &hp)
+	premade, err := r.CreatePremade("Harvey", campaign.Id, rpgDomain.CallOfCthulhu)
 	if err != nil {
 		t.Fatalf("create premade: %v", err)
 	}
 
 	t.Run("a character without a player can be read", func(t *testing.T) {
 		got, err := r.FindByID(premade.Id)
-		if err != nil || got == nil || !got.IsPremade() || *got.CampaignID != campaign.Id || got.Hp.Current() != 12 {
+		if err != nil || got == nil || !got.IsPremade() || *got.CampaignID != campaign.Id {
 			t.Fatalf("expected the premade character back, got %+v err=%v", got, err)
 		}
 	})
@@ -373,7 +372,7 @@ func TestPremadeCharacterClaims(t *testing.T) {
 	})
 
 	t.Run("player who already has a character cannot claim another", func(t *testing.T) {
-		another, err := r.CreatePremade("Another", campaign.Id, rpgDomain.CallOfCthulhu, nil)
+		another, err := r.CreatePremade("Another", campaign.Id, rpgDomain.CallOfCthulhu)
 		if err != nil {
 			t.Fatalf("create premade: %v", err)
 		}
@@ -417,6 +416,48 @@ func TestRenameRegeneratesSlug(t *testing.T) {
 		old, err := r.FindBySlug(second.Slug)
 		if err != nil || old != nil {
 			t.Fatalf("expected the old slug to stop resolving, got %v err=%v", old, err)
+		}
+	})
+}
+
+func TestCharacterListSearchAndCampaign(t *testing.T) {
+	db := testdb.Pool(t)
+	r := NewCharacterRepositoryPG(db)
+	campaigns := campaignInfra.NewCampaignRepositoryPG(db)
+	player := userDomain.NewUserID(uuid.New())
+	tag := uuid.NewString()[:8]
+
+	campaign, err := campaigns.Create(campaignDomain.CampaignName("Innsmouth "+tag), nil, userDomain.NewUserID(uuid.New()), rpgDomain.DungeonsAndDragons)
+	if err != nil {
+		t.Fatalf("create campaign: %v", err)
+	}
+	tomas := createCharacter(t, r, "Tomás Ribeiro "+tag, player)
+	if l, err := r.UpdateCampaign(campaign.Id, tomas.Slug, player); err != nil || l == nil {
+		t.Fatalf("link: %v", err)
+	}
+	createCharacter(t, r, "Jack Brady "+tag, player)
+	createCharacter(t, r, "Tomás de outro "+tag, userDomain.NewUserID(uuid.New()))
+	page := pagination.Page{Limit: pagination.DefaultLimit}
+	search := func(q string) *string { return &q }
+
+	t.Run("search ignores case and accents, and carries the campaign", func(t *testing.T) {
+		list := listCharacters(t, r, player, characterDomain.CharacterListFilters{Search: search("TOMAS")}, page)
+		if len(list.Items) != 1 || list.Total != 1 || list.Items[0].Id != tomas.Id {
+			t.Fatalf("expected only Tomás, got %v (total %d)", characterNames(list), list.Total)
+		}
+		if c := list.Items[0].Campaign; c == nil || c.Name != "Innsmouth "+tag || c.Slug != campaign.Slug.Value() {
+			t.Fatalf("expected the linked campaign, got %+v", c)
+		}
+	})
+
+	t.Run("search combines with without_campaign", func(t *testing.T) {
+		unlinked := true
+		list := listCharacters(t, r, player, characterDomain.CharacterListFilters{Search: search(tag), WithoutCampaign: &unlinked}, page)
+		if got := characterNames(list); len(got) != 1 || got[0] != "Jack Brady "+tag {
+			t.Fatalf("expected only Jack, got %v", got)
+		}
+		if list.Items[0].Campaign != nil {
+			t.Fatalf("expected no campaign for an unlinked character")
 		}
 	})
 }

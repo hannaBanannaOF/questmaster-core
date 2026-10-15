@@ -15,10 +15,6 @@ func NewEditCharacter(r characterApp.CharacterRepository, getCampaignFromIdUC Ch
 }
 
 func (uc *EditCharacterUseCase) Execute(cmd characterApp.EditCharacterCommand) (characterApp.EditCharacterReadModel, error) {
-	if cmd.Name == nil && cmd.MaxHP == nil {
-		return characterApp.EditCharacterReadModel{}, ErrNothingToEdit
-	}
-
 	character, err := uc.r.FindByID(cmd.ID)
 	if err != nil {
 		return characterApp.EditCharacterReadModel{}, err
@@ -36,7 +32,7 @@ func (uc *EditCharacterUseCase) Execute(cmd characterApp.EditCharacterCommand) (
 		campaignAccess = campaign
 	}
 
-	if err := character.Edit(cmd.UserID, campaignAccess, cmd.Name, cmd.MaxHP); err != nil {
+	if err := character.Rename(cmd.UserID, campaignAccess, cmd.Name); err != nil {
 		return characterApp.EditCharacterReadModel{}, err
 	}
 
@@ -45,15 +41,8 @@ func (uc *EditCharacterUseCase) Execute(cmd characterApp.EditCharacterCommand) (
 		return characterApp.EditCharacterReadModel{}, err
 	}
 
-	var currentHP, maxHP *int
-	if saved.Hp != nil {
-		curr, max := saved.Hp.Current(), saved.Hp.Max()
-		currentHP, maxHP = &curr, &max
-	}
 	return characterApp.EditCharacterReadModel{
-		Slug:      saved.Slug.Value(),
-		Name:      saved.Name.Value(),
-		CurrentHP: currentHP,
-		MaxHP:     maxHP,
+		Slug: saved.Slug.Value(),
+		Name: saved.Name.Value(),
 	}, nil
 }

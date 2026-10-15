@@ -46,12 +46,14 @@ func NewCampaignHandler(
 // @Tags v1:campaign
 // @Param role query string false "Only campaigns where the user has this role" Enums(dm, player)
 // @Param status query string false "Only campaigns with this status" Enums(DRAFT, ACTIVE, PAUSED, ARCHIVED)
+// @Param q query string false "Only campaigns whose name contains it, ignoring case and accents (at most 100 characters)"
+// @Param without_players query boolean false "true: only campaigns nobody joined yet"
 // @Param sort query string false "name: by name; recent: last opened by the user first, never opened after, by name" Enums(name, recent) default(name)
 // @Param limit query integer false "Page size, 1 to 100" default(50)
 // @Param offset query integer false "Number of campaigns to skip" default(0)
 // @Produce json
 // @Success 200 {object} CampaignListPageResponse
-// @Failure 400 {object} httperrors.HttpError "Invalid role, status, sort, limit or offset"
+// @Failure 400 {object} httperrors.HttpError "Invalid role, status, q, without_players, sort, limit or offset"
 // @Failure 401 {object} httperrors.HttpError "Unauthorized - missing or invalid access_token"
 // @Failure 500 {object} httperrors.HttpError "Internal server error"
 // @Security BearerAuth

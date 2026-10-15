@@ -43,19 +43,15 @@ type CampaignDetailResponse struct {
 }
 
 type CampaignPremadeCharacterResponse struct {
-	Id        int    `json:"id"`
-	Slug      string `json:"slug"`
-	Name      string `json:"name"`
-	CurrentHP *int   `json:"current_hp"`
-	MaxHP     *int   `json:"max_hp"`
+	Id   int    `json:"id"`
+	Slug string `json:"slug"`
+	Name string `json:"name"`
 }
 
 type CampaignDetailResponseCharacterItem struct {
-	Id        int    `json:"id"`
-	Slug      string `json:"slug"`
-	Name      string `json:"name"`
-	CurrentHP *int   `json:"current_hp"`
-	MaxHP     *int   `json:"max_hp"`
+	Id   int    `json:"id"`
+	Slug string `json:"slug"`
+	Name string `json:"name"`
 	// True when the requester is the character player
 	IsMine bool `json:"is_mine"`
 }

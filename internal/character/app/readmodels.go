@@ -1,18 +1,12 @@
 package character
 
-type UpdateHPReadModel struct {
-	CurrentHP int
-}
-
 type CharacterResolveSlugReadModel struct {
 	ID int
 }
 
 type EditCharacterReadModel struct {
-	Slug      string
-	Name      string
-	CurrentHP *int
-	MaxHP     *int
+	Slug string
+	Name string
 }
 
 type CreateCharacterReadModel struct {

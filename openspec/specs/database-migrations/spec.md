@@ -20,8 +20,8 @@ Running the binary with `-migrate` SHALL apply, in order, every migration newer 
 Running the binary with `-migrate-force <version>` SHALL record that version as applied and clear any failed state, without running any migration, and exit with status 0.
 
 #### Scenario: Baseline an existing database
-- **WHEN** an operator runs `-migrate-force 4` against a database where migrations 0001 to 0004 were applied by hand, then runs `-migrate`
-- **THEN** only the migrations after 0004 are applied
+- **WHEN** an operator runs `-migrate-force N` against a database whose schema already matches migration N but has no recorded version, then runs `-migrate`
+- **THEN** only the migrations after N are applied
 
 ### Requirement: A failed migration stops the deploy
 When a migration fails, `-migrate` SHALL exit with a non-zero status and leave the database marked as failed at that version, so the API service is not started and later `-migrate` runs refuse to continue until an operator forces a version.

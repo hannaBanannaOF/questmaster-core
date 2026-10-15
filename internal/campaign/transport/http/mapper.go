@@ -32,18 +32,16 @@ func MapDetailReadModelToResponse(rm campaignApp.CampaignDetailsReadModel) Campa
 
 	for _, c := range rm.Characters {
 		characters = append(characters, CampaignDetailResponseCharacterItem{
-			Id:        c.Id,
-			Slug:      c.Slug,
-			Name:      c.Name,
-			CurrentHP: c.CurrentHP,
-			MaxHP:     c.MaxHP,
-			IsMine:    c.IsMine,
+			Id:     c.Id,
+			Slug:   c.Slug,
+			Name:   c.Name,
+			IsMine: c.IsMine,
 		})
 	}
 
 	premades := make([]CampaignPremadeCharacterResponse, 0, len(rm.PremadeCharacters))
 	for _, c := range rm.PremadeCharacters {
-		premades = append(premades, CampaignPremadeCharacterResponse{Id: c.Id, Slug: c.Slug, Name: c.Name, CurrentHP: c.CurrentHP, MaxHP: c.MaxHP})
+		premades = append(premades, CampaignPremadeCharacterResponse{Id: c.Id, Slug: c.Slug, Name: c.Name})
 	}
 
 	return CampaignDetailResponse{

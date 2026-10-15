@@ -8,55 +8,28 @@ import (
 	userDomain "questmaster-core/internal/user/domain"
 )
 
-func convertHP(hp *characterDomain.HP) (*int, *int) {
-	var currentHp *int
-	var maxHp *int
-	if hp != nil {
-		savedCurrent := hp.Current()
-		savedMax := hp.Max()
-		currentHp = &savedCurrent
-		maxHp = &savedMax
-	}
-	return currentHp, maxHp
-}
-
 func MapListReadModelToResponse(c characterDomain.Character) CharacterListResponse {
-	current, max := convertHP(c.Hp)
+	var campaign *CharacterCampaignResponse
+	if c.Campaign != nil {
+		campaign = &CharacterCampaignResponse{Slug: c.Campaign.Slug, Name: c.Campaign.Name}
+	}
 	return CharacterListResponse{
+		Campaign:       campaign,
 		Slug:           c.Slug.Value(),
 		Name:           c.Name.Value(),
 		System:         c.System.Value(),
-		CurrentHP:      current,
-		MaxHP:          max,
 		LastAccessedAt: c.LastAccessedAt,
 	}
 }
 
 func MapDetailReadModelToResponse(c characterDomain.Character, userID userDomain.UserID) CharacterDetailResponse {
-	current, max := convertHP(c.Hp)
 	return CharacterDetailResponse{
-		Id:        c.Id.Value(),
-		Name:      c.Name.Value(),
-		System:    c.System.Value(),
-		Slug:      c.Slug.Value(),
-		MaxHP:     max,
-		CurrentHP: current,
-		IsPlayer:  c.IsPlayer(userID),
+		Id:       c.Id.Value(),
+		Name:     c.Name.Value(),
+		System:   c.System.Value(),
+		Slug:     c.Slug.Value(),
+		IsPlayer: c.IsPlayer(userID),
 	}
-}
-
-func MapCurrentHpToResponse(currentHp int) CharacterCurrentHpResponse {
-	return CharacterCurrentHpResponse{
-		CurrentHP: currentHp,
-	}
-}
-
-func MapUpdateHPRequestToCommand(req UpdateHPRequest, id characterDomain.CharacterID, userID userDomain.UserID) (characterApp.UpdateHPCommand, error) {
-	return characterApp.UpdateHPCommand{
-		ID:     id,
-		NewHP:  req.NewHP,
-		UserID: userID,
-	}, nil
 }
 
 func MapCreateCharacterReadModelToResponse(rm characterApp.CreateCharacterReadModel) rpgTransport.RpgSlugResponse {

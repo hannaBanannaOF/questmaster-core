@@ -33,48 +33,32 @@ func TestEditCharacter(t *testing.T) {
 	campaignID := campaignDomain.NewCampaignID(1)
 	finder := fakeCampaignFinder{campaign: campaignDomain.Campaign{Id: campaignID, Dm: dm}}
 	name := characterDomain.CharacterName("Harvey Walters")
-	maxHP := 13
 	newRepo := func() *fakeEditRepo {
-		hp, _ := characterDomain.NewHP(10, 10)
-		return &fakeEditRepo{character: &characterDomain.Character{Id: 1, Name: "Harvey", PlayerID: &player, CampaignID: &campaignID, Hp: &hp}}
+		return &fakeEditRepo{character: &characterDomain.Character{Id: 1, Name: "Harvey", PlayerID: &player, CampaignID: &campaignID}}
 	}
-	edit := func(repo *fakeEditRepo, cmd characterApp.EditCharacterCommand) (characterApp.EditCharacterReadModel, error) {
-		return NewEditCharacter(repo, finder).Execute(cmd)
+	edit := func(repo *fakeEditRepo, user userDomain.UserID) (characterApp.EditCharacterReadModel, error) {
+		return NewEditCharacter(repo, finder).Execute(characterApp.EditCharacterCommand{ID: 1, Name: name, UserID: user})
 	}
 
-	t.Run("campaign DM renames and raises max HP", func(t *testing.T) {
-		repo := newRepo()
-		rm, err := edit(repo, characterApp.EditCharacterCommand{ID: 1, Name: &name, MaxHP: &maxHP, UserID: dm})
-		if err != nil || rm.Slug != "harvey-walters" || rm.Name != "Harvey Walters" || *rm.CurrentHP != 10 || *rm.MaxHP != 13 {
-			t.Fatalf("expected the saved character, got %+v err=%v", rm, err)
-		}
-	})
+	for label, user := range map[string]userDomain.UserID{"player": player, "campaign DM": dm} {
+		t.Run(label+" renames", func(t *testing.T) {
+			rm, err := edit(newRepo(), user)
+			if err != nil || rm.Slug != "harvey-walters" || rm.Name != "Harvey Walters" {
+				t.Fatalf("expected the renamed character, got %+v err=%v", rm, err)
+			}
+		})
+	}
 
 	t.Run("other user is forbidden and nothing is saved", func(t *testing.T) {
 		repo := newRepo()
-		_, err := edit(repo, characterApp.EditCharacterCommand{ID: 1, Name: &name, UserID: userDomain.NewUserID(uuid.New())})
+		_, err := edit(repo, userDomain.NewUserID(uuid.New()))
 		if !errors.Is(err, characterDomain.ErrNotAllowed) || repo.saved != nil {
 			t.Fatalf("expected ErrNotAllowed without saving, got %v saved=%v", err, repo.saved)
 		}
 	})
 
-	t.Run("nothing to edit", func(t *testing.T) {
-		repo := newRepo()
-		if _, err := edit(repo, characterApp.EditCharacterCommand{ID: 1, UserID: player}); !errors.Is(err, ErrNothingToEdit) || repo.saved != nil {
-			t.Fatalf("expected ErrNothingToEdit without saving, got %v", err)
-		}
-	})
-
-	t.Run("invalid max HP is not saved", func(t *testing.T) {
-		repo := newRepo()
-		zero := 0
-		if _, err := edit(repo, characterApp.EditCharacterCommand{ID: 1, MaxHP: &zero, UserID: player}); !errors.Is(err, characterDomain.ErrInvalidMaxHP) || repo.saved != nil {
-			t.Fatalf("expected ErrInvalidMaxHP without saving, got %v", err)
-		}
-	})
-
 	t.Run("unknown character", func(t *testing.T) {
-		if _, err := edit(&fakeEditRepo{}, characterApp.EditCharacterCommand{ID: 1, Name: &name, UserID: player}); !errors.Is(err, ErrCharacterNotFound) {
+		if _, err := edit(&fakeEditRepo{}, player); !errors.Is(err, ErrCharacterNotFound) {
 			t.Fatalf("expected ErrCharacterNotFound, got %v", err)
 		}
 	})

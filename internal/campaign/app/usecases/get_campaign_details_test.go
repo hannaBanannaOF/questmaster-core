@@ -158,9 +158,8 @@ func TestGetCampaignDetails(t *testing.T) {
 
 	t.Run("party cards", func(t *testing.T) {
 		other := userDomain.NewUserID(uuid.New())
-		hp, _ := characterDomain.NewHP(3, 10)
 		characters := []characterDomain.Character{
-			{Id: 10, Slug: "hero", Name: "Hero", PlayerID: &player, Hp: &hp},
+			{Id: 10, Slug: "hero", Name: "Hero", PlayerID: &player},
 			{Id: 11, Slug: "sidekick", Name: "Sidekick", PlayerID: &other},
 		}
 		uc := NewGetCampaignDetails(
@@ -176,10 +175,10 @@ func TestGetCampaignDetails(t *testing.T) {
 			t.Fatalf("unexpected details %+v err=%v", rm, err)
 		}
 		mine, others := rm.Characters[0], rm.Characters[1]
-		if !mine.IsMine || mine.Slug != "hero" || *mine.CurrentHP != 3 || *mine.MaxHP != 10 {
+		if !mine.IsMine || mine.Slug != "hero" {
 			t.Fatalf("expected own character marked with slug and HP, got %+v", mine)
 		}
-		if others.IsMine || others.Slug != "sidekick" || others.CurrentHP != nil || others.MaxHP != nil {
+		if others.IsMine || others.Slug != "sidekick" {
 			t.Fatalf("expected other character not mine and without HP, got %+v", others)
 		}
 

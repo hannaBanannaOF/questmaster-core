@@ -10,7 +10,6 @@ import (
 
 type CreateCharacterCommand struct {
 	Name   characterDomain.CharacterName
-	Hp     *characterDomain.HP
 	System rpgDomain.System
 	Player userDomain.UserID
 }
@@ -18,14 +17,12 @@ type CreateCharacterCommand struct {
 type CreatePremadeCharacterCommand struct {
 	CampaignID campaignDomain.CampaignID
 	Name       characterDomain.CharacterName
-	Hp         *characterDomain.HP
 	UserID     userDomain.UserID
 }
 
 type EditCharacterCommand struct {
 	ID     characterDomain.CharacterID
-	Name   *characterDomain.CharacterName
-	MaxHP  *int
+	Name   characterDomain.CharacterName
 	UserID userDomain.UserID
 }
 
@@ -49,10 +46,4 @@ type GetCurrentUserCharactersCommand struct {
 	UserID  userDomain.UserID
 	Filters characterDomain.CharacterListFilters
 	Page    pagination.Page
-}
-
-type UpdateHPCommand struct {
-	ID     characterDomain.CharacterID
-	NewHP  int
-	UserID userDomain.UserID
 }

@@ -1,6 +1,7 @@
 package character
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -8,9 +9,11 @@ import (
 	characterDomain "questmaster-core/internal/character/domain"
 	rpgDomain "questmaster-core/internal/rpg/domain"
 	"questmaster-core/internal/shared/context"
+	"questmaster-core/internal/shared/httperrors"
+	"questmaster-core/internal/shared/pagination"
 )
 
-// CharacterListFiltersMiddleware parses the game_system and without_campaign filters of the character list
+// CharacterListFiltersMiddleware parses the game_system, without_campaign and q filters of the character list
 func CharacterListFiltersMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var filters characterDomain.CharacterListFilters
@@ -29,6 +32,14 @@ func CharacterListFiltersMiddleware() gin.HandlerFunc {
 		if withoutCampaign, err := strconv.ParseBool(c.Query("without_campaign")); err == nil {
 			filters.WithoutCampaign = &withoutCampaign
 		}
+
+		search, err := pagination.NewSearch(c.Query("q"))
+		if err != nil {
+			_ = c.Error(fmt.Errorf("%w: %w", httperrors.ErrInvalidParam, err))
+			c.Abort()
+			return
+		}
+		filters.Search = search
 
 		appCtx := context.AppContext{Context: c}
 		appCtx.SetCharacterListFilters(filters)

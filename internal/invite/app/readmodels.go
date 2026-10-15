@@ -14,8 +14,6 @@ type InviteDetailReadModel struct {
 }
 
 type InvitePremadeCharacterReadModel struct {
-	Slug      string
-	Name      string
-	CurrentHP *int
-	MaxHP     *int
+	Slug string
+	Name string
 }

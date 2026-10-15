@@ -6,12 +6,12 @@ Defines premade characters: characters the campaign DM prepares with no player, 
 ## Requirements
 
 ### Requirement: Only the campaign DM creates premade characters
-The system SHALL create a premade character in a campaign only when the requester is the campaign DM. The character has the given name and optional max HP (current HP starts at max HP), the campaign's game system, the campaign as its campaign, and no player. Any other authenticated user MUST receive 403 and no character is created. Creating one in an ARCHIVED campaign MUST return 400. An unknown campaign MUST return 404.
+The system SHALL create a premade character in a campaign only when the requester is the campaign DM. The character has the given name, the campaign's game system, the campaign as its campaign, and no player. Any other authenticated user MUST receive 403 and no character is created. Creating one in an ARCHIVED campaign MUST return 400. An unknown campaign MUST return 404.
 
 #### Scenario: DM creates a premade character
-- **WHEN** the campaign DM creates a premade character named "Harvey" with max HP 12 in a DRAFT Call of Cthulhu campaign
+- **WHEN** the campaign DM creates a premade character named "Harvey" in a DRAFT Call of Cthulhu campaign
 - **THEN** the system returns 201 with the character slug
-- **AND** the character has no player, belongs to the campaign, has the campaign's game system and current HP 12
+- **AND** the character has no player, belongs to the campaign and has the campaign's game system
 
 #### Scenario: Non-DM is forbidden
 - **WHEN** a user who is not the campaign DM creates a premade character in the campaign

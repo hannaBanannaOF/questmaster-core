@@ -39,6 +39,11 @@ func (r *CharacterRepositoryPG) GetAllByPlayerIDWithFilters(
 		where += " AND cs.game_system = $" + strconv.Itoa(len(args))
 	}
 
+	if filters.Search != nil {
+		args = append(args, *filters.Search)
+		where += " AND " + pagination.NameContains("cs.name", len(args))
+	}
+
 	if filters.WithoutCampaign != nil {
 		if *filters.WithoutCampaign {
 			where += " AND cs.campaign_id IS NULL"
@@ -54,8 +59,9 @@ func (r *CharacterRepositoryPG) GetAllByPlayerIDWithFilters(
 
 	args = append(args, page.Limit, page.Offset)
 	// $1 is the requester, who is also the player filtered by where
-	rows, err := r.db.Query(ctx, "SELECT cs.*, a.accessed_at AS last_accessed_at"+
-		" FROM character_sheet cs LEFT JOIN character_access a ON a.user_id = $1 AND a.character_id = cs.id"+where+
+	rows, err := r.db.Query(ctx, "SELECT cs.*, a.accessed_at AS last_accessed_at, lc.slug AS campaign_slug, lc.name AS campaign_name"+
+		" FROM character_sheet cs LEFT JOIN character_access a ON a.user_id = $1 AND a.character_id = cs.id"+
+		" LEFT JOIN campaign lc ON lc.id = cs.campaign_id"+where+
 		page.Sort.OrderBy("a.accessed_at", "cs.name", "cs.id")+
 		" LIMIT $"+strconv.Itoa(len(args)-1)+" OFFSET $"+strconv.Itoa(len(args)), args...)
 	if err != nil {
@@ -75,6 +81,9 @@ func (r *CharacterRepositoryPG) GetAllByPlayerIDWithFilters(
 			return pagination.Result[characterDomain.Character]{}, err
 		}
 		val.LastAccessedAt = c.LastAccessedAt
+		if c.CampaignSlug != nil && c.CampaignName != nil {
+			val.Campaign = &characterDomain.CampaignSummary{Slug: *c.CampaignSlug, Name: *c.CampaignName}
+		}
 		items = append(items, val)
 	}
 
@@ -211,23 +220,12 @@ func (r *CharacterRepositoryPG) FindByID(characterID characterDomain.CharacterID
 	return &val, nil
 }
 
-func (r *CharacterRepositoryPG) Create(name characterDomain.CharacterName, playerID userDomain.UserID, system rpgDomain.System, hp *characterDomain.HP) (characterDomain.Character, error) {
-
-	var currHP any
-	var maxHP any
-	if hp != nil {
-		currHP = hp.Current()
-		maxHP = hp.Max()
-	} else {
-		currHP = nil
-		maxHP = nil
-	}
-
+func (r *CharacterRepositoryPG) Create(name characterDomain.CharacterName, playerID userDomain.UserID, system rpgDomain.System) (characterDomain.Character, error) {
 	rows, err := r.db.Query(context.Background(), `
-		INSERT INTO character_sheet(name, player_id, game_system, max_hp, current_hp) 
-		VALUES($1, $2, $3, $4, $5) 
+		INSERT INTO character_sheet(name, player_id, game_system)
+		VALUES($1, $2, $3)
 		RETURNING *
-	`, name.Value(), playerID.Value(), system.Value(), maxHP, currHP)
+	`, name.Value(), playerID.Value(), system.Value())
 	if err != nil {
 		return characterDomain.Character{}, err
 	}
@@ -246,17 +244,12 @@ func (r *CharacterRepositoryPG) Create(name characterDomain.CharacterName, playe
 }
 
 // CreatePremade inserts a character in the campaign with no player
-func (r *CharacterRepositoryPG) CreatePremade(name characterDomain.CharacterName, campaignID campaignDomain.CampaignID, system rpgDomain.System, hp *characterDomain.HP) (characterDomain.Character, error) {
-	var currHP, maxHP any
-	if hp != nil {
-		currHP, maxHP = hp.Current(), hp.Max()
-	}
-
+func (r *CharacterRepositoryPG) CreatePremade(name characterDomain.CharacterName, campaignID campaignDomain.CampaignID, system rpgDomain.System) (characterDomain.Character, error) {
 	rows, err := r.db.Query(context.Background(), `
-		INSERT INTO character_sheet(name, campaign_id, game_system, max_hp, current_hp)
-		VALUES($1, $2, $3, $4, $5)
+		INSERT INTO character_sheet(name, campaign_id, game_system)
+		VALUES($1, $2, $3)
 		RETURNING *
-	`, name.Value(), campaignID.Value(), system.Value(), maxHP, currHP)
+	`, name.Value(), campaignID.Value(), system.Value())
 	if err != nil {
 		return characterDomain.Character{}, err
 	}
@@ -269,18 +262,13 @@ func (r *CharacterRepositoryPG) CreatePremade(name characterDomain.CharacterName
 	return MapRowToDomain(record)
 }
 
-// UpdateDetails saves the character name and HP; a new name regenerates the slug (migration 0008)
+// UpdateDetails saves the character name; a new name regenerates the slug (migration 0008)
 func (r *CharacterRepositoryPG) UpdateDetails(character characterDomain.Character) (characterDomain.Character, error) {
-	var currHP, maxHP any
-	if character.Hp != nil {
-		currHP, maxHP = character.Hp.Current(), character.Hp.Max()
-	}
-
 	rows, err := r.db.Query(context.Background(), `
-		UPDATE character_sheet SET name = $1, current_hp = $2, max_hp = $3
-		WHERE id = $4
+		UPDATE character_sheet SET name = $1
+		WHERE id = $2
 		RETURNING *
-	`, character.Name.Value(), currHP, maxHP, character.Id.Value())
+	`, character.Name.Value(), character.Id.Value())
 	if err != nil {
 		return characterDomain.Character{}, err
 	}
@@ -291,29 +279,6 @@ func (r *CharacterRepositoryPG) UpdateDetails(character characterDomain.Characte
 	}
 
 	return MapRowToDomain(record)
-}
-
-func (r *CharacterRepositoryPG) UpdateHP(newHP characterDomain.HP, characterID characterDomain.CharacterID) (characterDomain.Character, error) {
-	rows, err := r.db.Query(context.Background(), `
-		UPDATE character_sheet SET current_hp = $1, max_hp = $2
-		WHERE id = $3
-		RETURNING *
-	`, newHP.Current(), newHP.Max(), characterID.Value())
-	if err != nil {
-		return characterDomain.Character{}, err
-	}
-	defer rows.Close()
-	record, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[CharacterRow])
-	if err != nil {
-		return characterDomain.Character{}, err
-	}
-
-	val, err := MapRowToDomain(record)
-	if err != nil {
-		return characterDomain.Character{}, err
-	}
-
-	return val, nil
 }
 
 func (r *CharacterRepositoryPG) DeleteByID(characterID characterDomain.CharacterID) (bool, error) {

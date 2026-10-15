@@ -56,7 +56,7 @@ func createCampaign(t *testing.T, r *CampaignRepositoryPG, name string, dm userD
 func createLinkedCharacter(t *testing.T, db *pgxpool.Pool, campaignID campaignDomain.CampaignID, player userDomain.UserID) characterDomain.Character {
 	t.Helper()
 	r := characterInfra.NewCharacterRepositoryPG(db)
-	c, err := r.Create("Hero", player, rpgDomain.DungeonsAndDragons, nil)
+	c, err := r.Create("Hero", player, rpgDomain.DungeonsAndDragons)
 	if err != nil {
 		t.Fatalf("create character: %v", err)
 	}
@@ -381,14 +381,14 @@ func TestPremadeCharactersInCampaign(t *testing.T) {
 	campaign := createCampaign(t, campaigns, "Premade table", dm)
 
 	createLinkedCharacter(t, db, campaign.Id, player)
-	claimed, err := characters.CreatePremade("Claimed", campaign.Id, rpgDomain.DungeonsAndDragons, nil)
+	claimed, err := characters.CreatePremade("Claimed", campaign.Id, rpgDomain.DungeonsAndDragons)
 	if err != nil {
 		t.Fatalf("create premade: %v", err)
 	}
 	if c, err := characters.ClaimPremade(claimed.Id, campaign.Id, claimer); err != nil || c == nil {
 		t.Fatalf("claim premade: %v", err)
 	}
-	unclaimed, err := characters.CreatePremade("Unclaimed", campaign.Id, rpgDomain.DungeonsAndDragons, nil)
+	unclaimed, err := characters.CreatePremade("Unclaimed", campaign.Id, rpgDomain.DungeonsAndDragons)
 	if err != nil {
 		t.Fatalf("create premade: %v", err)
 	}
@@ -469,6 +469,48 @@ func TestRemovedCharacterNoLongerGrantsMembership(t *testing.T) {
 	t.Run("unlinking again changes nothing", func(t *testing.T) {
 		if unlinked, err := characters.UnlinkFromCampaign(character.Id, campaign.Id); err != nil || unlinked {
 			t.Fatalf("expected no row changed, got unlinked=%v err=%v", unlinked, err)
+		}
+	})
+}
+
+func TestListForUserSearchAndWithoutPlayers(t *testing.T) {
+	db := testdb.Pool(t)
+	campaigns := NewCampaignRepositoryPG(db)
+	dm := newUser()
+	// Unique suffix so names from other runs on the same database never match
+	tag := uuid.NewString()[:8]
+	alem := createCampaign(t, campaigns, "Além das Montanhas "+tag, dm)
+	createCampaign(t, campaigns, "Arkham, 1925 "+tag, dm)
+	createLinkedCharacter(t, db, alem.Id, newUser())
+	createCampaign(t, campaigns, "Além do outro "+tag, newUser())
+	search := func(q string) *string { return &q }
+
+	t.Run("search ignores case and accents", func(t *testing.T) {
+		list := listFor(t, campaigns, dm, campaignDomain.CampaignListFilters{Search: search("ALEM DAS")}, firstPage)
+		if got := names(list); len(got) != 1 || got[0] != "Além das Montanhas "+tag || list.Total != 1 {
+			t.Fatalf("expected only Além das Montanhas, got %v (total %d)", got, list.Total)
+		}
+	})
+
+	t.Run("other users' campaigns are not found", func(t *testing.T) {
+		list := listFor(t, campaigns, dm, campaignDomain.CampaignListFilters{Search: search("outro " + tag)}, firstPage)
+		if list.Total != 0 {
+			t.Fatalf("expected no campaign, got %v", names(list))
+		}
+	})
+
+	t.Run("search is literal", func(t *testing.T) {
+		list := listFor(t, campaigns, dm, campaignDomain.CampaignListFilters{Search: search("%")}, firstPage)
+		if list.Total != 0 {
+			t.Fatalf("expected %% to match nothing, got %v", names(list))
+		}
+	})
+
+	t.Run("without players combines with role and search", func(t *testing.T) {
+		dmRole := campaignDomain.RoleDM
+		list := listFor(t, campaigns, dm, campaignDomain.CampaignListFilters{Role: &dmRole, WithoutPlayers: true, Search: search(tag)}, firstPage)
+		if got := names(list); len(got) != 1 || got[0] != "Arkham, 1925 "+tag || list.Total != 1 {
+			t.Fatalf("expected only the campaign nobody joined, got %v (total %d)", got, list.Total)
 		}
 	})
 }
