@@ -20,6 +20,7 @@ type fakeLinkRepo struct {
 	claimResult  *characterDomain.Character
 	claimed      bool
 	updateCalled bool
+	name         rpgDomain.TableName
 }
 
 func (f *fakeLinkRepo) FindBySlug(rpgDomain.Slug) (*characterDomain.Character, error) {
@@ -30,13 +31,15 @@ func (f *fakeLinkRepo) GetByPlayerInCampaigns(userDomain.UserID, []campaignDomai
 	return f.own, nil
 }
 
-func (f *fakeLinkRepo) ClaimPremade(characterDomain.CharacterID, campaignDomain.CampaignID, userDomain.UserID) (*characterDomain.Character, error) {
+func (f *fakeLinkRepo) ClaimPremade(_ characterDomain.CharacterID, _ campaignDomain.CampaignID, _ userDomain.UserID, name rpgDomain.TableName) (*characterDomain.Character, error) {
 	f.claimed = true
+	f.name = name
 	return f.claimResult, nil
 }
 
-func (f *fakeLinkRepo) UpdateCampaign(campaignID campaignDomain.CampaignID, _ rpgDomain.Slug, user userDomain.UserID) (*characterDomain.Character, error) {
+func (f *fakeLinkRepo) UpdateCampaign(campaignID campaignDomain.CampaignID, _ rpgDomain.Slug, user userDomain.UserID, name rpgDomain.TableName) (*characterDomain.Character, error) {
 	f.updateCalled = true
+	f.name = name
 	return &characterDomain.Character{Id: 1, PlayerID: &user, CampaignID: &campaignID}, nil
 }
 
@@ -47,12 +50,12 @@ func TestLinkToCampaign(t *testing.T) {
 		return &characterDomain.Character{Id: 7, CampaignID: &id}
 	}
 	link := func(repo *fakeLinkRepo) (characterDomain.Character, error) {
-		return NewLinkCharacterToCampaign(repo).LinkToCampaign(campaignID, "hero", player)
+		return NewLinkCharacterToCampaign(repo).LinkToCampaign(campaignID, "hero", player, "Ana")
 	}
 
 	t.Run("own character keeps the existing link", func(t *testing.T) {
 		repo := &fakeLinkRepo{target: &characterDomain.Character{Id: 1, PlayerID: &player}}
-		if _, err := link(repo); err != nil || !repo.updateCalled || repo.claimed {
+		if _, err := link(repo); err != nil || !repo.updateCalled || repo.claimed || repo.name != "Ana" {
 			t.Fatalf("expected the own character update, got err=%v update=%v claim=%v", err, repo.updateCalled, repo.claimed)
 		}
 	})
@@ -60,7 +63,7 @@ func TestLinkToCampaign(t *testing.T) {
 	t.Run("claims a premade character of the campaign", func(t *testing.T) {
 		repo := &fakeLinkRepo{target: premadeIn(campaignID), claimResult: &characterDomain.Character{Id: 7, PlayerID: &player}}
 		got, err := link(repo)
-		if err != nil || !got.IsPlayer(player) || repo.updateCalled {
+		if err != nil || !got.IsPlayer(player) || repo.updateCalled || repo.name != "Ana" {
 			t.Fatalf("expected the requester to become the player, got %+v err=%v", got, err)
 		}
 	})

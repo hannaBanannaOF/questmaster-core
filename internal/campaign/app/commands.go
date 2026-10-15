@@ -12,6 +12,13 @@ type CreateCampaignCommand struct {
 	Overview *campaignDomain.CampaignOverview
 	System   rpgDomain.System
 	DmID     userDomain.UserID
+	DmName   rpgDomain.TableName
+}
+
+type UpdateCampaignDmNameCommand struct {
+	CampaignID campaignDomain.CampaignID
+	UserID     userDomain.UserID
+	DmName     rpgDomain.TableName
 }
 
 type DeleteCampaignCommand struct {

@@ -16,6 +16,7 @@ type AcceptInviteCommand struct {
 	Hash          inviteDomain.InviteHash
 	CharacterSlug rpgDomain.Slug
 	UserID        userDomain.UserID
+	PlayerName    rpgDomain.TableName
 }
 
 type CreateInviteCommand struct {

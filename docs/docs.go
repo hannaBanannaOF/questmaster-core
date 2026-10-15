@@ -149,7 +149,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid campaign data",
+                        "description": "Invalid campaign data, or dm_name missing or longer than 50 characters",
                         "schema": {
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
@@ -374,6 +374,80 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "Only the DM can delete a campaign",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "404": {
+                        "description": "Campaign not found",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            },
+            "patch": {
+                "description": "Changes how the DM is called in this campaign. Only the campaign DM can change it",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v1:campaign"
+                ],
+                "summary": "Update DM table name",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Campaign ID",
+                        "name": "campaignID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "New DM table name",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/campaign.UpdateCampaignDmNameRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/campaign.CampaignDmNameResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "dm_name missing or longer than 50 characters",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid access_token",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "403": {
+                        "description": "Only the DM can change the DM table name",
                         "schema": {
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
@@ -921,7 +995,7 @@ const docTemplate = `{
                 ]
             },
             "patch": {
-                "description": "Renames the character, for its player or the DM of its campaign. A new name regenerates the slug",
+                "description": "Renames the character (its player or the DM of its campaign; a new name regenerates the slug) and/or changes player_name, how the player is called in the character's campaign (the player only, while in a campaign)",
                 "consumes": [
                     "application/json"
                 ],
@@ -958,7 +1032,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Missing or invalid name",
+                        "description": "Neither name nor player_name, an invalid value, or player_name for a character in no campaign",
                         "schema": {
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
@@ -1268,6 +1342,10 @@ const docTemplate = `{
                         "$ref": "#/definitions/campaign.CampaignDetailResponseCharacterItem"
                     }
                 },
+                "dm_name": {
+                    "description": "How the DM is called in this campaign",
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -1314,7 +1392,19 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "player_name": {
+                    "description": "How the character's player is called in this campaign",
+                    "type": "string"
+                },
                 "slug": {
+                    "type": "string"
+                }
+            }
+        },
+        "campaign.CampaignDmNameResponse": {
+            "type": "object",
+            "properties": {
+                "dm_name": {
                     "type": "string"
                 }
             }
@@ -1409,6 +1499,10 @@ const docTemplate = `{
         "campaign.CreateCampaignRequest": {
             "type": "object",
             "properties": {
+                "dm_name": {
+                    "description": "How the DM is called in this campaign, 1 to 50 characters",
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -1416,6 +1510,14 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "system": {
+                    "type": "string"
+                }
+            }
+        },
+        "campaign.UpdateCampaignDmNameRequest": {
+            "type": "object",
+            "properties": {
+                "dm_name": {
                     "type": "string"
                 }
             }
@@ -1463,6 +1565,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "name": {
+                    "type": "string"
+                },
+                "player_name": {
                     "type": "string"
                 },
                 "slug": {
@@ -1534,6 +1639,10 @@ const docTemplate = `{
             "properties": {
                 "name": {
                     "type": "string"
+                },
+                "player_name": {
+                    "description": "How the player is called in the character's campaign; only the player, while in a campaign",
+                    "type": "string"
                 }
             }
         },
@@ -1552,6 +1661,10 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "character_slug": {
+                    "type": "string"
+                },
+                "player_name": {
+                    "description": "How the player is called in the campaign, 1 to 50 characters",
                     "type": "string"
                 }
             }

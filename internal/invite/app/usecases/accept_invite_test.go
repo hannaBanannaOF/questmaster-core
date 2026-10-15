@@ -26,10 +26,12 @@ func (f fakeHashRepo) FindByHash(inviteDomain.InviteHash) (*inviteDomain.Invite,
 
 type fakeLinker struct {
 	linked bool
+	name   rpgDomain.TableName
 }
 
-func (f *fakeLinker) LinkToCampaign(campaignDomain.CampaignID, rpgDomain.Slug, userDomain.UserID) (characterDomain.Character, error) {
+func (f *fakeLinker) LinkToCampaign(_ campaignDomain.CampaignID, _ rpgDomain.Slug, _ userDomain.UserID, name rpgDomain.TableName) (characterDomain.Character, error) {
 	f.linked = true
+	f.name = name
 	return characterDomain.Character{}, nil
 }
 
@@ -43,7 +45,7 @@ func TestAcceptInvite(t *testing.T) {
 		linker := &fakeLinker{}
 		finder := fakeCampaignFinder{campaign: campaignDomain.Campaign{Id: 1, Dm: dm, Status: status}}
 		err := inviteUsecases.NewAcceptInvite(r, finder, linker).Execute(inviteApp.AcceptInviteCommand{
-			Hash: hash, CharacterSlug: "hero", UserID: user,
+			Hash: hash, CharacterSlug: "hero", UserID: user, PlayerName: "Ana",
 		})
 		return linker, err
 	}
@@ -51,8 +53,8 @@ func TestAcceptInvite(t *testing.T) {
 	for _, status := range []campaignDomain.CampaignStatus{campaignDomain.StatusDraft, campaignDomain.StatusActive, campaignDomain.StatusPaused} {
 		t.Run("player joins "+status.Value()+" campaign", func(t *testing.T) {
 			linker, err := accept(status, player, repo)
-			if err != nil || !linker.linked {
-				t.Fatalf("expected character to be linked, err=%v", err)
+			if err != nil || !linker.linked || linker.name != "Ana" {
+				t.Fatalf("expected character linked with the table name, got %q err=%v", linker.name, err)
 			}
 		})
 	}

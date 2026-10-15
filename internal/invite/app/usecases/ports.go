@@ -16,5 +16,5 @@ type InvitePremadeCharactersFinder interface {
 }
 
 type InviteCharacterCampaignLinker interface {
-	LinkToCampaign(campaignID campaignDomain.CampaignID, characterSlug rpgDomain.Slug, userID userDomain.UserID) (characterDomain.Character, error)
+	LinkToCampaign(campaignID campaignDomain.CampaignID, characterSlug rpgDomain.Slug, userID userDomain.UserID, playerName rpgDomain.TableName) (characterDomain.Character, error)
 }

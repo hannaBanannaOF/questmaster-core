@@ -31,10 +31,16 @@ func MapAcceptRequestToAcceptCommand(r AcceptInviteRequest, userID userDomain.Us
 		return inviteApp.AcceptInviteCommand{}, err
 	}
 
+	playerName, err := rpgDomain.NewTableName(r.PlayerName)
+	if err != nil {
+		return inviteApp.AcceptInviteCommand{}, err
+	}
+
 	return inviteApp.AcceptInviteCommand{
 		Hash:          hash,
 		CharacterSlug: slug,
 		UserID:        userID,
+		PlayerName:    playerName,
 	}, nil
 }
 

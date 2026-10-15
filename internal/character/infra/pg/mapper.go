@@ -30,6 +30,12 @@ func MapRowToDomain(row CharacterRow) (characterDomain.Character, error) {
 		playerID = &id
 	}
 
+	var playerName *rpgDomain.TableName
+	if row.PlayerName != nil {
+		name := rpgDomain.TableName(*row.PlayerName)
+		playerName = &name
+	}
+
 	system, err := rpgDomain.NewSystem(row.System)
 	if err != nil {
 		return characterDomain.Character{}, err
@@ -39,6 +45,7 @@ func MapRowToDomain(row CharacterRow) (characterDomain.Character, error) {
 		Id:         characterDomain.NewCharacterID(row.Id),
 		Name:       characterName,
 		PlayerID:   playerID,
+		PlayerName: playerName,
 		System:     system,
 		CampaignID: campaignID,
 		Slug:       characterSlug,

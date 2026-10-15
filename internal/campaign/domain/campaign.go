@@ -11,6 +11,7 @@ type Campaign struct {
 	Id          CampaignID
 	Name        CampaignName
 	Dm          userDomain.UserID
+	DmName      rpgDomain.TableName
 	Status      CampaignStatus
 	System      rpgDomain.System
 	Slug        rpgDomain.Slug

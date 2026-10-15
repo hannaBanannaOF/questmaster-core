@@ -36,6 +36,7 @@ func MapRowToDomain(row CampaignRow) (campaignDomain.Campaign, error) {
 		Id:          campaignDomain.NewCampaignID(row.ID),
 		Name:        name,
 		Dm:          userDomain.NewUserID(row.DmID),
+		DmName:      rpgDomain.TableName(row.DmName),
 		Status:      status,
 		System:      system,
 		Slug:        slug,

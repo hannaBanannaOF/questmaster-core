@@ -21,11 +21,17 @@ type CampaignDetailsInput struct {
 func mapCampaignCharacters(characters []characterDomain.Character, userID userDomain.UserID) []CampaignCharacterReadModel {
 	models := make([]CampaignCharacterReadModel, 0, len(characters))
 	for _, c := range characters {
+		var playerName *string
+		if c.PlayerName != nil {
+			name := c.PlayerName.Value()
+			playerName = &name
+		}
 		models = append(models, CampaignCharacterReadModel{
-			Id:     c.Id.Value(),
-			Slug:   c.Slug.Value(),
-			Name:   c.Name.Value(),
-			IsMine: c.IsPlayer(userID),
+			PlayerName: playerName,
+			Id:         c.Id.Value(),
+			Slug:       c.Slug.Value(),
+			Name:       c.Name.Value(),
+			IsMine:     c.IsPlayer(userID),
 		})
 	}
 	return models
@@ -53,6 +59,7 @@ func MapDomainToDetailReadModel(input CampaignDetailsInput) CampaignDetailsReadM
 		System:            input.Campaign.System.Value(),
 		Slug:              input.Campaign.Slug.Value(),
 		Overview:          campaignOverview,
+		DmName:            input.Campaign.DmName.Value(),
 		IsDM:              input.Campaign.IsDM(input.UserID),
 		Characters:        charactersModels,
 		PremadeCharacters: mapCampaignCharacters(input.PremadeCharacters, input.UserID),

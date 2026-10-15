@@ -19,17 +19,17 @@ func NewLinkCharacterToCampaign(r characterApp.CharacterRepository) *LinkCharact
 }
 
 // LinkToCampaign links the requester own character to the campaign, or makes the requester
-// the player of one of the campaign unclaimed premade characters.
-func (uc LinkCharacterToCampaignUseCase) LinkToCampaign(campaignID campaignDomain.CampaignID, characterSlug rpgDomain.Slug, userID userDomain.UserID) (characterDomain.Character, error) {
+// the player of one of the campaign unclaimed premade characters, with their table name.
+func (uc LinkCharacterToCampaignUseCase) LinkToCampaign(campaignID campaignDomain.CampaignID, characterSlug rpgDomain.Slug, userID userDomain.UserID, playerName rpgDomain.TableName) (characterDomain.Character, error) {
 	target, err := uc.r.FindBySlug(characterSlug)
 	if err != nil {
 		return characterDomain.Character{}, err
 	}
 	if target != nil && target.IsPremade() {
-		return uc.claimPremade(*target, campaignID, userID)
+		return uc.claimPremade(*target, campaignID, userID, playerName)
 	}
 
-	character, err := uc.r.UpdateCampaign(campaignID, characterSlug, userID)
+	character, err := uc.r.UpdateCampaign(campaignID, characterSlug, userID, playerName)
 	if err != nil {
 		return characterDomain.Character{}, err
 	}
@@ -41,7 +41,7 @@ func (uc LinkCharacterToCampaignUseCase) LinkToCampaign(campaignID campaignDomai
 	return *character, nil
 }
 
-func (uc LinkCharacterToCampaignUseCase) claimPremade(premade characterDomain.Character, campaignID campaignDomain.CampaignID, userID userDomain.UserID) (characterDomain.Character, error) {
+func (uc LinkCharacterToCampaignUseCase) claimPremade(premade characterDomain.Character, campaignID campaignDomain.CampaignID, userID userDomain.UserID, playerName rpgDomain.TableName) (characterDomain.Character, error) {
 	if premade.CampaignID == nil || *premade.CampaignID != campaignID {
 		return characterDomain.Character{}, ErrUnavailableCharacter
 	}
@@ -55,7 +55,7 @@ func (uc LinkCharacterToCampaignUseCase) claimPremade(premade characterDomain.Ch
 		return characterDomain.Character{}, ErrAlreadyInCampaign
 	}
 
-	claimed, err := uc.r.ClaimPremade(premade.Id, campaignID, userID)
+	claimed, err := uc.r.ClaimPremade(premade.Id, campaignID, userID, playerName)
 	if err != nil {
 		return characterDomain.Character{}, err
 	}

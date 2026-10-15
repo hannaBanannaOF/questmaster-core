@@ -8,6 +8,7 @@ import (
 	campaignDomain "questmaster-core/internal/campaign/domain"
 	characterDomain "questmaster-core/internal/character/domain"
 	inviteDomain "questmaster-core/internal/invite/domain"
+	rpgDomain "questmaster-core/internal/rpg/domain"
 	userDomain "questmaster-core/internal/user/domain"
 
 	"github.com/google/uuid"
@@ -158,12 +159,13 @@ func TestGetCampaignDetails(t *testing.T) {
 
 	t.Run("party cards", func(t *testing.T) {
 		other := userDomain.NewUserID(uuid.New())
+		ana := rpgDomain.TableName("Ana")
 		characters := []characterDomain.Character{
-			{Id: 10, Slug: "hero", Name: "Hero", PlayerID: &player},
+			{Id: 10, Slug: "hero", Name: "Hero", PlayerID: &player, PlayerName: &ana},
 			{Id: 11, Slug: "sidekick", Name: "Sidekick", PlayerID: &other},
 		}
 		uc := NewGetCampaignDetails(
-			*NewGetCampaignFromID(fakeCampaignRepo{campaign: &campaignDomain.Campaign{Id: 1, Dm: dm}}),
+			*NewGetCampaignFromID(fakeCampaignRepo{campaign: &campaignDomain.Campaign{Id: 1, Dm: dm, DmName: "Mestre"}}),
 			fakeCharacterFinder{characters: characters},
 			&fakeInviteFinder{},
 			fakePremadeFinder{},
@@ -175,11 +177,14 @@ func TestGetCampaignDetails(t *testing.T) {
 			t.Fatalf("unexpected details %+v err=%v", rm, err)
 		}
 		mine, others := rm.Characters[0], rm.Characters[1]
+		if rm.DmName != "Mestre" || mine.PlayerName == nil || *mine.PlayerName != "Ana" || others.PlayerName != nil {
+			t.Fatalf("expected the table names, got dm=%q %v %v", rm.DmName, mine.PlayerName, others.PlayerName)
+		}
 		if !mine.IsMine || mine.Slug != "hero" {
-			t.Fatalf("expected own character marked with slug and HP, got %+v", mine)
+			t.Fatalf("expected own character marked with slug, got %+v", mine)
 		}
 		if others.IsMine || others.Slug != "sidekick" {
-			t.Fatalf("expected other character not mine and without HP, got %+v", others)
+			t.Fatalf("expected other character not mine, got %+v", others)
 		}
 
 		rm, err = uc.Execute(campaignApp.GetCampaignDetailsCommand{ID: 1, UserID: dm})

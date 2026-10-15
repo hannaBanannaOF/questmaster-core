@@ -10,6 +10,7 @@ type CharacterRow struct {
 	Id         int           `db:"id"`
 	Name       string        `db:"name"`
 	PlayerID   uuid.NullUUID `db:"player_id"`
+	PlayerName *string       `db:"player_name"`
 	System     string        `db:"game_system"`
 	CampaingID *int          `db:"campaign_id"`
 	Slug       string        `db:"slug"`

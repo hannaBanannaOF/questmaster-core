@@ -5,8 +5,9 @@ type CharacterResolveSlugReadModel struct {
 }
 
 type EditCharacterReadModel struct {
-	Slug string
-	Name string
+	Slug       string
+	Name       string
+	PlayerName *string
 }
 
 type CreateCharacterReadModel struct {

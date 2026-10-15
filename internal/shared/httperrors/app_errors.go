@@ -53,6 +53,9 @@ func From(err error) HttpError {
 		errors.Is(err, ErrInvalidQuery),
 		errors.Is(err, ErrInvalidRequestBody),
 		errors.Is(err, rpgDomain.ErrInvalidSlug),
+		errors.Is(err, rpgDomain.ErrInvalidTableName),
+		errors.Is(err, characterDomainErr.ErrNotInAnyCampaign),
+		errors.Is(err, characterAppErr.ErrNothingToEdit),
 		errors.Is(err, characterAppErr.ErrUnavailableCharacter),
 		errors.Is(err, characterAppErr.ErrNotInCampaign),
 		errors.Is(err, rpgDomain.ErrInvalidSystem):

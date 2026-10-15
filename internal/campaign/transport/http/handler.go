@@ -19,6 +19,7 @@ type CampaignHandler struct {
 	getDetailsUC              *campaignUsecases.GetCampaignDetailsUseCase
 	deleteCampaignUc          *campaignUsecases.DeleteCampaignUseCase
 	getStatusCountsUC         *campaignUsecases.GetCampaignStatusCountsUseCase
+	updateDmNameUC            *campaignUsecases.UpdateCampaignDmNameUseCase
 }
 
 func NewCampaignHandler(
@@ -29,6 +30,7 @@ func NewCampaignHandler(
 	getDetailsUC *campaignUsecases.GetCampaignDetailsUseCase,
 	deleteCampaignUc *campaignUsecases.DeleteCampaignUseCase,
 	getStatusCountsUC *campaignUsecases.GetCampaignStatusCountsUseCase,
+	updateDmNameUC *campaignUsecases.UpdateCampaignDmNameUseCase,
 ) *CampaignHandler {
 	return &CampaignHandler{
 		getCurrentUserCampaignsUC: getCurrentUserCampaignsUC,
@@ -38,6 +40,7 @@ func NewCampaignHandler(
 		getDetailsUC:              getDetailsUC,
 		deleteCampaignUc:          deleteCampaignUc,
 		getStatusCountsUC:         getStatusCountsUC,
+		updateDmNameUC:            updateDmNameUC,
 	}
 }
 
@@ -127,7 +130,7 @@ func (h *CampaignHandler) ResolveSlug(ctx *context.AppContext) error {
 // @Param request body CreateCampaignRequest true "Campaign data"
 // @Produce json
 // @Success 201 {object} rpg.RpgSlugResponse
-// @Failure 400 {object} httperrors.HttpError "Invalid campaign data"
+// @Failure 400 {object} httperrors.HttpError "Invalid campaign data, or dm_name missing or longer than 50 characters"
 // @Failure 401 {object} httperrors.HttpError "Unauthorized - missing or invalid access_token"
 // @Failure 500 {object} httperrors.HttpError "Internal server error"
 // @Security BearerAuth
@@ -155,11 +158,17 @@ func (h *CampaignHandler) CreateCampaign(ctx *context.AppContext) error {
 		return err
 	}
 
+	dmName, err := rpgDomain.NewTableName(body.DmName)
+	if err != nil {
+		return err
+	}
+
 	cmd := campaignApp.CreateCampaignCommand{
 		Name:     name,
 		Overview: overview,
 		DmID:     ctx.UserID(),
 		System:   system,
+		DmName:   dmName,
 	}
 
 	campaign, err := h.createCampaignUC.Execute(cmd)
@@ -265,5 +274,44 @@ func (h *CampaignHandler) DeleteCampaign(ctx *context.AppContext) error {
 	}
 
 	ctx.JSON(http.StatusNoContent, nil)
+	return nil
+}
+
+// @Summary Update DM table name
+// @Description Changes how the DM is called in this campaign. Only the campaign DM can change it
+// @Tags v1:campaign
+// @Param campaignID path integer true "Campaign ID"
+// @Accept json
+// @Param request body UpdateCampaignDmNameRequest true "New DM table name"
+// @Produce json
+// @Success 200 {object} CampaignDmNameResponse
+// @Failure 400 {object} httperrors.HttpError "dm_name missing or longer than 50 characters"
+// @Failure 401 {object} httperrors.HttpError "Unauthorized - missing or invalid access_token"
+// @Failure 403 {object} httperrors.HttpError "Only the DM can change the DM table name"
+// @Failure 404 {object} httperrors.HttpError "Campaign not found"
+// @Failure 500 {object} httperrors.HttpError "Internal server error"
+// @Security BearerAuth
+// @Router /core/api/v1/campaign/{campaignID} [patch]
+func (h *CampaignHandler) UpdateDmName(ctx *context.AppContext) error {
+	var body UpdateCampaignDmNameRequest
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		return httperrors.ErrInvalidRequestBody
+	}
+
+	dmName, err := rpgDomain.NewTableName(body.DmName)
+	if err != nil {
+		return err
+	}
+
+	saved, err := h.updateDmNameUC.Execute(campaignApp.UpdateCampaignDmNameCommand{
+		CampaignID: ctx.CampaignID(),
+		UserID:     ctx.UserID(),
+		DmName:     dmName,
+	})
+	if err != nil {
+		return err
+	}
+
+	ctx.JSON(http.StatusOK, CampaignDmNameResponse{DmName: saved.Value()})
 	return nil
 }
