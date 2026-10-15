@@ -1,7 +1,7 @@
 # character-edit Specification
 
 ## Purpose
-Defines who can edit a character's name and max HP after creation, and how the current HP and the slug follow the edit.
+Defines who can rename a character after creation, and how its slug follows the new name.
 
 ## Requirements
 
