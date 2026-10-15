@@ -178,12 +178,13 @@ func (h *CharactersHandler) CreatePremadeCharacter(ctx *context.AppContext) erro
 // @Tags v1:character
 // @Param game_system query string false "Only characters of this game system"
 // @Param without_campaign query boolean false "true: only characters without a campaign; false: only characters in a campaign"
+// @Param q query string false "Only characters whose name contains it, ignoring case and accents (at most 100 characters)"
 // @Param sort query string false "name: by name; recent: last opened by the user first, never opened after, by name" Enums(name, recent) default(name)
 // @Param limit query integer false "Page size, 1 to 100" default(50)
 // @Param offset query integer false "Number of characters to skip" default(0)
 // @Produce json
 // @Success 200 {object} CharacterListPageResponse
-// @Failure 400 {object} httperrors.HttpError "Invalid game_system, sort, limit or offset"
+// @Failure 400 {object} httperrors.HttpError "Invalid game_system, q, sort, limit or offset"
 // @Failure 401 {object} httperrors.HttpError "Unauthorized - missing or invalid access_token"
 // @Failure 500 {object} httperrors.HttpError "Internal server error"
 // @Security BearerAuth

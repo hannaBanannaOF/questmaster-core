@@ -472,3 +472,45 @@ func TestRemovedCharacterNoLongerGrantsMembership(t *testing.T) {
 		}
 	})
 }
+
+func TestListForUserSearchAndWithoutPlayers(t *testing.T) {
+	db := testdb.Pool(t)
+	campaigns := NewCampaignRepositoryPG(db)
+	dm := newUser()
+	// Unique suffix so names from other runs on the same database never match
+	tag := uuid.NewString()[:8]
+	alem := createCampaign(t, campaigns, "Além das Montanhas "+tag, dm)
+	createCampaign(t, campaigns, "Arkham, 1925 "+tag, dm)
+	createLinkedCharacter(t, db, alem.Id, newUser())
+	createCampaign(t, campaigns, "Além do outro "+tag, newUser())
+	search := func(q string) *string { return &q }
+
+	t.Run("search ignores case and accents", func(t *testing.T) {
+		list := listFor(t, campaigns, dm, campaignDomain.CampaignListFilters{Search: search("ALEM DAS")}, firstPage)
+		if got := names(list); len(got) != 1 || got[0] != "Além das Montanhas "+tag || list.Total != 1 {
+			t.Fatalf("expected only Além das Montanhas, got %v (total %d)", got, list.Total)
+		}
+	})
+
+	t.Run("other users' campaigns are not found", func(t *testing.T) {
+		list := listFor(t, campaigns, dm, campaignDomain.CampaignListFilters{Search: search("outro " + tag)}, firstPage)
+		if list.Total != 0 {
+			t.Fatalf("expected no campaign, got %v", names(list))
+		}
+	})
+
+	t.Run("search is literal", func(t *testing.T) {
+		list := listFor(t, campaigns, dm, campaignDomain.CampaignListFilters{Search: search("%")}, firstPage)
+		if list.Total != 0 {
+			t.Fatalf("expected %% to match nothing, got %v", names(list))
+		}
+	})
+
+	t.Run("without players combines with role and search", func(t *testing.T) {
+		dmRole := campaignDomain.RoleDM
+		list := listFor(t, campaigns, dm, campaignDomain.CampaignListFilters{Role: &dmRole, WithoutPlayers: true, Search: search(tag)}, firstPage)
+		if got := names(list); len(got) != 1 || got[0] != "Arkham, 1925 "+tag || list.Total != 1 {
+			t.Fatalf("expected only the campaign nobody joined, got %v (total %d)", got, list.Total)
+		}
+	})
+}

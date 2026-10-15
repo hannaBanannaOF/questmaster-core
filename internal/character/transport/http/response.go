@@ -10,6 +10,13 @@ type CharacterListResponse struct {
 	MaxHP     *int   `json:"max_hp"`
 	// The requester last open of the character details, null if never opened
 	LastAccessedAt *time.Time `json:"last_accessed_at"`
+	// The campaign the character plays in, null when none
+	Campaign *CharacterCampaignResponse `json:"campaign"`
+}
+
+type CharacterCampaignResponse struct {
+	Slug string `json:"slug"`
+	Name string `json:"name"`
 }
 
 type CharacterDetailResponse struct {

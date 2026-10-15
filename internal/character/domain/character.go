@@ -19,6 +19,13 @@ type Character struct {
 	Hp         *HP
 	// The requester last open of the character; only set by the character list
 	LastAccessedAt *time.Time
+	// The linked campaign slug and name; only set by the character list
+	Campaign *CampaignSummary
+}
+
+type CampaignSummary struct {
+	Slug string
+	Name string
 }
 
 func (c Character) IsPlayer(userID userDomain.UserID) bool {

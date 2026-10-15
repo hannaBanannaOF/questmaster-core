@@ -49,6 +49,13 @@ func userCampaignsWhere(userID userDomain.UserID, filters campaignDomain.Campaig
 		args = append(args, filters.Status.Value())
 		where += " AND c.status = $" + strconv.Itoa(len(args))
 	}
+	if filters.Search != nil {
+		args = append(args, *filters.Search)
+		where += " AND " + pagination.NameContains("c.name", len(args))
+	}
+	if filters.WithoutPlayers {
+		where += " AND NOT EXISTS (SELECT 1 FROM character_sheet wp WHERE wp.campaign_id = c.id AND wp.player_id IS NOT NULL)"
+	}
 
 	return " WHERE " + where, args
 }

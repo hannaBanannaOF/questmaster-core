@@ -39,6 +39,11 @@ func (r *CharacterRepositoryPG) GetAllByPlayerIDWithFilters(
 		where += " AND cs.game_system = $" + strconv.Itoa(len(args))
 	}
 
+	if filters.Search != nil {
+		args = append(args, *filters.Search)
+		where += " AND " + pagination.NameContains("cs.name", len(args))
+	}
+
 	if filters.WithoutCampaign != nil {
 		if *filters.WithoutCampaign {
 			where += " AND cs.campaign_id IS NULL"
@@ -54,8 +59,9 @@ func (r *CharacterRepositoryPG) GetAllByPlayerIDWithFilters(
 
 	args = append(args, page.Limit, page.Offset)
 	// $1 is the requester, who is also the player filtered by where
-	rows, err := r.db.Query(ctx, "SELECT cs.*, a.accessed_at AS last_accessed_at"+
-		" FROM character_sheet cs LEFT JOIN character_access a ON a.user_id = $1 AND a.character_id = cs.id"+where+
+	rows, err := r.db.Query(ctx, "SELECT cs.*, a.accessed_at AS last_accessed_at, lc.slug AS campaign_slug, lc.name AS campaign_name"+
+		" FROM character_sheet cs LEFT JOIN character_access a ON a.user_id = $1 AND a.character_id = cs.id"+
+		" LEFT JOIN campaign lc ON lc.id = cs.campaign_id"+where+
 		page.Sort.OrderBy("a.accessed_at", "cs.name", "cs.id")+
 		" LIMIT $"+strconv.Itoa(len(args)-1)+" OFFSET $"+strconv.Itoa(len(args)), args...)
 	if err != nil {
@@ -75,6 +81,9 @@ func (r *CharacterRepositoryPG) GetAllByPlayerIDWithFilters(
 			return pagination.Result[characterDomain.Character]{}, err
 		}
 		val.LastAccessedAt = c.LastAccessedAt
+		if c.CampaignSlug != nil && c.CampaignName != nil {
+			val.Campaign = &characterDomain.CampaignSummary{Slug: *c.CampaignSlug, Name: *c.CampaignName}
+		}
 		items = append(items, val)
 	}
 

@@ -22,7 +22,12 @@ func convertHP(hp *characterDomain.HP) (*int, *int) {
 
 func MapListReadModelToResponse(c characterDomain.Character) CharacterListResponse {
 	current, max := convertHP(c.Hp)
+	var campaign *CharacterCampaignResponse
+	if c.Campaign != nil {
+		campaign = &CharacterCampaignResponse{Slug: c.Campaign.Slug, Name: c.Campaign.Name}
+	}
 	return CharacterListResponse{
+		Campaign:       campaign,
 		Slug:           c.Slug.Value(),
 		Name:           c.Name.Value(),
 		System:         c.System.Value(),

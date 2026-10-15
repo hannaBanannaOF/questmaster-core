@@ -3,6 +3,7 @@ package campaign
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -59,5 +60,23 @@ func TestCampaignRoleFilterMiddlewareIgnoresStatus(t *testing.T) {
 	code, filters := serveFilters(t, CampaignRoleFilterMiddleware(), "?role=dm&status=FINISHED")
 	if code != http.StatusOK || filters.Role == nil || *filters.Role != campaignDomain.RoleDM || filters.Status != nil {
 		t.Fatalf("expected role dm and no status, got %d %+v", code, filters)
+	}
+}
+
+func TestCampaignListSearchAndWithoutPlayers(t *testing.T) {
+	code, filters := serveFilters(t, CampaignListFiltersMiddleware(), "?q=%20%20&without_players=false")
+	if code != http.StatusOK || filters.Search != nil || filters.WithoutPlayers {
+		t.Fatalf("expected blank q and false without_players to apply no filter, got %d %+v", code, filters)
+	}
+
+	code, filters = serveFilters(t, CampaignListFiltersMiddleware(), "?q=%20boston%20&without_players=true")
+	if code != http.StatusOK || filters.Search == nil || *filters.Search != "boston" || !filters.WithoutPlayers {
+		t.Fatalf("expected trimmed q and without_players, got %d %+v", code, filters)
+	}
+
+	for _, query := range []string{"?q=" + strings.Repeat("a", 101), "?without_players=maybe"} {
+		if code, _ := serveFilters(t, CampaignListFiltersMiddleware(), query); code != http.StatusBadRequest {
+			t.Fatalf("%s: expected 400, got %d", query[:20], code)
+		}
 	}
 }

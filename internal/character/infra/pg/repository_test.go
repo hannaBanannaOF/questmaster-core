@@ -420,3 +420,45 @@ func TestRenameRegeneratesSlug(t *testing.T) {
 		}
 	})
 }
+
+func TestCharacterListSearchAndCampaign(t *testing.T) {
+	db := testdb.Pool(t)
+	r := NewCharacterRepositoryPG(db)
+	campaigns := campaignInfra.NewCampaignRepositoryPG(db)
+	player := userDomain.NewUserID(uuid.New())
+	tag := uuid.NewString()[:8]
+
+	campaign, err := campaigns.Create(campaignDomain.CampaignName("Innsmouth "+tag), nil, userDomain.NewUserID(uuid.New()), rpgDomain.DungeonsAndDragons)
+	if err != nil {
+		t.Fatalf("create campaign: %v", err)
+	}
+	tomas := createCharacter(t, r, "Tomás Ribeiro "+tag, player)
+	if l, err := r.UpdateCampaign(campaign.Id, tomas.Slug, player); err != nil || l == nil {
+		t.Fatalf("link: %v", err)
+	}
+	createCharacter(t, r, "Jack Brady "+tag, player)
+	createCharacter(t, r, "Tomás de outro "+tag, userDomain.NewUserID(uuid.New()))
+	page := pagination.Page{Limit: pagination.DefaultLimit}
+	search := func(q string) *string { return &q }
+
+	t.Run("search ignores case and accents, and carries the campaign", func(t *testing.T) {
+		list := listCharacters(t, r, player, characterDomain.CharacterListFilters{Search: search("TOMAS")}, page)
+		if len(list.Items) != 1 || list.Total != 1 || list.Items[0].Id != tomas.Id {
+			t.Fatalf("expected only Tomás, got %v (total %d)", characterNames(list), list.Total)
+		}
+		if c := list.Items[0].Campaign; c == nil || c.Name != "Innsmouth "+tag || c.Slug != campaign.Slug.Value() {
+			t.Fatalf("expected the linked campaign, got %+v", c)
+		}
+	})
+
+	t.Run("search combines with without_campaign", func(t *testing.T) {
+		unlinked := true
+		list := listCharacters(t, r, player, characterDomain.CharacterListFilters{Search: search(tag), WithoutCampaign: &unlinked}, page)
+		if got := characterNames(list); len(got) != 1 || got[0] != "Jack Brady "+tag {
+			t.Fatalf("expected only Jack, got %v", got)
+		}
+		if list.Items[0].Campaign != nil {
+			t.Fatalf("expected no campaign for an unlinked character")
+		}
+	})
+}

@@ -21,4 +21,6 @@ type CharacterRow struct {
 type CharacterListRow struct {
 	CharacterRow
 	LastAccessedAt *time.Time `db:"last_accessed_at"`
+	CampaignSlug   *string    `db:"campaign_slug"`
+	CampaignName   *string    `db:"campaign_name"`
 }
