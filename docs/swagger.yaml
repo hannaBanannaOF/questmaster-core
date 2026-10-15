@@ -53,11 +53,6 @@ definitions:
       slug:
         type: string
     type: object
-  campaign.CampaignDmNameResponse:
-    properties:
-      dm_name:
-        type: string
-    type: object
   campaign.CampaignListPageResponse:
     properties:
       items:
@@ -129,14 +124,19 @@ definitions:
       system:
         type: string
     type: object
-  campaign.UpdateCampaignDmNameRequest:
+  campaign.TableNameResponse:
     properties:
-      dm_name:
+      name:
         type: string
     type: object
   campaign.UpdateCampaignStatusRequest:
     properties:
       status:
+        type: string
+    type: object
+  campaign.UpdateTableNameRequest:
+    properties:
+      name:
         type: string
     type: object
   character.CharacterCampaignResponse:
@@ -162,8 +162,6 @@ definitions:
   character.CharacterEditResponse:
     properties:
       name:
-        type: string
-      player_name:
         type: string
       slug:
         type: string
@@ -209,10 +207,6 @@ definitions:
   character.EditCharacterRequest:
     properties:
       name:
-        type: string
-      player_name:
-        description: How the player is called in the character's campaign; only the
-          player, while in a campaign
         type: string
     type: object
   httperrors.HttpError:
@@ -479,55 +473,6 @@ paths:
       summary: Get campaign details
       tags:
       - v1:campaign
-    patch:
-      consumes:
-      - application/json
-      description: Changes how the DM is called in this campaign. Only the campaign
-        DM can change it
-      parameters:
-      - description: Campaign ID
-        in: path
-        name: campaignID
-        required: true
-        type: integer
-      - description: New DM table name
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/campaign.UpdateCampaignDmNameRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/campaign.CampaignDmNameResponse'
-        "400":
-          description: dm_name missing or longer than 50 characters
-          schema:
-            $ref: '#/definitions/httperrors.HttpError'
-        "401":
-          description: Unauthorized - missing or invalid access_token
-          schema:
-            $ref: '#/definitions/httperrors.HttpError'
-        "403":
-          description: Only the DM can change the DM table name
-          schema:
-            $ref: '#/definitions/httperrors.HttpError'
-        "404":
-          description: Campaign not found
-          schema:
-            $ref: '#/definitions/httperrors.HttpError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/httperrors.HttpError'
-      security:
-      - BearerAuth: []
-      summary: Update DM table name
-      tags:
-      - v1:campaign
   /core/api/v1/campaign/{campaignID}/character:
     post:
       consumes:
@@ -671,6 +616,56 @@ paths:
       security:
       - BearerAuth: []
       summary: Update Status
+      tags:
+      - v1:campaign
+  /core/api/v1/campaign/{campaignID}/table-name:
+    patch:
+      consumes:
+      - application/json
+      description: 'Changes how the requester is called in this campaign: the DM name
+        for the DM, otherwise the player name of their character in it'
+      parameters:
+      - description: Campaign ID
+        in: path
+        name: campaignID
+        required: true
+        type: integer
+      - description: New table name
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/campaign.UpdateTableNameRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/campaign.TableNameResponse'
+        "400":
+          description: name missing or longer than 50 characters
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "401":
+          description: Unauthorized - missing or invalid access_token
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "403":
+          description: Not the DM nor a player in this campaign
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "404":
+          description: Campaign not found
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/httperrors.HttpError'
+      security:
+      - BearerAuth: []
+      summary: Update my table name
       tags:
       - v1:campaign
   /core/api/v1/campaign/counts:
@@ -919,9 +914,8 @@ paths:
     patch:
       consumes:
       - application/json
-      description: Renames the character (its player or the DM of its campaign; a
-        new name regenerates the slug) and/or changes player_name, how the player
-        is called in the character's campaign (the player only, while in a campaign)
+      description: Renames the character, for its player or the DM of its campaign.
+        A new name regenerates the slug
       parameters:
       - description: Character ID
         in: path
@@ -942,8 +936,7 @@ paths:
           schema:
             $ref: '#/definitions/character.CharacterEditResponse'
         "400":
-          description: Neither name nor player_name, an invalid value, or player_name
-            for a character in no campaign
+          description: Missing or invalid name
           schema:
             $ref: '#/definitions/httperrors.HttpError'
         "401":

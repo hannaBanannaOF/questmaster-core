@@ -396,80 +396,6 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ]
-            },
-            "patch": {
-                "description": "Changes how the DM is called in this campaign. Only the campaign DM can change it",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "v1:campaign"
-                ],
-                "summary": "Update DM table name",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Campaign ID",
-                        "name": "campaignID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "New DM table name",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/campaign.UpdateCampaignDmNameRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/campaign.CampaignDmNameResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "dm_name missing or longer than 50 characters",
-                        "schema": {
-                            "$ref": "#/definitions/httperrors.HttpError"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized - missing or invalid access_token",
-                        "schema": {
-                            "$ref": "#/definitions/httperrors.HttpError"
-                        }
-                    },
-                    "403": {
-                        "description": "Only the DM can change the DM table name",
-                        "schema": {
-                            "$ref": "#/definitions/httperrors.HttpError"
-                        }
-                    },
-                    "404": {
-                        "description": "Campaign not found",
-                        "schema": {
-                            "$ref": "#/definitions/httperrors.HttpError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/httperrors.HttpError"
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ]
             }
         },
         "/core/api/v1/campaign/{campaignID}/character": {
@@ -659,6 +585,82 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "Only the DM can update a campaign, or the status transition is invalid",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "404": {
+                        "description": "Campaign not found",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/core/api/v1/campaign/{campaignID}/table-name": {
+            "patch": {
+                "description": "Changes how the requester is called in this campaign: the DM name for the DM, otherwise the player name of their character in it",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v1:campaign"
+                ],
+                "summary": "Update my table name",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Campaign ID",
+                        "name": "campaignID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "New table name",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/campaign.UpdateTableNameRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/campaign.TableNameResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "name missing or longer than 50 characters",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid access_token",
+                        "schema": {
+                            "$ref": "#/definitions/httperrors.HttpError"
+                        }
+                    },
+                    "403": {
+                        "description": "Not the DM nor a player in this campaign",
                         "schema": {
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
@@ -995,7 +997,7 @@ const docTemplate = `{
                 ]
             },
             "patch": {
-                "description": "Renames the character (its player or the DM of its campaign; a new name regenerates the slug) and/or changes player_name, how the player is called in the character's campaign (the player only, while in a campaign)",
+                "description": "Renames the character, for its player or the DM of its campaign. A new name regenerates the slug",
                 "consumes": [
                     "application/json"
                 ],
@@ -1032,7 +1034,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Neither name nor player_name, an invalid value, or player_name for a character in no campaign",
+                        "description": "Missing or invalid name",
                         "schema": {
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
@@ -1401,14 +1403,6 @@ const docTemplate = `{
                 }
             }
         },
-        "campaign.CampaignDmNameResponse": {
-            "type": "object",
-            "properties": {
-                "dm_name": {
-                    "type": "string"
-                }
-            }
-        },
         "campaign.CampaignListPageResponse": {
             "type": "object",
             "properties": {
@@ -1514,10 +1508,10 @@ const docTemplate = `{
                 }
             }
         },
-        "campaign.UpdateCampaignDmNameRequest": {
+        "campaign.TableNameResponse": {
             "type": "object",
             "properties": {
-                "dm_name": {
+                "name": {
                     "type": "string"
                 }
             }
@@ -1526,6 +1520,14 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "campaign.UpdateTableNameRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
                     "type": "string"
                 }
             }
@@ -1565,9 +1567,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "name": {
-                    "type": "string"
-                },
-                "player_name": {
                     "type": "string"
                 },
                 "slug": {
@@ -1638,10 +1637,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "name": {
-                    "type": "string"
-                },
-                "player_name": {
-                    "description": "How the player is called in the character's campaign; only the player, while in a campaign",
                     "type": "string"
                 }
             }
