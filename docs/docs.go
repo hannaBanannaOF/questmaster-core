@@ -49,6 +49,18 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "Only campaigns whose name contains it, ignoring case and accents (at most 100 characters)",
+                        "name": "q",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "true: only campaigns nobody joined yet",
+                        "name": "without_players",
+                        "in": "query"
+                    },
+                    {
                         "enum": [
                             "name",
                             "recent"
@@ -82,7 +94,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid role, status, sort, limit or offset",
+                        "description": "Invalid role, status, q, without_players, sort, limit or offset",
                         "schema": {
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
@@ -621,6 +633,12 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "Only characters whose name contains it, ignoring case and accents (at most 100 characters)",
+                        "name": "q",
+                        "in": "query"
+                    },
+                    {
                         "enum": [
                             "name",
                             "recent"
@@ -654,7 +672,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid game_system, sort, limit or offset",
+                        "description": "Invalid game_system, q, sort, limit or offset",
                         "schema": {
                             "$ref": "#/definitions/httperrors.HttpError"
                         }
@@ -1492,6 +1510,17 @@ const docTemplate = `{
                 }
             }
         },
+        "character.CharacterCampaignResponse": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                }
+            }
+        },
         "character.CharacterCurrentHpResponse": {
             "type": "object",
             "properties": {
@@ -1560,6 +1589,14 @@ const docTemplate = `{
         "character.CharacterListResponse": {
             "type": "object",
             "properties": {
+                "campaign": {
+                    "description": "The campaign the character plays in, null when none",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/character.CharacterCampaignResponse"
+                        }
+                    ]
+                },
                 "current_hp": {
                     "type": "integer"
                 },

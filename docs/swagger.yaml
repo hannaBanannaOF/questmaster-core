@@ -128,6 +128,13 @@ definitions:
       status:
         type: string
     type: object
+  character.CharacterCampaignResponse:
+    properties:
+      name:
+        type: string
+      slug:
+        type: string
+    type: object
   character.CharacterCurrentHpResponse:
     properties:
       current_hp:
@@ -172,6 +179,10 @@ definitions:
     type: object
   character.CharacterListResponse:
     properties:
+      campaign:
+        allOf:
+        - $ref: '#/definitions/character.CharacterCampaignResponse'
+        description: The campaign the character plays in, null when none
       current_hp:
         type: integer
       last_accessed_at:
@@ -319,6 +330,15 @@ paths:
         in: query
         name: status
         type: string
+      - description: Only campaigns whose name contains it, ignoring case and accents
+          (at most 100 characters)
+        in: query
+        name: q
+        type: string
+      - description: 'true: only campaigns nobody joined yet'
+        in: query
+        name: without_players
+        type: boolean
       - default: name
         description: 'name: by name; recent: last opened by the user first, never
           opened after, by name'
@@ -346,7 +366,7 @@ paths:
           schema:
             $ref: '#/definitions/campaign.CampaignListPageResponse'
         "400":
-          description: Invalid role, status, sort, limit or offset
+          description: Invalid role, status, q, without_players, sort, limit or offset
           schema:
             $ref: '#/definitions/httperrors.HttpError'
         "401":
@@ -702,6 +722,11 @@ paths:
         in: query
         name: without_campaign
         type: boolean
+      - description: Only characters whose name contains it, ignoring case and accents
+          (at most 100 characters)
+        in: query
+        name: q
+        type: string
       - default: name
         description: 'name: by name; recent: last opened by the user first, never
           opened after, by name'
@@ -729,7 +754,7 @@ paths:
           schema:
             $ref: '#/definitions/character.CharacterListPageResponse'
         "400":
-          description: Invalid game_system, sort, limit or offset
+          description: Invalid game_system, q, sort, limit or offset
           schema:
             $ref: '#/definitions/httperrors.HttpError'
         "401":
