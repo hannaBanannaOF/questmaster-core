@@ -262,18 +262,13 @@ func (r *CharacterRepositoryPG) CreatePremade(name characterDomain.CharacterName
 	return MapRowToDomain(record)
 }
 
-// UpdateDetails saves the character name and its player's table name; a new name regenerates the slug
+// UpdateDetails saves the character name; a new name regenerates the slug
 func (r *CharacterRepositoryPG) UpdateDetails(character characterDomain.Character) (characterDomain.Character, error) {
-	var playerName any
-	if character.PlayerName != nil {
-		playerName = character.PlayerName.Value()
-	}
-
 	rows, err := r.db.Query(context.Background(), `
-		UPDATE character_sheet SET name = $1, player_name = $2
-		WHERE id = $3
+		UPDATE character_sheet SET name = $1
+		WHERE id = $2
 		RETURNING *
-	`, character.Name.Value(), playerName, character.Id.Value())
+	`, character.Name.Value(), character.Id.Value())
 	if err != nil {
 		return characterDomain.Character{}, err
 	}
@@ -415,4 +410,17 @@ func (r *CharacterRepositoryPG) RecordAccess(userID userDomain.UserID, id charac
 		ON CONFLICT (user_id, character_id) DO UPDATE SET accessed_at = now()
 	`, userID.Value(), id.Value())
 	return err
+}
+
+// UpdatePlayerName changes the table name of userID's character in the campaign; false when they have none there
+func (r *CharacterRepositoryPG) UpdatePlayerName(userID userDomain.UserID, campaignID campaignDomain.CampaignID, name rpgDomain.TableName) (bool, error) {
+	cmdTag, err := r.db.Exec(context.Background(), `
+		UPDATE character_sheet SET player_name = $1
+		WHERE player_id = $2 AND campaign_id = $3
+	`, name.Value(), userID.Value(), campaignID.Value())
+	if err != nil {
+		return false, err
+	}
+
+	return cmdTag.RowsAffected() > 0, nil
 }

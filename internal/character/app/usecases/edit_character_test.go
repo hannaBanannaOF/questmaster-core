@@ -7,7 +7,6 @@ import (
 	campaignDomain "questmaster-core/internal/campaign/domain"
 	characterApp "questmaster-core/internal/character/app"
 	characterDomain "questmaster-core/internal/character/domain"
-	rpgDomain "questmaster-core/internal/rpg/domain"
 	userDomain "questmaster-core/internal/user/domain"
 
 	"github.com/google/uuid"
@@ -38,7 +37,7 @@ func TestEditCharacter(t *testing.T) {
 		return &fakeEditRepo{character: &characterDomain.Character{Id: 1, Name: "Harvey", PlayerID: &player, CampaignID: &campaignID}}
 	}
 	edit := func(repo *fakeEditRepo, user userDomain.UserID) (characterApp.EditCharacterReadModel, error) {
-		return NewEditCharacter(repo, finder).Execute(characterApp.EditCharacterCommand{ID: 1, Name: &name, UserID: user})
+		return NewEditCharacter(repo, finder).Execute(characterApp.EditCharacterCommand{ID: 1, Name: name, UserID: user})
 	}
 
 	for label, user := range map[string]userDomain.UserID{"player": player, "campaign DM": dm} {
@@ -55,41 +54,6 @@ func TestEditCharacter(t *testing.T) {
 		_, err := edit(repo, userDomain.NewUserID(uuid.New()))
 		if !errors.Is(err, characterDomain.ErrNotAllowed) || repo.saved != nil {
 			t.Fatalf("expected ErrNotAllowed without saving, got %v saved=%v", err, repo.saved)
-		}
-	})
-
-	setPlayerName := func(repo *fakeEditRepo, user userDomain.UserID) (characterApp.EditCharacterReadModel, error) {
-		ana := rpgDomain.TableName("Ana")
-		return NewEditCharacter(repo, finder).Execute(characterApp.EditCharacterCommand{ID: 1, PlayerName: &ana, UserID: user})
-	}
-
-	t.Run("player changes their table name", func(t *testing.T) {
-		repo := newRepo()
-		rm, err := setPlayerName(repo, player)
-		if err != nil || rm.PlayerName == nil || *rm.PlayerName != "Ana" || rm.Name != "Harvey" {
-			t.Fatalf("expected only the table name changed, got %+v err=%v", rm, err)
-		}
-	})
-
-	t.Run("DM can't change the player's table name", func(t *testing.T) {
-		repo := newRepo()
-		if _, err := setPlayerName(repo, dm); !errors.Is(err, characterDomain.ErrNotPlayer) || repo.saved != nil {
-			t.Fatalf("expected ErrNotPlayer without saving, got %v saved=%v", err, repo.saved)
-		}
-	})
-
-	t.Run("character without a campaign has no table name", func(t *testing.T) {
-		repo := &fakeEditRepo{character: &characterDomain.Character{Id: 1, Name: "Harvey", PlayerID: &player}}
-		if _, err := setPlayerName(repo, player); !errors.Is(err, characterDomain.ErrNotInAnyCampaign) || repo.saved != nil {
-			t.Fatalf("expected ErrNotInAnyCampaign without saving, got %v saved=%v", err, repo.saved)
-		}
-	})
-
-	t.Run("nothing to edit", func(t *testing.T) {
-		repo := newRepo()
-		_, err := NewEditCharacter(repo, finder).Execute(characterApp.EditCharacterCommand{ID: 1, UserID: player})
-		if !errors.Is(err, ErrNothingToEdit) || repo.saved != nil {
-			t.Fatalf("expected ErrNothingToEdit without saving, got %v saved=%v", err, repo.saved)
 		}
 	})
 

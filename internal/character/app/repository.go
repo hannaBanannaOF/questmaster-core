@@ -23,5 +23,6 @@ type CharacterRepository interface {
 	GetAllByUserIDAndCampaignIDNullAndSystem(userID userDomain.UserID, system rpgDomain.System) ([]characterDomain.Character, error)
 	ClaimPremade(characterID characterDomain.CharacterID, campaignID campaignDomain.CampaignID, userID userDomain.UserID, playerName rpgDomain.TableName) (*characterDomain.Character, error)
 	UnlinkFromCampaign(characterID characterDomain.CharacterID, campaignID campaignDomain.CampaignID) (bool, error)
+	UpdatePlayerName(userID userDomain.UserID, campaignID campaignDomain.CampaignID, name rpgDomain.TableName) (bool, error)
 	UpdateCampaign(campaignID campaignDomain.CampaignID, characterSlug rpgDomain.Slug, userID userDomain.UserID, playerName rpgDomain.TableName) (*characterDomain.Character, error)
 }

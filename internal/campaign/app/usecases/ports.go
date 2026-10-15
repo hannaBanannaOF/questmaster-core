@@ -4,6 +4,7 @@ import (
 	campaignDomain "questmaster-core/internal/campaign/domain"
 	characterDomain "questmaster-core/internal/character/domain"
 	inviteDomain "questmaster-core/internal/invite/domain"
+	rpgDomain "questmaster-core/internal/rpg/domain"
 	userDomain "questmaster-core/internal/user/domain"
 )
 
@@ -25,4 +26,8 @@ type CampaignAccessRecorder interface {
 
 type CampaignInviteFinder interface {
 	GetByCampaignID(campaignID campaignDomain.CampaignID) (*inviteDomain.Invite, error)
+}
+
+type CampaignPlayerNameUpdater interface {
+	UpdatePlayerName(userID userDomain.UserID, campaignID campaignDomain.CampaignID, name rpgDomain.TableName) (bool, error)
 }

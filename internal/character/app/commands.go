@@ -21,10 +21,9 @@ type CreatePremadeCharacterCommand struct {
 }
 
 type EditCharacterCommand struct {
-	ID         characterDomain.CharacterID
-	Name       *characterDomain.CharacterName
-	PlayerName *rpgDomain.TableName
-	UserID     userDomain.UserID
+	ID     characterDomain.CharacterID
+	Name   characterDomain.CharacterName
+	UserID userDomain.UserID
 }
 
 type LeaveCampaignCommand struct {

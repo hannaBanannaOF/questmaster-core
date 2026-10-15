@@ -110,3 +110,42 @@ func TestCreateCampaignRoute(t *testing.T) {
 		})
 	}
 }
+
+type fakeTableNameRepo struct {
+	campaignApp.CampaignRepository
+	dm userDomain.UserID
+}
+
+func (f fakeTableNameRepo) FindById(id campaignDomain.CampaignID) (*campaignDomain.Campaign, error) {
+	return &campaignDomain.Campaign{Id: id, Dm: f.dm}, nil
+}
+
+func (fakeTableNameRepo) UpdateDmName(campaignDomain.CampaignID, rpgDomain.TableName) error {
+	return nil
+}
+
+func TestUpdateTableNameRoute(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	dm := userDomain.NewUserID(uuid.New())
+	handler := NewCampaignHandler(nil, nil, nil, nil, nil, nil, nil, campaignUsecases.NewUpdateTableName(fakeTableNameRepo{dm: dm}, nil))
+	router := gin.New()
+	router.Use(middleware.ErrorHandlerMiddleware(), func(c *gin.Context) {
+		(&context.AppContext{Context: c}).SetUser(userDomain.User{Id: dm})
+	})
+	router.PATCH("/campaign/:campaignID/table-name", CampaignIDMiddleware(), context.Adapt(handler.UpdateTableName))
+	patch := func(path, body string) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		router.ServeHTTP(rec, httptest.NewRequest(http.MethodPatch, path, strings.NewReader(body)))
+		return rec
+	}
+
+	if rec := patch("/campaign/1/table-name", `{"name":" Ana "}`); rec.Code != http.StatusOK || rec.Body.String() != `{"name":"Ana"}` {
+		t.Fatalf("expected 200 with the trimmed name, got %d %s", rec.Code, rec.Body)
+	}
+	if rec := patch("/campaign/1/table-name", `{"name":"  "}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 for a blank name, got %d", rec.Code)
+	}
+	if rec := patch("/campaign/1", `{"dm_name":"Ana"}`); rec.Code != http.StatusNotFound {
+		t.Fatalf("expected the generic campaign patch to be gone, got %d", rec.Code)
+	}
+}

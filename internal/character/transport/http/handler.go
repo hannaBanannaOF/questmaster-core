@@ -46,14 +46,14 @@ func NewCharactersHandler(
 }
 
 // @Summary Edit character
-// @Description Renames the character (its player or the DM of its campaign; a new name regenerates the slug) and/or changes player_name, how the player is called in the character's campaign (the player only, while in a campaign)
+// @Description Renames the character, for its player or the DM of its campaign. A new name regenerates the slug
 // @Tags v1:character
 // @Param characterID path integer true "Character ID"
 // @Accept json
 // @Param request body EditCharacterRequest true "Fields to change"
 // @Produce json
 // @Success 200 {object} CharacterEditResponse
-// @Failure 400 {object} httperrors.HttpError "Neither name nor player_name, an invalid value, or player_name for a character in no campaign"
+// @Failure 400 {object} httperrors.HttpError "Missing or invalid name"
 // @Failure 401 {object} httperrors.HttpError "Unauthorized - missing or invalid access_token"
 // @Failure 403 {object} httperrors.HttpError "Not the character player nor its campaign DM"
 // @Failure 404 {object} httperrors.HttpError "Character not found"
@@ -66,31 +66,23 @@ func (h *CharactersHandler) Edit(ctx *context.AppContext) error {
 		return httperrors.ErrInvalidRequestBody
 	}
 
-	cmd := characterApp.EditCharacterCommand{ID: ctx.CharacterID(), UserID: ctx.UserID()}
-	if body.Name != nil {
-		name, err := characterDomain.NewCharacterName(*body.Name)
-		if err != nil {
-			return err
-		}
-		cmd.Name = &name
-	}
-	if body.PlayerName != nil {
-		playerName, err := rpgDomain.NewTableName(*body.PlayerName)
-		if err != nil {
-			return err
-		}
-		cmd.PlayerName = &playerName
+	name, err := characterDomain.NewCharacterName(body.Name)
+	if err != nil {
+		return err
 	}
 
-	edited, err := h.editUC.Execute(cmd)
+	edited, err := h.editUC.Execute(characterApp.EditCharacterCommand{
+		ID:     ctx.CharacterID(),
+		Name:   name,
+		UserID: ctx.UserID(),
+	})
 	if err != nil {
 		return err
 	}
 
 	ctx.JSON(http.StatusOK, CharacterEditResponse{
-		Slug:       edited.Slug,
-		Name:       edited.Name,
-		PlayerName: edited.PlayerName,
+		Slug: edited.Slug,
+		Name: edited.Name,
 	})
 	return nil
 }

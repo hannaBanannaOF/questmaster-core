@@ -15,10 +15,10 @@ type CreateCampaignCommand struct {
 	DmName   rpgDomain.TableName
 }
 
-type UpdateCampaignDmNameCommand struct {
+type UpdateTableNameCommand struct {
 	CampaignID campaignDomain.CampaignID
 	UserID     userDomain.UserID
-	DmName     rpgDomain.TableName
+	Name       rpgDomain.TableName
 }
 
 type DeleteCampaignCommand struct {

@@ -72,6 +72,6 @@ type CampaignStatusCountsResponse struct {
 	Archived int `json:"ARCHIVED"`
 }
 
-type CampaignDmNameResponse struct {
-	DmName string `json:"dm_name"`
+type TableNameResponse struct {
+	Name string `json:"name"`
 }
