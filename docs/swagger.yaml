@@ -37,15 +37,11 @@ definitions:
     type: object
   campaign.CampaignDetailResponseCharacterItem:
     properties:
-      current_hp:
-        type: integer
       id:
         type: integer
       is_mine:
         description: True when the requester is the character player
         type: boolean
-      max_hp:
-        type: integer
       name:
         type: string
       slug:
@@ -87,11 +83,7 @@ definitions:
     type: object
   campaign.CampaignPremadeCharacterResponse:
     properties:
-      current_hp:
-        type: integer
       id:
-        type: integer
-      max_hp:
         type: integer
       name:
         type: string
@@ -135,21 +127,12 @@ definitions:
       slug:
         type: string
     type: object
-  character.CharacterCurrentHpResponse:
-    properties:
-      current_hp:
-        type: integer
-    type: object
   character.CharacterDetailResponse:
     properties:
-      current_hp:
-        type: integer
       id:
         type: integer
       is_player:
         type: boolean
-      max_hp:
-        type: integer
       name:
         type: string
       slug:
@@ -159,10 +142,6 @@ definitions:
     type: object
   character.CharacterEditResponse:
     properties:
-      current_hp:
-        type: integer
-      max_hp:
-        type: integer
       name:
         type: string
       slug:
@@ -183,14 +162,10 @@ definitions:
         allOf:
         - $ref: '#/definitions/character.CharacterCampaignResponse'
         description: The campaign the character plays in, null when none
-      current_hp:
-        type: integer
       last_accessed_at:
         description: The requester last open of the character details, null if never
           opened
         type: string
-      max_hp:
-        type: integer
       name:
         type: string
       slug:
@@ -200,8 +175,6 @@ definitions:
     type: object
   character.CreateCharacterRequest:
     properties:
-      hp:
-        type: integer
       name:
         type: string
       system:
@@ -209,22 +182,13 @@ definitions:
     type: object
   character.CreatePremadeCharacterRequest:
     properties:
-      max_hp:
-        type: integer
       name:
         type: string
     type: object
   character.EditCharacterRequest:
     properties:
-      max_hp:
-        type: integer
       name:
         type: string
-    type: object
-  character.UpdateHPRequest:
-    properties:
-      new_hp:
-        type: integer
     type: object
   httperrors.HttpError:
     properties:
@@ -273,10 +237,6 @@ definitions:
     type: object
   invite.InvitePremadeCharacterResponse:
     properties:
-      current_hp:
-        type: integer
-      max_hp:
-        type: integer
       name:
         type: string
       slug:
@@ -496,7 +456,7 @@ paths:
       - application/json
       description: The campaign DM prepares a character in the campaign, with no player,
         for players to claim when accepting the invite. It gets the campaign game
-        system, and current HP starts at max HP
+        system
       parameters:
       - description: Campaign ID
         in: path
@@ -544,7 +504,7 @@ paths:
   /core/api/v1/campaign/{campaignID}/character/{characterID}:
     delete:
       description: The character player leaves the campaign, or the campaign DM removes
-        the character. The character keeps its player and HP, with no campaign
+        the character. The character keeps its player, with no campaign
       parameters:
       - description: Campaign ID
         in: path
@@ -881,9 +841,8 @@ paths:
     patch:
       consumes:
       - application/json
-      description: Changes the character name and/or max HP, for its player or the
-        DM of its campaign. A new name regenerates the slug; a lower max HP lowers
-        the current HP, and a character without HP gets full HP
+      description: Renames the character, for its player or the DM of its campaign.
+        A new name regenerates the slug
       parameters:
       - description: Character ID
         in: path
@@ -904,7 +863,7 @@ paths:
           schema:
             $ref: '#/definitions/character.CharacterEditResponse'
         "400":
-          description: Nothing to change, invalid name or max HP
+          description: Missing or invalid name
           schema:
             $ref: '#/definitions/httperrors.HttpError'
         "401":
@@ -926,51 +885,6 @@ paths:
       security:
       - BearerAuth: []
       summary: Edit character
-      tags:
-      - v1:character
-  /core/api/v1/character/{characterID}/hp:
-    patch:
-      consumes:
-      - application/json
-      description: Updates character HP
-      parameters:
-      - description: Character ID
-        in: path
-        name: characterID
-        required: true
-        type: integer
-      - description: New character HP
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/character.UpdateHPRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/character.CharacterCurrentHpResponse'
-        "401":
-          description: Unauthorized - missing or invalid access_token
-          schema:
-            $ref: '#/definitions/httperrors.HttpError'
-        "403":
-          description: Only the character's player can update it
-          schema:
-            $ref: '#/definitions/httperrors.HttpError'
-        "404":
-          description: Character not found
-          schema:
-            $ref: '#/definitions/httperrors.HttpError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/httperrors.HttpError'
-      security:
-      - BearerAuth: []
-      summary: Update HP
       tags:
       - v1:character
   /core/api/v1/character/resolve/{slug}:
